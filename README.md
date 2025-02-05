@@ -1,8 +1,5 @@
-# blank
+## Docker Postgres Image Command:
 
-blank
-
-## Attributes
-
-- **Database**: mongodb
-- **Storage Adapter**: localDisk
+```
+postgres://myKunba:postgres@db@0.0.0.0:5400/mydb
+```
