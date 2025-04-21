@@ -1,3 +1,5 @@
+"use client";
+
 import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
 import {
   Accordion,
@@ -22,6 +24,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { JSX } from "react";
+import AuthenticationSheet from "./AuthenticationSheet";
+import { useAppStore } from "@/lib/context/store";
 
 interface MenuItem {
   title: string;
@@ -57,10 +61,10 @@ interface NavbarProps {
 
 export default function Navbar({
   logo = {
-    url: "#",
+    url: "https://www.mykunba.org",
     src: "https://www.shadcnblocks.com/images/block/block-1.svg",
     alt: "logo",
-    title: "Shadcnblocks.com",
+    title: "My Kunba",
   },
   menu = [
     { title: "Home", url: "#" },
@@ -126,12 +130,8 @@ export default function Navbar({
       ],
     },
     {
-      title: "Pricing",
-      url: "#",
-    },
-    {
       title: "Blog",
-      url: "#",
+      url: "#blog",
     },
   ],
   mobileExtraLinks = [
@@ -140,16 +140,13 @@ export default function Navbar({
     { name: "Imprint", url: "#" },
     { name: "Sitemap", url: "#" },
   ],
-  auth = {
-    login: { text: "Log in", url: "#" },
-    signup: { text: "Sign up", url: "#" },
-  },
 }: NavbarProps) {
+  const { loginDetail } = useAppStore();
   return (
-    <section className="p-4">
+    <section className="p-4 fixed top-0 z-50 w-full bg-white border-b">
       <nav className="hidden justify-between lg:flex">
         <div className="flex items-center gap-6">
-          <a href={logo.url} className="flex items-center gap-2">
+          <a href={logo.url} className="flex items-center gap-2 bg-none">
             <img src={logo.src} className="w-8" alt={logo.alt} />
             <span className="text-lg font-semibold">{logo.title}</span>
           </a>
@@ -161,14 +158,14 @@ export default function Navbar({
             </NavigationMenu>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <a href={auth.login.url}>{auth.login.text}</a>
-          </Button>
-          <Button asChild size="sm">
-            <a href={auth.signup.url}>{auth.signup.text}</a>
-          </Button>
-        </div>
+        {loginDetail.role === "admin" ? (
+          <Button>Dashboard</Button>
+        ) : (
+          <div className="flex gap-2 justify-between items-center">
+            <AuthenticationSheet />
+            <Button>Sign Up</Button>
+          </div>
+        )}
       </nav>
       <div className="block lg:hidden">
         <div className="flex items-center justify-between">
@@ -213,11 +210,9 @@ export default function Navbar({
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Button asChild variant="outline">
-                    <a href={auth.login.url}>{auth.login.text}</a>
-                  </Button>
-                  <Button asChild>
-                    <a href={auth.signup.url}>{auth.signup.text}</a>
+                  <AuthenticationSheet />
+                  <Button asChild size="sm">
+                    <p>Sign Up</p>
                   </Button>
                 </div>
               </div>
@@ -232,7 +227,11 @@ export default function Navbar({
 const renderMenuItem = (item: MenuItem) => {
   if (item.items) {
     return (
-      <NavigationMenuItem key={item.title} className="text-muted-foreground">
+      <NavigationMenuItem
+        id="1"
+        key={item.title}
+        className="text-muted-foreground bg-none h-full"
+      >
         <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
         <NavigationMenuContent>
           <ul className="w-80 p-3">

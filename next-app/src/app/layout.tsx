@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { Toaster } from "@/components/ui/sonner";
+import { AppProvider } from "@/lib/context/store";
+import HeroSection from "@/components/HeroSection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,13 +28,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        {children}
-        <Footer />
+        <AppProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <Toaster />
+        </AppProvider>
       </body>
     </html>
   );
