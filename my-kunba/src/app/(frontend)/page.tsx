@@ -1,10 +1,6 @@
-import Blog from "@/components/Blog";
+import Root from '@/components/Root/Root'
+import React from 'react'
 
-export default function Home() {
-  return (
-    <div className="mt-20">
-      {/* <HeroSection /> */}
-      <Blog />
-    </div>
-  );
+export default function page() {
+  return <Root />
 }

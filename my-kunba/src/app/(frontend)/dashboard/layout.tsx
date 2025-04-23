@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import './globals.css'
-import { Toaster } from '@/components/ui/sonner'
-import { AppProvider } from '@/lib/context/store'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/sidebar/app-sidebar'
+import { SiteHeader } from '@/components/sidebar/site-header'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,17 +25,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        cz-shortcut-listen="false"
-        suppressHydrationWarning={true}
-      >
-        <AppProvider>
-          {children}
-          <Toaster />
-        </AppProvider>
-      </body>
-    </html>
+    <SidebarProvider>
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
