@@ -3,22 +3,17 @@
 import * as React from 'react'
 import {
   ArrowUpCircleIcon,
-  BarChartIcon,
+  Bookmark,
   CameraIcon,
-  ClipboardListIcon,
-  DatabaseIcon,
   FileCodeIcon,
-  FileIcon,
   FileTextIcon,
-  FolderIcon,
-  HelpCircleIcon,
   LayoutDashboardIcon,
-  ListIcon,
+  MessageCircleHeart,
   SearchIcon,
   SettingsIcon,
+  Shapes,
   UsersIcon,
 } from 'lucide-react'
-
 import { NavDocuments } from '@/components/sidebar/nav-documents'
 import { NavMain } from '@/components/sidebar/nav-main'
 import { NavSecondary } from '@/components/sidebar/nav-secondary'
@@ -35,30 +30,15 @@ import {
 
 const data = {
   user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
+    name: 'Lakshay Bhati',
+    email: 'll3162@srmist.edu.in',
+    avatar: 'https://shoppershine.com/wp-content/uploads/2021/01/SS-PS095-1.jpg',
   },
   navMain: [
     {
       title: 'Dashboard',
       url: '#',
       icon: LayoutDashboardIcon,
-    },
-    {
-      title: 'Lifecycle',
-      url: '#',
-      icon: ListIcon,
-    },
-    {
-      title: 'Analytics',
-      url: '#',
-      icon: BarChartIcon,
-    },
-    {
-      title: 'Projects',
-      url: '#',
-      icon: FolderIcon,
     },
     {
       title: 'Team',
@@ -116,50 +96,50 @@ const data = {
   ],
   navSecondary: [
     {
-      title: 'Settings',
-      url: '#',
-      icon: SettingsIcon,
-    },
-    {
-      title: 'Get Help',
-      url: '#',
-      icon: HelpCircleIcon,
-    },
-    {
       title: 'Search',
       url: '#',
       icon: SearchIcon,
     },
+    {
+      title: 'Settings',
+      url: '#',
+      icon: SettingsIcon,
+    },
+    // {
+    //   title: 'Get Help',
+    //   url: '#',
+    //   icon: HelpCircleIcon,
+    // },
   ],
   documents: [
     {
-      name: 'Data Library',
-      url: '#',
-      icon: DatabaseIcon,
+      name: 'Blog',
+      url: '/dashboard/blog',
+      icon: MessageCircleHeart,
     },
     {
-      name: 'Reports',
-      url: '#',
-      icon: ClipboardListIcon,
+      name: 'Category',
+      url: '/dashboard/category',
+      icon: Shapes,
     },
     {
-      name: 'Word Assistant',
-      url: '#',
-      icon: FileIcon,
+      name: 'Blog Tag',
+      url: '/dashboard/tags',
+      icon: Bookmark,
     },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#">
                 <ArrowUpCircleIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">My Kunba</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -5,6 +5,7 @@ export const Posts: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
   },
+  timestamps: true,
   fields: [
     {
       name: 'title',
@@ -70,6 +71,10 @@ export const Posts: CollectionConfig = {
       type: 'relationship',
       relationTo: 'tags',
       hasMany: true,
+    },
+    {
+      name: 'deleted_at',
+      type: 'date',
     },
   ],
   hooks: {

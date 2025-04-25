@@ -1,29 +1,28 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "./ui/separator";
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Separator } from './ui/separator'
 
 const sections = [
   {
-    title: "Product",
+    title: 'Links',
     links: [
-      { name: "Product 1", href: "#" },
-      { name: "Product 2", href: "#" },
-      { name: "Product 3", href: "#" },
-      { name: "Product 4", href: "#" },
-      { name: "Product 5", href: "#" },
-      { name: "Product 6", href: "#" },
+      { name: 'Home', href: '#' },
+      { name: 'About', href: '#' },
+      { name: 'Contact', href: '#' },
+      { name: 'All Posts / Blog', href: '#' },
+      // { name: 'Privacy Policy', href: '#' },
     ],
   },
   {
-    title: "Resources",
+    title: 'Social Media',
     links: [
-      { name: "Blog", href: "#" },
-      { name: "Knowledge Base", href: "#" },
-      { name: "Documentation", href: "#" },
-      { name: "Partner Directory", href: "#" },
+      { name: 'Twitter / X', href: '#' },
+      { name: 'GitHub', href: '#' },
+      { name: 'LinkedIn', href: '#' },
+      { name: 'Instagram', href: '#' },
     ],
   },
-];
+]
 
 export default function Footer() {
   return (
@@ -32,16 +31,14 @@ export default function Footer() {
         <div className="col-span-2 mb-8 lg:mb-0">
           <div className="flex flex-col justify-start gap-3">
             <div className="flex justify-start gap-3 items-center">
-              <img
-                src="https://www.shadcnblocks.com/images/block/block-1.svg"
-                alt="logo"
-                className="h-10 w-10"
-              />
-              <p className="text-xl font-bold">Shadcnblocks</p>
+              <div className="overflow-hidden rounded-xl">
+                <img src="/logo.png" alt="logo" className="h-10 w-10" />
+              </div>
+              <p className="text-xl font-bold">myKunba.org</p>
             </div>
             <p className="text-base font-medium text-muted-foreground w-[80%]">
-              A collection of 100+ responsive HTML templates for your startup
-              business or side project.
+              Where Stories Come to Life is an innovative and engaging blogging platform designed
+              for provide writers, storytellers, and content creators.
             </p>
           </div>
         </div>
@@ -82,5 +79,5 @@ export default function Footer() {
         </ul>
       </div>
     </footer>
-  );
+  )
 }

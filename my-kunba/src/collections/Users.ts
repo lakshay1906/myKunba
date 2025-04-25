@@ -31,7 +31,7 @@ export const Users: CollectionConfig = {
       name: 'role',
       type: 'select',
       defaultValue: 'author',
-      options: ['admin', 'author', 'editor'],
+      options: ['admin', 'author', 'user'],
       required: true,
     },
     {
@@ -47,6 +47,10 @@ export const Users: CollectionConfig = {
           type: 'text',
         },
       ],
+    },
+    {
+      name: 'deleted_at',
+      type: 'date',
     },
   ],
 }

@@ -132,9 +132,17 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   username: string;
+  displayName: string;
   bio?: string | null;
   profileImage?: (number | null) | Media;
-  role: 'admin' | 'author' | 'moderator' | 'user';
+  role: 'admin' | 'author' | 'user';
+  socialLinks?:
+    | {
+        platform?: string | null;
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -153,6 +161,9 @@ export interface User {
 export interface Media {
   id: number;
   alt: string;
+  caption?: string | null;
+  credit?: string | null;
+  tags?: string[] | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -172,6 +183,7 @@ export interface Media {
 export interface Category {
   id: number;
   name: string;
+  slug: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -181,9 +193,11 @@ export interface Category {
  */
 export interface Comment {
   id: number;
-  content: string;
   post: number | Post;
   user: number | User;
+  content: string;
+  status?: ('pending' | 'approved' | 'rejected') | null;
+  parent?: (number | null) | Comment;
   updatedAt: string;
   createdAt: string;
 }
@@ -195,7 +209,8 @@ export interface Post {
   id: number;
   title: string;
   slug: string;
-  content: {
+  excerpt?: string | null;
+  content?: {
     root: {
       type: string;
       children: {
@@ -209,10 +224,13 @@ export interface Post {
       version: number;
     };
     [k: string]: unknown;
-  };
+  } | null;
   coverImage?: (number | null) | Media;
-  status?: ('draft' | 'published' | 'pending_approval') | null;
-  moderationNotes?: string | null;
+  status: 'draft' | 'published' | 'pending_approval';
+  publishDate?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  template?: ('standard' | 'full-width') | null;
   author: number | User;
   categories?: (number | Category)[] | null;
   tags?: (number | Tag)[] | null;
@@ -226,6 +244,7 @@ export interface Post {
 export interface Tag {
   id: number;
   name: string;
+  slug: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -247,8 +266,8 @@ export interface Like {
 export interface PostLog {
   id: number;
   post: number | Post;
-  user: number | User;
-  action: string;
+  user?: (number | null) | User;
+  action: 'create' | 'update' | 'delete';
   timestamp?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -340,9 +359,17 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   username?: T;
+  displayName?: T;
   bio?: T;
   profileImage?: T;
   role?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -359,6 +386,9 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  caption?: T;
+  credit?: T;
+  tags?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -377,6 +407,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -385,9 +416,11 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "comments_select".
  */
 export interface CommentsSelect<T extends boolean = true> {
-  content?: T;
   post?: T;
   user?: T;
+  content?: T;
+  status?: T;
+  parent?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -420,10 +453,14 @@ export interface PostLogsSelect<T extends boolean = true> {
 export interface PostsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  excerpt?: T;
   content?: T;
   coverImage?: T;
   status?: T;
-  moderationNotes?: T;
+  publishDate?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  template?: T;
   author?: T;
   categories?: T;
   tags?: T;
@@ -436,6 +473,7 @@ export interface PostsSelect<T extends boolean = true> {
  */
 export interface TagsSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
   updatedAt?: T;
   createdAt?: T;
 }

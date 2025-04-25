@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 
 export const Comments: CollectionConfig = {
   slug: 'comments',
+  timestamps: true,
   fields: [
     {
       name: 'post',

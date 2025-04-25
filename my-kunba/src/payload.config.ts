@@ -15,9 +15,13 @@ import { Likes } from './collections/Likes'
 import { PostLogs } from './collections/PostLogs'
 import { Posts } from './collections/Posts'
 import { Tags } from './collections/Tag'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+export const payload = await getPayload({ config })
 
 export default buildConfig({
   admin: {
@@ -25,6 +29,7 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    theme: 'all',
   },
   collections: [Users, Media, Categories, Comments, Likes, PostLogs, Posts, Tags],
   editor: lexicalEditor(),
