@@ -27,8 +27,8 @@ export const Posts: CollectionConfig = {
       type: 'richText',
     },
     {
-      name: 'coverImage',
-      type: 'upload',
+      name: 'media',
+      type: 'relationship',
       relationTo: 'media',
     },
     {
@@ -79,15 +79,34 @@ export const Posts: CollectionConfig = {
   ],
   hooks: {
     afterChange: [
-      async ({ doc, req, operation }) => {
-        await req.payload.create({
-          collection: 'post-logs',
-          data: {
-            post: doc.id,
-            user: Number(req.user?.id),
-            action: operation,
-          },
-        })
+      async ({ req, operation, doc }) => {
+        console.log('afterChange triggered', { operation, doc })
+
+        if (!['create', 'update', 'delete'].includes(operation)) return
+        if (!doc) return
+
+        const userId = doc.author?.id
+
+        if (!userId) {
+          console.warn('No user associated with post, skipping post-log creation')
+          return
+        }
+
+        // ⏳ Defer log creation to next event loop
+        setTimeout(async () => {
+          try {
+            await req.payload.create({
+              collection: 'post-logs',
+              data: {
+                post: doc.id,
+                user: userId,
+                action: operation,
+              },
+            })
+          } catch (error) {
+            console.error('Failed to create post log:', error)
+          }
+        }, 0)
       },
     ],
   },

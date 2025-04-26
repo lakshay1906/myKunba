@@ -25,6 +25,7 @@ export async function createPost(data: PostData) {
     // For this example, we'll set a fixed author ID
     // In a real application, you would get this from the authenticated user
     const authorId = 1 // Replace with actual logic to get the current user ID
+    console.log(data, `${url}/api/blog`)
     const response = await fetch(`${url}/api/blog`, {
       method: 'POST',
       headers: {

@@ -36,6 +36,7 @@ import * as z from 'zod'
 import { RichTextEditor } from './rich-text-editor'
 import { MediaUploader } from './media-uploader'
 import { MultiSelect } from './multi-select'
+import Toast from '../Toast'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -88,20 +89,19 @@ export function CreatePostForm() {
         tags: data.tags?.map((id) => ({ id })),
       })
 
-      // toast({
-      //   title: 'Success',
-      //   description: 'Post created successfully',
-      // })
-
-      // Redirect to the posts list
       router.push('/dashboard/blog')
+      return (
+        <Toast isSuccess={true} message={'Success'} description={'Post created successfully'} />
+      )
     } catch (error) {
       console.error('Error creating post:', error)
-      // toast({
-      //   title: 'Error',
-      //   description: error instanceof Error ? error.message : 'Failed to create post',
-      //   variant: 'destructive',
-      // })
+      return (
+        <Toast
+          isSuccess={false}
+          message={'Error'}
+          description={`'Error creating post:' ${error}`}
+        />
+      )
     } finally {
       setIsLoading(false)
     }

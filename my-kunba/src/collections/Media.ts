@@ -5,25 +5,22 @@ export const Media: CollectionConfig = {
   access: {
     read: () => true,
   },
-  upload: true,
+  // upload: {
+  //   mimeTypes: ['image/*'], // Only allow image files
+  // },
   fields: [
     {
-      name: 'alt',
+      name: 'url',
       type: 'text',
       required: true,
     },
     {
+      name: 'alt',
+      type: 'text',
+    },
+    {
       name: 'caption',
-      type: 'text',
-    },
-    {
-      name: 'credit',
-      type: 'text',
-    },
-    {
-      name: 'tags',
-      type: 'text',
-      hasMany: true,
+      type: 'textarea', // Easier for long captions
     },
   ],
 }

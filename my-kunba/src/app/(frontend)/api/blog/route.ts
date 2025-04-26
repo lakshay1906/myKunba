@@ -1,4 +1,4 @@
-import { payload } from '@/payload.config'
+import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -51,6 +51,15 @@ export async function POST(req: NextRequest) {
       categories,
       tags,
     } = await req.json()
+    const coverImg = await payload.create({
+      collection: 'media',
+      data: {
+        url: coverImage,
+      },
+    })
+    console.log(coverImg.id, '::id')
+    if (!coverImg.id)
+      return NextResponse.json({ message: 'Image uploading failed' }, { status: 401 })
     await payload.create({
       collection: 'posts',
       data: {
@@ -60,7 +69,7 @@ export async function POST(req: NextRequest) {
         status,
         categories,
         content,
-        coverImage,
+        media: coverImg.id,
         excerpt,
         metaDescription,
         metaTitle,

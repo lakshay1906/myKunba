@@ -143,6 +143,7 @@ export interface User {
         id?: string | null;
       }[]
     | null;
+  deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -160,21 +161,11 @@ export interface User {
  */
 export interface Media {
   id: number;
-  alt: string;
+  url: string;
+  alt?: string | null;
   caption?: string | null;
-  credit?: string | null;
-  tags?: string[] | null;
   updatedAt: string;
   createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -184,6 +175,7 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
+  deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -225,7 +217,7 @@ export interface Post {
     };
     [k: string]: unknown;
   } | null;
-  coverImage?: (number | null) | Media;
+  media?: (number | null) | Media;
   status: 'draft' | 'published' | 'pending_approval';
   publishDate?: string | null;
   metaTitle?: string | null;
@@ -234,6 +226,7 @@ export interface Post {
   author: number | User;
   categories?: (number | Category)[] | null;
   tags?: (number | Tag)[] | null;
+  deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -370,6 +363,7 @@ export interface UsersSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -385,21 +379,11 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  url?: T;
   alt?: T;
   caption?: T;
-  credit?: T;
-  tags?: T;
   updatedAt?: T;
   createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -408,6 +392,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -455,7 +440,7 @@ export interface PostsSelect<T extends boolean = true> {
   slug?: T;
   excerpt?: T;
   content?: T;
-  coverImage?: T;
+  media?: T;
   status?: T;
   publishDate?: T;
   metaTitle?: T;
@@ -464,6 +449,7 @@ export interface PostsSelect<T extends boolean = true> {
   author?: T;
   categories?: T;
   tags?: T;
+  deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
 }

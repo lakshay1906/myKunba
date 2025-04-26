@@ -18,6 +18,10 @@ export const Categories: CollectionConfig = {
       required: true,
       unique: true,
     },
+    {
+      name: 'deleted_at',
+      type: 'date',
+    },
   ],
   hooks: {
     beforeValidate: [
