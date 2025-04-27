@@ -6,8 +6,9 @@ export async function createCategory(name: string) {
   try {
     // Get the authentication token if needed
     // const token = cookies().get('payload-token')?.value
-
-    const response = await fetch(`/api/category`, {
+    console.log('sending')
+    const url = process.env.NEXT_PUBLIC_NEXT_URL
+    const response = await fetch(`${url}/api/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -144,8 +144,8 @@ importers:
         specifier: 3.33.0
         version: 3.33.0(graphql@16.10.0)(typescript@5.7.3)
       pg:
-        specifier: '8'
-        version: 8.10.0
+        specifier: ^8.11.3
+        version: 8.11.3
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -183,6 +183,9 @@ importers:
       '@types/node':
         specifier: ^22.5.4
         version: 22.14.1
+      '@types/pg':
+        specifier: ^8.11.14
+        version: 8.11.14
       '@types/react':
         specifier: 19.1.0
         version: 19.1.0
@@ -2389,6 +2392,9 @@ packages:
   '@types/pg@8.10.2':
     resolution: {integrity: sha512-MKFs9P6nJ+LAeHLU3V0cODEOgyThJ3OAnmOlsZsxux6sfQs3HRXR5bBn7xG5DjckEFhTAxsXi7k7cd0pCMxpJw==}
 
+  '@types/pg@8.11.14':
+    resolution: {integrity: sha512-qyD11E5R3u0eJmd1lB0WnWKXJGA7s015nyARWljfz5DcX83TKAIlY+QrmvzQTsbIe+hkiFtkyL2gHC6qwF6Fbg==}
+
   '@types/react-dom@19.1.2':
     resolution: {integrity: sha512-XGJkWF41Qq305SKWEILa1O8vzhb3aOo3ogBlSmiqNko/WmRb6QIaweuZCXjKygVDXpzXb5wyxKTSOsmkuqj+Qw==}
     peerDependencies:
@@ -4271,15 +4277,6 @@ packages:
   pg-types@4.0.2:
     resolution: {integrity: sha512-cRL3JpS3lKMGsKaWndugWQoLOCoP+Cic8oseVcbr0qhPzYD5DWXK+RZ9LY9wxRf7RQia4SCwQlXk0q6FCPrVng==}
     engines: {node: '>=10'}
-
-  pg@8.10.0:
-    resolution: {integrity: sha512-ke7o7qSTMb47iwzOSaZMfeR7xToFdkE71ifIipOAAaLIM0DYzfOAXlgFFmYUIE2BcJtvnVlGCID84ZzCegE8CQ==}
-    engines: {node: '>= 8.0.0'}
-    peerDependencies:
-      pg-native: '>=3.0.1'
-    peerDependenciesMeta:
-      pg-native:
-        optional: true
 
   pg@8.11.3:
     resolution: {integrity: sha512-+9iuvG8QfaaUrrph+kpF24cXkH1YOOUeArRNYIxq1viYHZagBxrTno7cecY1Fa44tJeZvaoG+Djpkc3JwehN5g==}
@@ -8037,6 +8034,12 @@ snapshots:
       pg-protocol: 1.9.0
       pg-types: 4.0.2
 
+  '@types/pg@8.11.14':
+    dependencies:
+      '@types/node': 22.14.1
+      pg-protocol: 1.9.0
+      pg-types: 4.0.2
+
   '@types/react-dom@19.1.2(@types/react@19.1.0)':
     dependencies:
       '@types/react': 19.1.0
@@ -10154,10 +10157,6 @@ snapshots:
 
   pg-numeric@1.0.2: {}
 
-  pg-pool@3.9.2(pg@8.10.0):
-    dependencies:
-      pg: 8.10.0
-
   pg-pool@3.9.2(pg@8.11.3):
     dependencies:
       pg: 8.11.3
@@ -10181,16 +10180,6 @@ snapshots:
       postgres-date: 2.1.0
       postgres-interval: 3.0.0
       postgres-range: 1.1.4
-
-  pg@8.10.0:
-    dependencies:
-      buffer-writer: 2.0.0
-      packet-reader: 1.0.0
-      pg-connection-string: 2.8.2
-      pg-pool: 3.9.2(pg@8.10.0)
-      pg-protocol: 1.9.0
-      pg-types: 2.2.0
-      pgpass: 1.0.5
 
   pg@8.11.3:
     dependencies:

@@ -18,6 +18,11 @@ export async function GET(req: NextRequest) {
         select: {
           name: true,
         },
+        where: {
+          deleted_at: {
+            equals: null,
+          },
+        },
         pagination: true,
       })
     return NextResponse.json(data, { status: 200 })
@@ -29,9 +34,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('got request')
     const data = await req.json()
-    if (!data.name || !data.slug)
-      return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
+    console.log(data)
+    if (!data.name) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
     await payload.create({
       collection: 'categories',
       data: data,
@@ -50,7 +56,6 @@ export async function DELETE(req: NextRequest) {
     await payload.update({
       collection: 'categories',
       data: {
-        // deleted_at: new Date(),
         deleted_at: String(new Date()),
       },
       where: {

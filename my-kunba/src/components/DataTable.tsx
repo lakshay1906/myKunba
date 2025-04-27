@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,7 +24,7 @@ import {
 import CurrentPageComponent from '@/components/CurrentPageComponent'
 // import StatusTag from '@/components/StatusTag'
 import { Checkbox } from '@/components/ui/checkbox'
-import React from 'react'
+import React, { ReactElement } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function DataTable({
@@ -45,7 +47,7 @@ export default function DataTable({
 }: {
   tableTitle?: string
   tableSubTitle?: string
-  AddProductButton: any
+  AddProductButton: React.JSX.Element
   detailPageLink: string
   selectedProductsState: Record<string, any>
   total: string | number
@@ -99,7 +101,7 @@ export default function DataTable({
             <p className="font-medium text-xl">{tableTitle}</p>
             <p className="text-sm text-muted-foreground">{tableSubTitle}</p>
           </div>
-          {AddProductButton !== undefined && <AddProductButton />}
+          {AddProductButton !== undefined && AddProductButton}
         </div>
       )}
       {data.length <= 0 ? (
