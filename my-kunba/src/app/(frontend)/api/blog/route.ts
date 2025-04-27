@@ -8,13 +8,13 @@ export async function GET(req: NextRequest) {
     const offset = req.nextUrl.searchParams.get('offset')
     let data
     if (id) {
-      data = payload.findByID({
+      data = await payload.findByID({
         collection: 'posts',
         id: Number(id),
         depth: 1,
       })
     } else {
-      data = payload.find({
+      data = await payload.find({
         collection: 'posts',
         depth: 1,
         where: {
@@ -23,10 +23,11 @@ export async function GET(req: NextRequest) {
           },
         },
         pagination: true,
-        limit: Number(limit),
-        page: Math.floor(Number(offset) / Number(limit)) + 1,
+        // limit: Number(limit),
+        // page: Math.floor(Number(offset) / Number(limit)) + 1,
       })
     }
+    console.log(data, id)
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
     console.log(error)

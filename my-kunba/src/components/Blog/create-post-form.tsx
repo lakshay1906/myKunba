@@ -2,7 +2,7 @@
 
 import type React from 'react'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createPost } from '@/app/actions/post-actions'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ import { RichTextEditor } from './rich-text-editor'
 import { MediaUploader } from './media-uploader'
 import { MultiSelect } from './multi-select'
 import Toast from '../Toast'
+import { fetchAllCategories } from '@/app/actions/category-actions'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -58,9 +59,10 @@ type FormValues = z.infer<typeof formSchema>
 
 export function CreatePostForm() {
   const [isLoading, setIsLoading] = useState(false)
-  const [categories, setCategories] = useState<{ label: string; value: string }[]>([])
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
   const [tags, setTags] = useState<{ label: string; value: string }[]>([])
   const router = useRouter()
+  const [catLoading, setCatLoading] = useState(true)
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -80,12 +82,12 @@ export function CreatePostForm() {
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
-
+    console.log(data.categories, '::cat')
     try {
       await createPost({
         ...data,
         // Convert categories and tags to the format expected by the API
-        categories: data.categories?.map((id) => ({ id })),
+        categories: data.categories?.map((item) => Number(item)),
         tags: data.tags?.map((id) => ({ id })),
       })
 
@@ -128,22 +130,15 @@ export function CreatePostForm() {
 
   // Fetch categories and tags (mock data for now)
   // In a real app, you would fetch these from your API
-  useState(() => {
-    // Mock categories data
-    setCategories([
-      { label: 'Technology', value: 'technology' },
-      { label: 'Design', value: 'design' },
-      { label: 'Business', value: 'business' },
-    ])
-
-    // Mock tags data
-    setTags([
-      { label: 'React', value: 'react' },
-      { label: 'Next.js', value: 'nextjs' },
-      { label: 'UI/UX', value: 'uiux' },
-      { label: 'JavaScript', value: 'javascript' },
-    ])
-  })
+  useEffect(() => {
+    ;(async () => {
+      setCatLoading(true)
+      const categories = await fetchAllCategories()
+      console.log(categories)
+      setCategories(categories.docs)
+      setCatLoading(false)
+    })()
+  }, [])
 
   return (
     <Form {...form}>
@@ -332,11 +327,14 @@ export function CreatePostForm() {
                     <FormLabel>Categories</FormLabel>
                     <FormControl>
                       <MultiSelect
-                        options={categories}
+                        options={categories.map((item) => ({
+                          label: item.name,
+                          value: String(item.id),
+                        }))}
                         selected={field.value || []}
                         onChange={field.onChange}
                         placeholder="Select categories"
-                        disabled={isLoading}
+                        disabled={catLoading || isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -344,7 +342,7 @@ export function CreatePostForm() {
                 )}
               />
 
-              {/* Tags Field */}
+              {/* Tags Field
               <FormField
                 control={form.control}
                 name="tags"
@@ -363,7 +361,7 @@ export function CreatePostForm() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Meta Title Field */}
               <FormField

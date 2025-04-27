@@ -13,7 +13,7 @@ interface PostData {
   metaTitle?: string
   metaDescription?: string
   template: 'standard' | 'full-width'
-  categories?: { id: string }[]
+  categories?: number[]
   tags?: { id: string }[]
 }
 

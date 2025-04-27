@@ -2,12 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 
+const url = process.env.NEXT_PUBLIC_NEXT_URL
+
 export async function createCategory(name: string) {
   try {
     // Get the authentication token if needed
     // const token = cookies().get('payload-token')?.value
     console.log('sending')
-    const url = process.env.NEXT_PUBLIC_NEXT_URL
     const response = await fetch(`${url}/api/category`, {
       method: 'POST',
       headers: {
@@ -30,6 +31,21 @@ export async function createCategory(name: string) {
     revalidatePath('/category/create')
 
     return await response.json()
+  } catch (error) {
+    console.error('Error in createCategory:', error)
+    throw error
+  }
+}
+
+export async function fetchAllCategories() {
+  try {
+    const rawRes = await fetch(`${url}/api/category`)
+    if (!rawRes.ok) {
+      const error = await rawRes.json()
+      throw new Error(error.message || 'Failed to create category')
+    }
+
+    return await rawRes.json()
   } catch (error) {
     console.error('Error in createCategory:', error)
     throw error
