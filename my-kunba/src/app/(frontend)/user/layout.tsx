@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <>
       <Navbar />
-      {children}
+      <div className="mt-20 container mx-auto xs:px-5 px-3">{children}</div>
       <Footer />
     </>
   )

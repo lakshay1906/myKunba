@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
         // page: Math.floor(Number(offset) / Number(limit)) + 1,
       })
     }
-    console.log(data, id)
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
     console.log(error)
@@ -58,9 +57,8 @@ export async function POST(req: NextRequest) {
         url: coverImage,
       },
     })
-    console.log(coverImg.id, '::id')
     if (!coverImg.id)
-      return NextResponse.json({ message: 'Image uploading failed' }, { status: 401 })
+      return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
     await payload.create({
       collection: 'posts',
       data: {

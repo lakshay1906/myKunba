@@ -17,7 +17,7 @@ import { useState } from 'react'
 import Toast from '../Toast'
 import { createCategory } from '@/app/actions/category-actions'
 
-export default function Create() {
+export default function Create({ setCategories }: { setCategories: (categories: any) => void }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
@@ -35,9 +35,8 @@ export default function Create() {
     }
     setLoading(true)
     try {
-      await createCategory(name)
+      const cat = await createCategory(name)
       ;<Toast message={'Success'} description={'Category created successfully'} isSuccess={true} />
-      router.push('/category')
     } catch (error) {
       console.error('Error creating category:', error)
       ;<Toast

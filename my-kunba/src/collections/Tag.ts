@@ -18,6 +18,16 @@ export const Tags: CollectionConfig = {
       required: true,
       unique: true,
     },
+    {
+      name: 'posts',
+      type: 'relationship',
+      relationTo: 'posts',
+      hasMany: true,
+    },
+    {
+      name: 'deleted_at',
+      type: 'date',
+    },
   ],
   hooks: {
     beforeValidate: [

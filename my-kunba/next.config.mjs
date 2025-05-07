@@ -18,6 +18,20 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/user',
+        permanent: true, // use false if it's not a permanent redirect
+      },
+      {
+        source: '/blog',
+        destination: '/user',
+        permanent: true, // use false if it's not a permanent redirect
+      },
+    ]
+  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

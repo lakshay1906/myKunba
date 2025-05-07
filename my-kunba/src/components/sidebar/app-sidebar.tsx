@@ -3,16 +3,15 @@
 import * as React from 'react'
 import {
   ArrowUpCircleIcon,
-  Bookmark,
   CameraIcon,
   FileCodeIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   MessageCircleHeart,
+  Reply,
   SearchIcon,
   SettingsIcon,
   Shapes,
-  UsersIcon,
 } from 'lucide-react'
 import { NavDocuments } from '@/components/sidebar/nav-documents'
 import { NavMain } from '@/components/sidebar/nav-main'
@@ -37,14 +36,19 @@ const data = {
   navMain: [
     {
       title: 'Dashboard',
-      url: '#',
+      url: '/dashboard',
       icon: LayoutDashboardIcon,
     },
     {
-      title: 'Team',
-      url: '#',
-      icon: UsersIcon,
+      title: 'Back to Frontend',
+      url: '/',
+      icon: Reply,
     },
+    // {
+    //   title: 'Team',
+    //   url: '#',
+    //   icon: UsersIcon,
+    // },
   ],
   navClouds: [
     {
@@ -122,11 +126,11 @@ const data = {
       url: '/dashboard/category',
       icon: Shapes,
     },
-    {
-      name: 'Blog Tag',
-      url: '/dashboard/tags',
-      icon: Bookmark,
-    },
+    // {
+    //   name: 'Tag',
+    //   url: '/dashboard/tags',
+    //   icon: Bookmark,
+    // },
   ],
 }
 

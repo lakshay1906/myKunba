@@ -26,10 +26,6 @@ export async function createCategory(name: string) {
       throw new Error(error.message || 'Failed to create category')
     }
 
-    // Revalidate the categories path to update any cached data
-    revalidatePath('/categories')
-    revalidatePath('/category/create')
-
     return await response.json()
   } catch (error) {
     console.error('Error in createCategory:', error)
@@ -40,6 +36,20 @@ export async function createCategory(name: string) {
 export async function fetchAllCategories() {
   try {
     const rawRes = await fetch(`${url}/api/category`)
+    if (!rawRes.ok) {
+      const error = await rawRes.json()
+      throw new Error(error.message || 'Failed to create category')
+    }
+
+    return await rawRes.json()
+  } catch (error) {
+    console.error('Error in createCategory:', error)
+    throw error
+  }
+}
+export async function fetchCategoryData(id: number) {
+  try {
+    const rawRes = await fetch(`${url}/api/category?id=${id}`)
     if (!rawRes.ok) {
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to create category')

@@ -1,6 +1,6 @@
 'use client'
 
-import { Book, Menu, MoonStar, Sun, Sunset, Trees, Zap } from 'lucide-react'
+import { Book, ContactRound, Menu, MessageCircleQuestion, Newspaper, Send, Zap } from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -23,6 +23,7 @@ import { useAppStore } from '@/lib/context/store'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import ThemeToggle from './ThemeToggle'
+import { Badge } from './ui/badge'
 
 interface MenuItem {
   title: string
@@ -30,6 +31,7 @@ interface MenuItem {
   description?: string
   icon?: JSX.Element
   items?: MenuItem[]
+  upcoming?: boolean
 }
 
 interface NavbarProps {
@@ -64,70 +66,69 @@ export default function Navbar({
     title: 'My Kunba',
   },
   menu = [
-    { title: 'Home', url: '#' },
+    { title: 'Home', url: '/user' },
     {
       title: 'Products',
-      url: '#',
+      url: '/user',
       items: [
         {
           title: 'Blog',
           description: 'The latest industry news, updates, and info',
           icon: <Book className="size-5 shrink-0" />,
-          url: '#',
+          url: '/user',
         },
         {
-          title: 'Company',
-          description: 'Our mission is to innovate and empower the world',
-          icon: <Trees className="size-5 shrink-0" />,
+          title: 'Quiz',
+          description: 'Test your knowledge and skills with our quizzes',
+          icon: <MessageCircleQuestion className="size-5 shrink-0" />,
           url: '#',
+          upcoming: true,
         },
         {
-          title: 'Careers',
-          description: 'Browse job listing and discover our workspace',
-          icon: <Sunset className="size-5 shrink-0" />,
+          title: 'Current Affairs',
+          description: 'Stay updated with the latest news and events',
+          icon: <Newspaper className="size-5 shrink-0" />,
           url: '#',
+          upcoming: true,
         },
+        // {
+        //   title: 'Careers',
+        //   description: 'Browse job listing and discover our workspace',
+        //   icon: <Sunset className="size-5 shrink-0" />,
+        //   url: '#',
+        // },
         {
           title: 'Support',
           description: 'Get in touch with our support team or visit our community forums',
           icon: <Zap className="size-5 shrink-0" />,
           url: '#',
+          upcoming: true,
         },
       ],
     },
     {
-      title: 'Resources',
-      url: '#',
+      title: 'Website',
+      url: '/user',
       items: [
         {
-          title: 'Help Center',
+          title: 'About Us',
           description: 'Get all the answers you need right here',
-          icon: <Zap className="size-5 shrink-0" />,
-          url: '#',
+          icon: <ContactRound className="size-5 shrink-0" />,
+          url: '/user/about',
         },
         {
           title: 'Contact Us',
           description: 'We are here to help you with any questions you have',
-          icon: <Sunset className="size-5 shrink-0" />,
-          url: '#',
+          icon: <Send className="size-5 shrink-0" />,
+          url: '/user/contact',
         },
-        {
-          title: 'Status',
-          description: 'Check the current status of our services and APIs',
-          icon: <Trees className="size-5 shrink-0" />,
-          url: '#',
-        },
-        {
-          title: 'Terms of Service',
-          description: 'Our terms and conditions for using our services',
-          icon: <Book className="size-5 shrink-0" />,
-          url: '#',
-        },
+        // {
+        //   title: 'Terms of Service',
+        //   description: 'Our terms and conditions for using our services',
+        //   icon: <Book className="size-5 shrink-0" />,
+        //   url: '#',
+        // },
       ],
-    },
-    {
-      title: 'Blog',
-      url: '#blog',
     },
   ],
   mobileExtraLinks = [
@@ -247,7 +248,14 @@ const renderMenuItem = (item: MenuItem) => {
                   >
                     {subItem.icon}
                     <div>
-                      <div className="text-sm font-semibold">{subItem.title}</div>
+                      <div className="flex flex-wrap items-center justify-start gap-2">
+                        <div className="text-sm font-semibold">{subItem.title}</div>
+                        {subItem.upcoming && (
+                          <Badge className="rounded-full justify-center items-center mt-0">
+                            Upcoming
+                          </Badge>
+                        )}
+                      </div>
                       {subItem.description && (
                         <p className="text-sm leading-snug text-muted-foreground">
                           {subItem.description}
@@ -291,7 +299,10 @@ const renderMobileMenuItem = (item: MenuItem) => {
             >
               {subItem.icon}
               <div>
-                <div className="text-sm font-semibold">{subItem.title}</div>
+                <div className="flex flex-wrap items-center justify-start space-x-2 space-y-1">
+                  <div className="text-sm font-semibold">{subItem.title}</div>
+                  {subItem.upcoming && <Badge className="rounded-full mt-0">Upcoming</Badge>}
+                </div>
                 {subItem.description && (
                   <p className="text-sm leading-snug text-muted-foreground">
                     {subItem.description}

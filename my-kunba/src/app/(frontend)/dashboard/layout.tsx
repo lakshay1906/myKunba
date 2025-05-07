@@ -29,7 +29,7 @@ export default function RootLayout({
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        {children}
+        <div className="py-2 px-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )
