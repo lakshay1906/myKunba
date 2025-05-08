@@ -5,13 +5,13 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface BlogPost {
+  media: Record<string, any>
   id: number
   title: string
   slug: string
   author: Record<string, any>
   categories: Record<string, any>[]
   excerpt: string
-  coverImage: string
   content: string
   createdAt: string
   updatedAt: string
@@ -23,7 +23,6 @@ interface BlogCardProps {
 
 export default function BlogCard({ post }: BlogCardProps) {
   // Format the date to be more readable
-  console.log(post)
   const formattedDate = new Date(post.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',

@@ -62,6 +62,35 @@ export default {
           ring: 'hsl(var(--sidebar-ring))',
         },
       },
+      keyframes: {
+        rotator: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(270deg)' },
+        },
+        dash: {
+          '0%': { strokeDashoffset: '187' },
+          '50%': {
+            strokeDashoffset: '46.75',
+            transform: 'rotate(135deg)',
+          },
+          '100%': {
+            strokeDashoffset: '187',
+            transform: 'rotate(450deg)',
+          },
+        },
+        colors: {
+          '0%': { stroke: '#4285F4' },
+          '25%': { stroke: '#DE3E35' },
+          '50%': { stroke: '#F7C223' },
+          '75%': { stroke: '#1B9A59' },
+          '100%': { stroke: '#4285F4' },
+        },
+      },
+      animation: {
+        rotator: 'rotator 1.4s linear infinite',
+        dash: 'dash 1.4s ease-in-out infinite',
+        colors: 'colors 5.6s ease-in-out infinite',
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],

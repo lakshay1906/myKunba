@@ -26,7 +26,7 @@ const sections = [
 
 export default function Footer() {
   return (
-    <footer>
+    <footer className="container mx-auto mt-12">
       <div className="grid grid-cols-2 gap-8 lg:grid-cols-6 px-6">
         <div className="col-span-2 mb-8 lg:mb-0">
           <div className="flex flex-col justify-start gap-3">

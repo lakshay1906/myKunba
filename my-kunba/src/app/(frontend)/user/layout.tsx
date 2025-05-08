@@ -13,10 +13,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <>
+    <div className="w-full h-full flex flex-col justify-between items-center bg-background">
       <Navbar />
-      <div className="mt-20 container mx-auto xs:px-5 px-3">{children}</div>
+      <div className="h-full mt-20 container mx-auto xs:px-5 px-3">{children}</div>
       <Footer />
-    </>
+    </div>
   )
 }

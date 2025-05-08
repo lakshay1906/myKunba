@@ -19,12 +19,6 @@ export const Categories: CollectionConfig = {
       unique: true,
     },
     {
-      name: 'posts',
-      type: 'relationship',
-      relationTo: 'posts',
-      hasMany: true,
-    },
-    {
       name: 'deleted_at',
       type: 'date',
     },

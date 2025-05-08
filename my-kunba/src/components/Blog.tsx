@@ -7,6 +7,7 @@ import { fetchAllCategories } from '@/app/actions/category-actions'
 import { Badge } from './ui/badge'
 import { fetchAllBlogs } from '@/app/actions/post-actions'
 import EmptyBlogState from './Blog/EmptyBlogState'
+import Spinner from './Loading'
 
 export default function Blog() {
   const [data, setData] = useState<
@@ -17,7 +18,7 @@ export default function Blog() {
       author: Record<string, any>
       categories: Record<string, any>[]
       excerpt: string
-      coverImage: string
+      media: Record<string, any>
       content: string
       createdAt: string
       updatedAt: string
@@ -33,21 +34,28 @@ export default function Blog() {
       setData(blogData.docs)
       console.log(blogData.docs)
       setLoading(false)
+      if (categories.length > 1) return
       const response = await fetchAllCategories()
       setCategories((prev) => [...prev, ...response.docs])
     })()
   }, [])
 
+  useEffect(() => {
+    console.log(categories)
+  }, [categories])
+
   return (
-    <div id="blog" className="w-full my-12">
-      <div className="space-y-1">
+    <div id="blog" className="w-full h-full">
+      <div>
         <h1 className="text-2xl font-semibold">Blog</h1>
         <p className="text-sm text-muted-foreground">
           Discover stories, insights, and updates from our community.
         </p>
       </div>
       {loading ? (
-        <p>Loading</p>
+        <div className="w-full h-full">
+          <Spinner />
+        </div>
       ) : (
         <>
           <div className="flex flex-nowrap gap-2 mt-2 overflow-x-auto scrollbar-hidden">
@@ -62,11 +70,23 @@ export default function Blog() {
               </Badge>
             ))}
           </div>
-          {data.map.length > 0 ? (
+          {data.filter((post) =>
+            post.categories.some((category) => {
+              if (selectedCat === 0) return true
+              return category.id === selectedCat
+            }),
+          ).length > 0 ? (
             <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-3">
-              {data.map((ele) => (
-                <BlogCard key={ele.id} post={ele} />
-              ))}
+              {data
+                .filter((post) =>
+                  post.categories.some((category) => {
+                    if (selectedCat === 0) return true
+                    return category.id === selectedCat
+                  }),
+                )
+                .map((ele) => (
+                  <BlogCard key={ele.id} post={ele} />
+                ))}
             </div>
           ) : (
             <EmptyBlogState />

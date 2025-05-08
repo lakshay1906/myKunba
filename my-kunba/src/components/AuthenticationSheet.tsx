@@ -121,6 +121,7 @@ export default function AuthenticationSheet() {
       role: false,
     })
   }, [userDetails])
+
   useEffect(() => {
     setError({
       username: false,

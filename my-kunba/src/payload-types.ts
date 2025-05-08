@@ -175,8 +175,21 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
-  posts?: (number | Post)[] | null;
   deleted_at?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: number;
+  post: number | Post;
+  user: number | User;
+  content: string;
+  status?: ('pending' | 'approved' | 'rejected') | null;
+  parent?: (number | null) | Comment;
   updatedAt: string;
   createdAt: string;
 }
@@ -227,20 +240,6 @@ export interface Tag {
   slug: string;
   posts?: (number | Post)[] | null;
   deleted_at?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "comments".
- */
-export interface Comment {
-  id: number;
-  post: number | Post;
-  user: number | User;
-  content: string;
-  status?: ('pending' | 'approved' | 'rejected') | null;
-  parent?: (number | null) | Comment;
   updatedAt: string;
   createdAt: string;
 }
@@ -395,7 +394,6 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
-  posts?: T;
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
