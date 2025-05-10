@@ -1,7 +1,6 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import type { Metadata } from 'next'
 
-// Define the Blog type based on the API response
 type Blog = {
   id: number
   title: string
@@ -33,19 +32,6 @@ type Blog = {
     slug: string
   }>
   tags: Array<any>
-}
-
-// Generate metadata for the page
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const blog = await fetchBlogById(params.id)
-
-  return {
-    title: blog.metaTitle || blog.title,
-    description: blog.metaDescription || blog.excerpt,
-    openGraph: {
-      images: blog.media?.url ? [blog.media.url] : [],
-    },
-  }
 }
 
 // Fetch blog data from API

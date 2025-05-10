@@ -24,7 +24,7 @@ export async function createPost(data: PostData) {
     const url = process.env.NEXT_PUBLIC_NEXT_URL
     // For this example, we'll set a fixed author ID
     // In a real application, you would get this from the authenticated user
-    const authorId = 1 // Replace with actual logic to get the current user ID
+    const authorId = 2 // Replace with actual logic to get the current user ID
     console.log(data, `${url}/api/blog`)
     const response = await fetch(`${url}/api/blog`, {
       method: 'POST',
@@ -55,10 +55,11 @@ export async function createPost(data: PostData) {
   }
 }
 
-export async function fetchAllBlogs() {
+export async function fetchAllBlogs(id?: number) {
   try {
-    const url = process.env.NEXT_PUBLIC_NEXT_URL
-    const response = await fetch(`${url}/api/blog`)
+    let url = `${process.env.NEXT_PUBLIC_NEXT_URL}/api/blog`
+    if (id) url = `${process.env.NEXT_PUBLIC_NEXT_URL}/api/blog?id=${id}`
+    const response = await fetch(url)
 
     if (!response.ok) {
       const error = await response.json()

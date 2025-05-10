@@ -50,7 +50,7 @@ const formSchema = z.object({
   publishDate: z.date().optional(),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
-  template: z.enum(['standard', 'full-width']).default('standard'),
+  template: z.enum(['standard', 'full-width']),
   categories: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
 })
@@ -60,7 +60,6 @@ type FormValues = z.infer<typeof formSchema>
 export function CreatePostForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
-  const [tags, setTags] = useState<{ label: string; value: string }[]>([])
   const router = useRouter()
   const [catLoading, setCatLoading] = useState(true)
 

@@ -1,3 +1,5 @@
+// 'use server'
+
 import CategoryDetailPage from '@/components/Category/category-detail-page'
 import React from 'react'
 

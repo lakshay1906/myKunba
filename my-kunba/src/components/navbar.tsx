@@ -239,33 +239,31 @@ const renderMenuItem = (item: MenuItem) => {
         <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
         <NavigationMenuContent>
           <ul className="w-80 p-3">
-            <NavigationMenuLink>
-              {item.items.map((subItem) => (
-                <li key={subItem.title}>
-                  <a
-                    className="flex select-none gap-4 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted hover:text-accent-foreground"
-                    href={subItem.url}
-                  >
-                    {subItem.icon}
-                    <div>
-                      <div className="flex flex-wrap items-center justify-start gap-2">
-                        <div className="text-sm font-semibold">{subItem.title}</div>
-                        {subItem.upcoming && (
-                          <Badge className="rounded-full justify-center items-center mt-0">
-                            Upcoming
-                          </Badge>
-                        )}
-                      </div>
-                      {subItem.description && (
-                        <p className="text-sm leading-snug text-muted-foreground">
-                          {subItem.description}
-                        </p>
+            {item.items.map((subItem) => (
+              <li key={subItem.title}>
+                <a
+                  className="flex select-none gap-4 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted hover:text-accent-foreground"
+                  href={subItem.url}
+                >
+                  {subItem.icon}
+                  <div>
+                    <div className="flex flex-wrap items-center justify-start gap-2">
+                      <div className="text-sm font-semibold">{subItem.title}</div>
+                      {subItem.upcoming && (
+                        <Badge className="rounded-full justify-center items-center mt-0">
+                          Upcoming
+                        </Badge>
                       )}
                     </div>
-                  </a>
-                </li>
-              ))}
-            </NavigationMenuLink>
+                    {subItem.description && (
+                      <p className="text-sm leading-snug text-muted-foreground">
+                        {subItem.description}
+                      </p>
+                    )}
+                  </div>
+                </a>
+              </li>
+            ))}
           </ul>
         </NavigationMenuContent>
       </NavigationMenuItem>

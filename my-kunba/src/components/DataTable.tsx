@@ -22,10 +22,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import CurrentPageComponent from '@/components/CurrentPageComponent'
-// import StatusTag from '@/components/StatusTag'
 import { Checkbox } from '@/components/ui/checkbox'
-import React, { ReactElement } from 'react'
+import React from 'react'
 import { useRouter } from 'next/navigation'
+import StatusTag from './StatusTag'
 
 export default function DataTable({
   tableTitle,
@@ -210,22 +210,28 @@ export default function DataTable({
                         } else {
                           return (
                             <TableCell key={idx} className="capitalize">
-                              {/* <StatusTag
-                        product={{
-                          product_status: col.Status,
-                          indicator:
-                            col.Status.toLowerCase() === 'published' || 'active' || 'enabled' || 'enable'
-                              ? 'green'
-                              : col.Status.toLowerCase() === 'draft'
-                                ? 'gray'
-                                : col.Status.toLowerCase() === 'proposed'
-                                  ? 'orange'
-                                  : col.Status.toLowerCase() === 'rejected' || 'Inactive' || 'disabled' || 'disable'
-                                    ? 'red'
-                                    : 'black',
-                        }}
-                        styles="border-none"
-                      /> */}
+                              <StatusTag
+                                product={{
+                                  product_status: col.Status,
+                                  indicator:
+                                    col.Status.toLowerCase() === 'published' ||
+                                    'active' ||
+                                    'enabled' ||
+                                    'enable'
+                                      ? 'green'
+                                      : col.Status.toLowerCase() === 'draft'
+                                        ? 'gray'
+                                        : col.Status.toLowerCase() === 'proposed'
+                                          ? 'orange'
+                                          : col.Status.toLowerCase() === 'rejected' ||
+                                              'Inactive' ||
+                                              'disabled' ||
+                                              'disable'
+                                            ? 'red'
+                                            : 'black',
+                                }}
+                                styles="border-none"
+                              />
                             </TableCell>
                           )
                         }

@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
           },
         },
         pagination: true,
-        // limit: Number(limit),
-        // page: Math.floor(Number(offset) / Number(limit)) + 1,
+        limit: Number(limit),
+        page: Math.floor(Number(offset) / Number(limit)) + 1,
       })
     }
     return NextResponse.json(data, { status: 200 })
@@ -59,6 +59,24 @@ export async function POST(req: NextRequest) {
     })
     if (!coverImg.id)
       return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
+    console.log(
+      {
+        title,
+        author,
+        slug,
+        status,
+        categories,
+        content,
+        media: coverImg.id,
+        excerpt,
+        metaDescription,
+        metaTitle,
+        publishDate,
+        tags,
+        template,
+      },
+      'data',
+    )
     await payload.create({
       collection: 'posts',
       data: {
@@ -90,9 +108,16 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
     await payload.update({
       collection: 'posts',
-      id: Number(id),
       data: {
-        // deleted_at: new Date()
+        deleted_at: new Date().toISOString(),
+      },
+      where: {
+        id: {
+          equals: Number(id),
+        },
+        deleted_at: {
+          equals: null,
+        },
       },
     })
     return NextResponse.json({}, { status: 200 })

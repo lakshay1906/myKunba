@@ -1,10 +1,6 @@
-'use server'
-
-import CategoryMain from '@/components/Category/CategoryMain'
 import React from 'react'
+import CategoryMain from '@/components/Category/CategoryMain'
 
-function page() {
+export default function page() {
   return <CategoryMain />
 }
-
-export default page

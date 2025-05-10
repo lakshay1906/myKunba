@@ -1,7 +1,6 @@
+import BlogMain from '@/components/Blog/BlogMain'
 import React from 'react'
 
-function page() {
-  return <div>page</div>
+export default function page() {
+  return <BlogMain />
 }
-
-export default page

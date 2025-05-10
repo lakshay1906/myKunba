@@ -1,20 +1,20 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 
 const url = process.env.NEXT_PUBLIC_NEXT_URL
 
 export async function createCategory(name: string) {
   try {
     // Get the authentication token if needed
-    // const token = cookies().get('payload-token')?.value
+    const token = (await cookies()).get('payload-token')?.value
     console.log('sending')
     const response = await fetch(`${url}/api/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Add authentication if needed
-        // "authorization": `bearer ${token}`,
+        authorization: `bearer ${token}`,
       },
       body: JSON.stringify({
         name,
