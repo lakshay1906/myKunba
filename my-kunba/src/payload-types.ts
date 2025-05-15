@@ -143,6 +143,11 @@ export interface User {
         id?: string | null;
       }[]
     | null;
+  /**
+   * This is the unique ID assigned by Firebase
+   */
+  uid: string;
+  lastLogin?: string | null;
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -365,6 +370,8 @@ export interface UsersSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  uid?: T;
+  lastLogin?: T;
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;

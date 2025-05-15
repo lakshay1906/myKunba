@@ -12,18 +12,20 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { JSX } from 'react'
-import AuthenticationSheet from './AuthenticationSheet'
+import { JSX, useEffect, useState } from 'react'
+import AuthenticationSheet from '../AuthenticationSheet'
 import { useAppStore } from '@/lib/context/store'
 import { useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
 import ThemeToggle from './ThemeToggle'
-import { Badge } from './ui/badge'
+import { Badge } from '../ui/badge'
+import Toast from '../Toast'
+import { login } from 'payload/dist/auth/operations/local/login'
+import { SignInButton } from './Authentication/sign-in-button'
+import Link from 'next/link'
 
 interface MenuItem {
   title: string
@@ -139,8 +141,8 @@ export default function Navbar({
   ],
 }: NavbarProps) {
   const { loginDetail } = useAppStore()
-  const { theme, setTheme } = useTheme()
-  const route = useRouter()
+  const { logout } = useAppStore()
+
   return (
     <section className="p-4 fixed top-0 z-50 w-full bg-background border-b">
       <nav className="hidden justify-between lg:flex">
@@ -155,7 +157,7 @@ export default function Navbar({
             <NavigationMenu>
               <NavigationMenuList>
                 {menu.map((item) => renderMenuItem(item))}
-                {loginDetail.role === 'admin' && (
+                {loginDetail?.role === 'admin' && (
                   <a
                     className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
                     href={'/dashboard'}
@@ -169,12 +171,25 @@ export default function Navbar({
         </div>
         <div className="flex gap-5 justify-center items-center">
           <ThemeToggle />
-          {loginDetail.role === 'admin' ? (
-            <Button onClick={() => route.push('/dashboard')}>Dashboard</Button>
+          {loginDetail ? (
+            loginDetail?.role === 'admin' ? (
+              <Link href={'/dashboard'}>
+                <Button>Dashboard</Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={async () => {
+                  await logout()
+                }}
+                variant="default"
+              >
+                Sign Out
+              </Button>
+            )
           ) : (
             <div className="flex gap-2 justify-between items-center">
-              <AuthenticationSheet />
-              <Button>Sign Up</Button>
+              <SignInButton btnText="Login" />
+              <SignInButton btnText="Sign In" />
             </div>
           )}
         </div>

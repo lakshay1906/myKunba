@@ -4,10 +4,10 @@ import React, { useEffect } from 'react'
 import { useState } from 'react'
 import BlogCard from './BlogCard'
 import { fetchAllCategories } from '@/app/actions/category-actions'
-import { Badge } from './ui/badge'
+import { Badge } from '../ui/badge'
 import { fetchAllBlogs } from '@/app/actions/post-actions'
-import EmptyBlogState from './Blog/EmptyBlogState'
-import Spinner from './Loading'
+import EmptyBlogState from './EmptyBlogState'
+import Spinner from '../Loading'
 
 export default function Blog() {
   const [data, setData] = useState<

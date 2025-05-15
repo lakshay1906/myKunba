@@ -10,18 +10,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from './ui/button'
-import { Label } from './ui/label'
-import { Input } from './ui/input'
 import { toast } from 'sonner'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
 import { CheckCircle, X } from 'lucide-react'
 import { useAppStore } from '@/lib/context/store'
 
@@ -146,9 +135,9 @@ export default function AuthenticationSheet() {
       <SheetContent className="flex flex-col justify-between">
         <div>
           <SheetHeader>
-            <SheetTitle className="text-xl font-semibold">Edit profile</SheetTitle>
+            <SheetTitle className="text-xl font-semibold">Login</SheetTitle>
           </SheetHeader>
-          <div className="grid gap-4 py-4">
+          {/* <div className="grid gap-4 py-4">
             <div className="flex flex-col items-start justify-center gap-2">
               <Label htmlFor="role" className="text-right">
                 Role
@@ -206,7 +195,8 @@ export default function AuthenticationSheet() {
                 className={`${error.password && 'border border-red-600'}`}
               />
             </div>
-          </div>
+          </div> */}
+          {/* Google authentication button will go here */}
         </div>
         <SheetFooter>
           <Button disabled={loading} type="submit" onClick={authenticate}>

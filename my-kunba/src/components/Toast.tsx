@@ -15,7 +15,7 @@ export default function Toast({
     description,
     className: 'gap-4',
     icon: (
-      <div className="bg-green-500 rounded-full p-1.5">
+      <div className={`rounded-full p-1.5 ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
         {isSuccess ? (
           <CheckCircle className="w-4 h-4 text-white" />
         ) : (

@@ -43,7 +43,7 @@ export default function CategoryMain() {
         Name: category.name,
         Slug: `/${category.slug}`,
       }))}
-      EllipsisComponent={(value: Record<string, any>) =>
+      EllipsisComponent={({ value }: { value: Record<string, any> }) =>
         popoverEllipsis({ value, isDetailPage: false, setCategories })
       }
       isCheckBoxRequired={false}

@@ -1,6 +1,6 @@
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import ThemeToggle from '../ThemeToggle'
+import ThemeToggle from '../Home/ThemeToggle'
 import { Bell } from 'lucide-react'
 import {
   Sheet,

@@ -6,6 +6,7 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'displayName',
   },
+  timestamps: true,
   fields: [
     {
       name: 'username',
@@ -24,7 +25,7 @@ export const Users: CollectionConfig = {
     },
     {
       name: 'profileImage',
-      type: 'upload',
+      type: 'relationship',
       relationTo: 'media',
     },
     {
@@ -47,6 +48,26 @@ export const Users: CollectionConfig = {
           type: 'text',
         },
       ],
+    },
+    {
+      name: 'email',
+      type: 'email',
+      required: true,
+      unique: true,
+    },
+    {
+      name: 'uid',
+      type: 'text',
+      unique: true,
+      admin: {
+        readOnly: true,
+        description: 'This is the unique ID assigned by Firebase',
+      },
+      required: true,
+    },
+    {
+      name: 'lastLogin',
+      type: 'date',
     },
     {
       name: 'deleted_at',
