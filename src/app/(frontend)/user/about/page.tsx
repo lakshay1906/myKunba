@@ -43,23 +43,23 @@ export default function About() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
-              name: 'Alex Johnson',
+              name: 'Satpal',
               role: 'Founder & Editor-in-Chief',
-              bio: 'Tech enthusiast with 10+ years of experience in web development.',
+              bio: 'Senior writer',
               image: 'https://picsum.photos/seed/alex/200/200',
             },
             {
-              name: 'Sarah Williams',
-              role: 'Senior Writer',
-              bio: 'UX designer and accessibility advocate passionate about inclusive design.',
+              name: 'Lakshay',
+              role: 'Full Stack Developer',
+              bio: 'Tech enthusiast with real world experience in web development.',
               image: 'https://picsum.photos/seed/sarah/200/200',
             },
-            {
-              name: 'Michael Chen',
-              role: 'Technical Editor',
-              bio: 'Full-stack developer specializing in React and Node.js ecosystems.',
-              image: 'https://picsum.photos/seed/michael/200/200',
-            },
+            // {
+            //   name: 'Michael Chen',
+            //   role: 'Technical Editor',
+            //   bio: 'Full-stack developer specializing in React and Node.js ecosystems.',
+            //   image: 'https://picsum.photos/seed/michael/200/200',
+            // },
           ].map((member, index) => (
             <div key={index} className="text-center">
               <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">

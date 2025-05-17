@@ -4,7 +4,6 @@ import type React from 'react'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createPost } from '@/app/actions/post-actions'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,6 +37,7 @@ import { MediaUploader } from './media-uploader'
 import { MultiSelect } from './multi-select'
 import Toast from '../Toast'
 import { fetchAllCategories } from '@/app/actions/category-actions'
+import { useAppStore } from '@/lib/context/store'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -62,6 +62,7 @@ export function CreatePostForm() {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
   const router = useRouter()
   const [catLoading, setCatLoading] = useState(true)
+  const { loginDetail } = useAppStore()
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -81,14 +82,36 @@ export function CreatePostForm() {
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
-    console.log(data.categories, '::cat')
     try {
-      await createPost({
-        ...data,
-        // Convert categories and tags to the format expected by the API
-        categories: data.categories?.map((item) => Number(item)),
-        tags: data.tags?.map((id) => ({ id })),
+      if (loginDetail) {
+        ;<Toast
+          description="You're not authorized to perform this action"
+          isSuccess={false}
+          message="Error"
+        />
+      }
+      const response = await fetch(`/api/blog`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${loginDetail?.token}`,
+        },
+        body: JSON.stringify({
+          ...data,
+          categories: data.categories?.map((item) => Number(item)),
+          tags: data.tags?.map((id) => ({ id })),
+        }),
       })
+      if (!response.ok) {
+        const res = await response.json()
+        {
+          ;<Toast
+            description={res.message ?? "You're not authorized to perform this action"}
+            isSuccess={false}
+            message="Error"
+          />
+        }
+      }
 
       router.push('/dashboard/blog')
       return (

@@ -51,8 +51,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
-    const user = result.user
-    return user
+    return result.user
   }
 
   async function logout() {
@@ -67,16 +66,17 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user)
-        setLoginDetail((prev) => ({
-          ...prev,
-          email: user.email ?? '',
-          name: user.displayName ?? '',
-          profile_pic: user.photoURL ?? '',
-          token: prev?.token ?? '',
-          uid: user.uid,
-        }))
-      else setLoginDetail(null)
+      // if (user)
+      //   setLoginDetail((prev) => ({
+      //     ...prev,
+      //     email: user.email ?? '',
+      //     name: user.displayName ?? '',
+      //     profile_pic: user.photoURL ?? '',
+      //     token: prev?.token ?? '',
+      //     uid: user.uid,
+      //   }))
+      // else setLoginDetail(null)
+      console.log(user)
     })
     return () => {
       unsubscribe
@@ -94,7 +94,6 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
       })
       if (rawRes.ok) {
         const res = await rawRes.json()
-        console.log(res)
         setLoginDetail({
           token: token,
           email: res.email,
@@ -106,6 +105,10 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
       }
     })()
   }, [])
+
+  useEffect(() => {
+    console.log(loginDetail)
+  }, [loginDetail])
 
   return (
     <AppContext.Provider

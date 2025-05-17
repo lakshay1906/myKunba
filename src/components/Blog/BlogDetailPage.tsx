@@ -26,7 +26,6 @@ import { CalendarIcon, X, Save, ArrowLeft, ImagePlus } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import CategorySelector from '../../components/Blog/category-selector'
-import { fetchAllBlogs } from '@/app/actions/post-actions'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import Toast from '../Toast'
 import Loading from '../Loading'
@@ -59,7 +58,8 @@ export default function EditBlogPage({ id }: { id: number }) {
   // Fetch blog data
   useEffect(() => {
     ;(async () => {
-      const blog = await fetchAllBlogs(id)
+      const rawRes = await fetch(`/api/blog?id=${id}`)
+      const blog = await rawRes.json()
       setBlog(blog)
       setSelectedCategories(blog.categories.map((cat: any) => cat.id))
       const allCategories = await fetchAllCategories()

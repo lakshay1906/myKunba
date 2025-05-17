@@ -5,9 +5,9 @@ import { useState } from 'react'
 import BlogCard from './BlogCard'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { Badge } from '../ui/badge'
-import { fetchAllBlogs } from '@/app/actions/post-actions'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
+import Toast from '../Toast'
 
 export default function Blog() {
   const [data, setData] = useState<
@@ -30,9 +30,10 @@ export default function Blog() {
 
   useEffect(() => {
     ;(async () => {
-      const blogData = await fetchAllBlogs()
-      setData(blogData.docs)
-      console.log(blogData.docs)
+      const rawRes = await fetch(`/api/blog`)
+      const res = await rawRes.json()
+      if (rawRes.ok) setData(res.docs)
+      else <Toast isSuccess={false} description={res.message} message={'Error'} />
       setLoading(false)
       if (categories.length > 1) return
       const response = await fetchAllCategories()

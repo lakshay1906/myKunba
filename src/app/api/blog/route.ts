@@ -1,5 +1,6 @@
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
 
 export async function GET(req: NextRequest) {
   try {
@@ -47,10 +48,32 @@ export async function POST(req: NextRequest) {
       metaTitle,
       metaDescription,
       template,
-      author,
       categories,
       tags,
     } = await req.json()
+    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
+    if (!accessToken) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const data: any = jwt.verify(accessToken, process.env.ACCESS_SECRET || 'secret')
+    const author = await payload.find({
+      collection: 'users',
+      where: {
+        email: {
+          equals: data.email,
+        },
+        deleted_at: {
+          equals: null,
+        },
+        role: {
+          not_equals: 'user',
+        },
+      },
+    })
+    if (author.docs.length <= 0 || !author.docs[0].id) {
+      return NextResponse.json(
+        { message: "User with this email address doesn't exists" },
+        { status: 401 },
+      )
+    }
     const coverImg = await payload.create({
       collection: 'media',
       data: {
@@ -59,29 +82,34 @@ export async function POST(req: NextRequest) {
     })
     if (!coverImg.id)
       return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
+
     console.log(
       {
-        title,
-        author,
-        slug,
-        status,
-        categories,
-        content,
-        media: coverImg.id,
-        excerpt,
-        metaDescription,
-        metaTitle,
-        publishDate,
-        tags,
-        template,
+        collection: 'posts',
+        data: {
+          title,
+          author: author.docs[0].id,
+          slug,
+          status,
+          categories,
+          content,
+          media: coverImg.id,
+          excerpt,
+          metaDescription,
+          metaTitle,
+          publishDate,
+          tags,
+          template,
+        },
       },
       'data',
     )
+
     await payload.create({
       collection: 'posts',
       data: {
         title,
-        author,
+        author: author.docs[0].id,
         slug,
         status,
         categories,

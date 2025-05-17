@@ -99,7 +99,7 @@ export default function DataTable({
             <p className="font-medium text-xl">{tableTitle}</p>
             <p className="text-sm text-muted-foreground">{tableSubTitle}</p>
           </div>
-          {loading && AddProductButton !== undefined && AddProductButton}
+          {!loading && AddProductButton !== undefined && AddProductButton}
         </div>
       )}
       {!loading ? (

@@ -8,7 +8,6 @@ export async function createCategory(name: string) {
   try {
     // Get the authentication token if needed
     const token = (await cookies()).get('payload-token')?.value
-    console.log('sending')
     const response = await fetch(`${url}/api/category`, {
       method: 'POST',
       headers: {

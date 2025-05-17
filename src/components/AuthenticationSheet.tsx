@@ -49,11 +49,11 @@ export default function AuthenticationSheet() {
               </div>
             ),
           })
-          setLoginDetail((prev) => ({
-            ...prev,
-            userName: userDetails.userName,
-            role: userDetails.role,
-          }))
+          // setLoginDetail((prev) => ({
+          //   ...prev,
+          //   userName: userDetails.userName,
+          //   role: userDetails.role,
+          // }))
           setIsSheetOpen(false)
           return
         } else

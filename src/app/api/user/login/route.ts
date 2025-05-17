@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 
 export async function GET(req: NextRequest) {
   try {
-    // const data = await req.json()
     const accessToken = req.headers.get('Authorization')?.split(' ')[1]
     const secret = process.env.ACCESS_SECRET
     if (!accessToken)
@@ -15,12 +14,29 @@ export async function GET(req: NextRequest) {
 
     const userData: any = jwt.verify(accessToken, secret)
     if (!userData) return NextResponse.json({ message: 'Invalid access token' }, { status: 401 })
+    // Check if the user with same email as in the token.email exists in the database and also check for the deleted_at field.
+
+    const user = await payload.find({
+      collection: 'users',
+      where: {
+        email: {
+          equals: userData.email,
+        },
+        deleted_at: {
+          equals: null,
+        },
+      },
+    })
+
+    if (user.docs.length <= 0) {
+      return NextResponse.json({ message: 'No such user exists' }, { status: 404 })
+    }
 
     await payload.update({
       collection: 'users',
       where: {
-        uid: {
-          equals: userData.uid,
+        email: {
+          equals: userData.email,
         },
       },
       data: {

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -72,9 +73,16 @@ export default function Create({ setCategories }: { setCategories: (categories: 
           </p>
         </div>
         <DialogFooter className="flex justify-between">
-          <Button variant="outline" type="button" onClick={() => router.back()} disabled={loading}>
-            Cancel
-          </Button>
+          <DialogClose asChild>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => router.back()}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          </DialogClose>
           <Button type="submit" disabled={loading} onClick={handleSubmit}>
             {loading ? 'Creating...' : 'Create Category'}
           </Button>

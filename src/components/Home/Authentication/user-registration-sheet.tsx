@@ -22,9 +22,11 @@ interface UserRegistrationSheetProps {
 export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegistrationSheetProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const { googleSignIn, setLoginDetail, setLoading } = useAppStore()
+  const [userDetails, setuserDetails] = useState<Record<string, any>>({})
 
   async function handleAuthSuccess() {
     try {
+      console.log(btnText)
       setLoading(true)
       const user = await googleSignIn()
       if (user) {
@@ -60,14 +62,18 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
               })
             }
           } else if (btnText === 'Sign In') {
-            setLoginDetail((prev) => ({
-              ...prev,
-              token: token,
-              email: user.email ?? '',
-              uid: user.uid ?? '',
-              profile_pic: user.photoURL ?? '',
-              name: user.displayName ?? '',
-            }))
+            console.log(token)
+            setLoginDetail((prev) => {
+              setuserDetails({
+                ...prev,
+                token: token,
+                email: user.email ?? '',
+                uid: user.uid ?? '',
+                profile_pic: user.photoURL ?? '',
+                name: user.displayName ?? '',
+              })
+              return null
+            })
           }
         } else
           Toast({
@@ -105,7 +111,21 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
 
         <div className="mt-6">
           {isAuthenticated ? (
-            <UserRegistrationForm onComplete={() => onOpenChange(false)} />
+            <UserRegistrationForm
+              userDetails={userDetails}
+              onComplete={() => {
+                console.log('setting login detail')
+                setLoginDetail((prev) => ({
+                  ...prev,
+                  token: userDetails.token,
+                  email: userDetails.email ?? '',
+                  uid: userDetails.uid ?? '',
+                  profile_pic: userDetails.profile_pic ?? '',
+                  name: userDetails.name ?? '',
+                }))
+                onOpenChange(false)
+              }}
+            />
           ) : (
             <div className="flex justify-center py-8">
               <GoogleAuthButton onAuthSuccess={handleAuthSuccess} />

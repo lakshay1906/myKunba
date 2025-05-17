@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react'
 import DataTable from '../DataTable'
 import Link from 'next/link'
 import { Button } from '../ui/button'
-import { fetchAllBlogs } from '@/app/actions/post-actions'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   Dialog,
@@ -16,6 +15,7 @@ import {
   DialogTrigger,
 } from '../ui/dialog'
 import { EllipsisVertical } from 'lucide-react'
+import Toast from '../Toast'
 
 export default function BlogMain() {
   const [loading, setLoading] = useState(true)
@@ -34,9 +34,10 @@ export default function BlogMain() {
 
   useEffect(() => {
     ;(async () => {
-      const response = await fetchAllBlogs()
-      setBlogs(response.docs)
-      console.log(response)
+      const response = await fetch(`/api/blog`)
+      const res = await response.json()
+      if (response.ok) setBlogs(res.docs)
+      else <Toast isSuccess={false} description={res.message} message={'Error'} />
       setLoading(false)
     })()
   }, [])

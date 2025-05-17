@@ -54,21 +54,3 @@ export async function createPost(data: PostData) {
     throw error
   }
 }
-
-export async function fetchAllBlogs(id?: number) {
-  try {
-    let url = `${process.env.NEXT_PUBLIC_NEXT_URL}/api/blog`
-    if (id) url = `${process.env.NEXT_PUBLIC_NEXT_URL}/api/blog?id=${id}`
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Failed to fetch posts')
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error('Error in getAllPosts:', error)
-    throw error
-  }
-}

@@ -19,8 +19,16 @@ import { Card, CardContent } from '@/components/ui/card'
 import { PlusCircle, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/lib/context/store'
 import Toast from '@/components/Toast'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface UserRegistrationFormProps {
+  userDetails: Record<string, any>
   onComplete: () => void
 }
 
@@ -42,16 +50,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-export function UserRegistrationForm({ onComplete }: UserRegistrationFormProps) {
-  const { loginDetail } = useAppStore()
+export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrationFormProps) {
+  // const { setLoginDetail } = useAppStore()
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: '',
-      displayName: loginDetail ? loginDetail.name : '',
+      displayName: userDetails ? userDetails.name : '',
       bio: '',
       role: 'user',
-      email: loginDetail?.email,
+      email: userDetails?.email,
       socialLinks: [],
     },
   })
@@ -73,8 +81,8 @@ export function UserRegistrationForm({ onComplete }: UserRegistrationFormProps) 
 
   async function onSubmit(values: FormValues) {
     // Here you would typically send the form data to your backend
-    console.log(values, loginDetail)
-    if (!loginDetail || loginDetail.token === '' || loginDetail.token === null) {
+    console.log(values, userDetails)
+    if (!userDetails || userDetails.token === '' || userDetails.token === null) {
       Toast({
         message: 'Error',
         description: 'Invalid access token',
@@ -86,12 +94,12 @@ export function UserRegistrationForm({ onComplete }: UserRegistrationFormProps) 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${loginDetail?.token}`,
+        Authorization: `Bearer ${userDetails?.token}`,
       },
       body: JSON.stringify({
         username: values.username,
         bio: values.bio,
-        role: 'user',
+        role: values.role,
         socialLinks: values.socialLinks,
         name: values.displayName,
       }),
@@ -164,7 +172,7 @@ export function UserRegistrationForm({ onComplete }: UserRegistrationFormProps) 
           )}
         />
 
-        {/* <FormField
+        <FormField
           control={form.control}
           name="role"
           render={({ field }) => (
@@ -185,7 +193,7 @@ export function UserRegistrationForm({ onComplete }: UserRegistrationFormProps) 
               <FormMessage />
             </FormItem>
           )}
-        /> */}
+        />
 
         <div>
           <div className="flex items-center justify-between mb-2">
