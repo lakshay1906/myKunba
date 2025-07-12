@@ -29,7 +29,8 @@ import {
 
 interface UserRegistrationFormProps {
   userDetails: Record<string, any>
-  onComplete: () => void
+  onComplete: (role: string) => void
+  onInComplete: () => void
 }
 
 const formSchema = z.object({
@@ -50,7 +51,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrationFormProps) {
+export function UserRegistrationForm({
+  userDetails,
+  onComplete,
+  onInComplete,
+}: UserRegistrationFormProps) {
   // const { setLoginDetail } = useAppStore()
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,15 +93,17 @@ export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrati
         description: 'Invalid access token',
         isSuccess: false,
       })
+      onInComplete()
       return
     }
-    await fetch(`/api/user/sign-in`, {
+    await fetch(`/api/user/auth/sign-in`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${userDetails?.token}`,
       },
       body: JSON.stringify({
+        profile_pic: userDetails.profile_pic,
         username: values.username,
         bio: values.bio,
         role: values.role,
@@ -104,14 +111,28 @@ export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrati
         name: values.displayName,
       }),
     })
-
-    // Close the sheet after submission
-    onComplete()
+      .then(() => onComplete(values.role))
+      .catch(() => onInComplete())
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="displayName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Display Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Your Name" {...field} />
+              </FormControl>
+              <FormDescription>This is how your name will appear publicly.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="username"
@@ -124,21 +145,6 @@ export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrati
               <FormDescription>
                 This will be your unique identifier on the platform.
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="displayName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Display Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Name" {...field} />
-              </FormControl>
-              <FormDescription>This is how your name will appear publicly.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -185,7 +191,6 @@ export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrati
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="author">Author</SelectItem>
                   <SelectItem value="user">User</SelectItem>
                 </SelectContent>
@@ -255,7 +260,7 @@ export function UserRegistrationForm({ userDetails, onComplete }: UserRegistrati
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onComplete}>
+          <Button type="button" variant="outline" onClick={onInComplete}>
             Cancel
           </Button>
           <Button type="submit">Complete Registration</Button>

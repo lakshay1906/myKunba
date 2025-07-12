@@ -66,7 +66,11 @@ export default function BlogCard({ post }: BlogCardProps) {
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarImage
-                src={`https://source.unsplash.com/featured/?portrait,${post.author.username.replace(' ', '')}`}
+                src={
+                  post.author.profileImage === null
+                    ? `https://source.unsplash.com/featured/?portrait,${post.author.username.replace(' ', '')}`
+                    : post.author.profileImage.url
+                }
                 alt={post.author.username}
               />
               <AvatarFallback>{authorInitials}</AvatarFallback>

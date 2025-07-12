@@ -4,7 +4,7 @@ import type React from 'react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { RichTextEditor } from '@/components/Blog/rich-text-editor'
+import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -58,7 +58,7 @@ export default function EditBlogPage({ id }: { id: number }) {
   // Fetch blog data
   useEffect(() => {
     ;(async () => {
-      const rawRes = await fetch(`/api/blog?id=${id}`)
+      const rawRes = await fetch(`/api/dashboard/blog?id=${id}`)
       const blog = await rawRes.json()
       setBlog(blog)
       setSelectedCategories(blog.categories.map((cat: any) => cat.id))

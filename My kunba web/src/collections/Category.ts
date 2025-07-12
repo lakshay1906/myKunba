@@ -19,6 +19,11 @@ export const Categories: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'parent',
+      type: 'relationship',
+      relationTo: 'categories',
+    },
+    {
       name: 'deleted_at',
       type: 'date',
     },

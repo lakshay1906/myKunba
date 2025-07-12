@@ -17,7 +17,7 @@ interface PostData {
   tags?: { id: string }[]
 }
 
-export async function createPost(data: PostData) {
+export async function createPost(data: PostData, token: string) {
   try {
     // Get the authentication token if needed
     // const token = cookies().get('payload-token')?.value
@@ -25,13 +25,12 @@ export async function createPost(data: PostData) {
     // For this example, we'll set a fixed author ID
     // In a real application, you would get this from the authenticated user
     const authorId = 2 // Replace with actual logic to get the current user ID
-    console.log(data, `${url}/api/blog`)
-    const response = await fetch(`${url}/api/blog`, {
+    const response = await fetch(`${url}/api/dashboard/blog`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Add authentication if needed
-        // "Authorization": `bearer ${token}`,
+        Authorization: `bearer ${token}`,
       },
       body: JSON.stringify({
         ...data,

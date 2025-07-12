@@ -32,7 +32,8 @@ import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
-import { RichTextEditor } from './rich-text-editor'
+// import { RichTextEditor } from './rich-text-editor'
+import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { MediaUploader } from './media-uploader'
 import { MultiSelect } from './multi-select'
 import Toast from '../Toast'
@@ -90,16 +91,16 @@ export function CreatePostForm() {
           message="Error"
         />
       }
-      const response = await fetch(`/api/blog`, {
+      const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `bearer ${loginDetail?.token}`,
+          Authorization: `${loginDetail ? `bearer ${loginDetail.token}` : null}`,
         },
         body: JSON.stringify({
           ...data,
           categories: data.categories?.map((item) => Number(item)),
-          tags: data.tags?.map((id) => ({ id })),
+          // tags: data.tags?.map((id) => ({ id })),
         }),
       })
       if (!response.ok) {
@@ -441,7 +442,8 @@ export function CreatePostForm() {
                     <RichTextEditor
                       value={field.value}
                       onChange={field.onChange}
-                      disabled={isLoading}
+                      placeholder="Enter content here..."
+                      height="500px"
                     />
                   </FormControl>
                   <FormMessage />

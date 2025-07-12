@@ -16,14 +16,10 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { JSX, useEffect, useState } from 'react'
-import AuthenticationSheet from '../AuthenticationSheet'
+import { JSX } from 'react'
 import { useAppStore } from '@/lib/context/store'
-import { useRouter } from 'next/navigation'
 import ThemeToggle from './ThemeToggle'
 import { Badge } from '../ui/badge'
-import Toast from '../Toast'
-import { login } from 'payload/dist/auth/operations/local/login'
 import { SignInButton } from './Authentication/sign-in-button'
 import Link from 'next/link'
 
@@ -140,9 +136,7 @@ export default function Navbar({
     { name: 'Sitemap', url: '#' },
   ],
 }: NavbarProps) {
-  const { loginDetail } = useAppStore()
-  const { logout } = useAppStore()
-
+  const { loginDetail, logout } = useAppStore()
   return (
     <section className="p-4 fixed top-0 z-50 w-full bg-background border-b">
       <nav className="hidden justify-between lg:flex">
@@ -172,20 +166,22 @@ export default function Navbar({
         <div className="flex gap-5 justify-center items-center">
           <ThemeToggle />
           {loginDetail ? (
-            loginDetail?.role === 'admin' ? (
-              <Link href={'/dashboard'}>
-                <Button>Dashboard</Button>
-              </Link>
-            ) : (
+            <div className="flex gap-2 justify-center items-center">
+              {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
+                <Link href={'/dashboard'}>
+                  <Button>Dashboard</Button>
+                </Link>
+              )}
+
               <Button
                 onClick={async () => {
                   await logout()
                 }}
-                variant="default"
+                variant="outline"
               >
                 Sign Out
               </Button>
-            )
+            </div>
           ) : (
             <div className="flex gap-2 justify-between items-center">
               <SignInButton btnText="Login" />
@@ -233,7 +229,7 @@ export default function Navbar({
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <AuthenticationSheet />
+                  {/* <AuthenticationSheet /> */}
                   <Button asChild size="sm">
                     <p>Sign Up</p>
                   </Button>
@@ -247,7 +243,7 @@ export default function Navbar({
   )
 }
 
-const renderMenuItem = (item: MenuItem) => {
+function renderMenuItem(item: MenuItem) {
   if (item.items) {
     return (
       <NavigationMenuItem key={item.title} className="text-muted-foreground bg-none h-full">

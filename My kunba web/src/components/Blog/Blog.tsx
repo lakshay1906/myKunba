@@ -9,7 +9,7 @@ import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 import Toast from '../Toast'
 
-export default function Blog() {
+export default function Blog(posts: Record<string, any>) {
   const [data, setData] = useState<
     {
       id: number
@@ -28,22 +28,23 @@ export default function Blog() {
   const [categories, setCategories] = useState<Record<string, any>[]>([{ id: 0, name: 'All' }])
   const [selectedCat, setSelectedCat] = useState<number>(0)
 
+  // useEffect(() => {
+  //   ;(async () => {
+  //     const rawRes = await fetch(`/api/user/blog`)
+  //     const res = await rawRes.json()
+  //     if (rawRes.ok) setData(res.docs)
+  //     else <Toast isSuccess={false} description={res.message} message={'Error'} />
+  //     setLoading(false)
+  //     if (categories.length > 1) return
+  //     const response = await fetchAllCategories()
+  //     setCategories((prev) => [...prev, ...response.docs])
+  //   })()
+  // }, [])
   useEffect(() => {
-    ;(async () => {
-      const rawRes = await fetch(`/api/blog`)
-      const res = await rawRes.json()
-      if (rawRes.ok) setData(res.docs)
-      else <Toast isSuccess={false} description={res.message} message={'Error'} />
-      setLoading(false)
-      if (categories.length > 1) return
-      const response = await fetchAllCategories()
-      setCategories((prev) => [...prev, ...response.docs])
-    })()
+    console.log(posts)
+    setData(posts.posts.docs)
+    setLoading(false)
   }, [])
-
-  useEffect(() => {
-    console.log(categories)
-  }, [categories])
 
   return (
     <div id="blog" className="w-full h-full">
@@ -71,20 +72,20 @@ export default function Blog() {
               </Badge>
             ))}
           </div>
-          {data.filter((post) =>
-            post.categories.some((category) => {
-              if (selectedCat === 0) return true
+          {data.filter((post) => {
+            if (selectedCat === 0) return true
+            return post.categories.some((category) => {
               return category.id === selectedCat
-            }),
-          ).length > 0 ? (
+            })
+          }).length > 0 ? (
             <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-3">
               {data
-                .filter((post) =>
-                  post.categories.some((category) => {
-                    if (selectedCat === 0) return true
+                .filter((post) => {
+                  if (selectedCat === 0) return true
+                  return post.categories.some((category) => {
                     return category.id === selectedCat
-                  }),
-                )
+                  })
+                })
                 .map((ele) => (
                   <BlogCard key={ele.id} post={ele} />
                 ))}

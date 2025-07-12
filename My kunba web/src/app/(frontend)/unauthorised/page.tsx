@@ -18,14 +18,9 @@ export default function Unauthorized() {
             if you believe this is an error.`}
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild>
-            <Link href="/">Go back home</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/">Go back home</Link>
+        </Button>
       </div>
     </div>
   )

@@ -18,7 +18,7 @@ Step - 3 Initialize tailwind
 pnpm dlx tailwindcss@3.4.17 init -p
 ```
 
-Step - 4
+Step - 4 Replace content in tailwind.config.js with the below
 
 ```
 /** @type {import('tailwindcss').Config} */

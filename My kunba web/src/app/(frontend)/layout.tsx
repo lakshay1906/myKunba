@@ -6,6 +6,9 @@ import { AppProvider } from '@/lib/context/store'
 import { ThemeProvider } from 'next-themes'
 import ThemeInitializer from '@/components/ThemeInitializer'
 import { getTokenFromCookie } from '../actions/jwt-actions'
+import { uploadRouter } from '@/server/uploadthing'
+import { extractRouterConfig } from 'uploadthing/server'
+import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,6 +40,7 @@ export default async function RootLayout({
       >
         <AppProvider token={token}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
             <ThemeInitializer />
             {children}
             <Toaster />

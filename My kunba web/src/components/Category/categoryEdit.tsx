@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog'
 import { Separator } from '../ui/separator'
-import { EllipsisVertical, Link } from 'lucide-react'
+import { EllipsisVertical } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { DialogHeader, DialogFooter } from '../ui/dialog'
@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from '../ui/sheet'
+import Link from 'next/link'
 
 export function popoverEllipsis({
   value,
@@ -32,7 +33,7 @@ export function popoverEllipsis({
   })
 
   async function editCategory(name: string, slug: string, id: number) {
-    const rawRes = await fetch(`/api/category?id=${id}`, {
+    const rawRes = await fetch(`/api/dashboard/category?id=${id}`, {
       method: 'PUT',
       body: JSON.stringify({ name: name, slug: slug }),
       headers: {
@@ -55,7 +56,7 @@ export function popoverEllipsis({
   }
 
   async function deleteCategory(id: number) {
-    const rawRes = await fetch(`/api/category?id=${id}`, {
+    const rawRes = await fetch(`/api/dashboard/category?id=${id}`, {
       method: 'DELETE',
     })
     if (!rawRes.ok) {

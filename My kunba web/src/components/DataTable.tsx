@@ -96,7 +96,7 @@ export default function DataTable({
       {tableTitle !== undefined && (
         <div className="p-5 flex justify-between items-center border-b-[1px]">
           <div>
-            <p className="font-medium text-xl">{tableTitle}</p>
+            <p className="font-medium text-lg">{tableTitle}</p>
             <p className="text-sm text-muted-foreground">{tableSubTitle}</p>
           </div>
           {!loading && AddProductButton !== undefined && AddProductButton}

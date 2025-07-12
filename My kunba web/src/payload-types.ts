@@ -63,11 +63,13 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    users: UserAuthOperations;
+    admin: AdminAuthOperations;
   };
   blocks: {};
   collections: {
+    admin: Admin;
     users: User;
+    person: Person;
     media: Media;
     categories: Category;
     comments: Comment;
@@ -81,7 +83,9 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    admin: AdminSelect<false> | AdminSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    person: PersonSelect<false> | PersonSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
@@ -99,15 +103,15 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
+  user: Admin & {
+    collection: 'admin';
   };
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
-export interface UserAuthOperations {
+export interface AdminAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -127,15 +131,14 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "admin".
  */
-export interface User {
+export interface Admin {
   id: number;
   username: string;
   displayName: string;
   bio?: string | null;
   profileImage?: (number | null) | Media;
-  role: 'admin' | 'author' | 'user';
   socialLinks?:
     | {
         platform?: string | null;
@@ -143,11 +146,6 @@ export interface User {
         id?: string | null;
       }[]
     | null;
-  /**
-   * This is the unique ID assigned by Firebase
-   */
-  uid: string;
-  lastLogin?: string | null;
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -174,12 +172,70 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  username: string;
+  displayName: string;
+  bio?: string | null;
+  profileImage?: (number | null) | Media;
+  role: 'admin' | 'author' | 'user';
+  socialLinks?:
+    | {
+        platform?: string | null;
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  email: string;
+  /**
+   * This is the unique ID assigned by Firebase
+   */
+  uid: string;
+  lastLogin?: string | null;
+  deleted_at?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Base collection for all person-related data
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "person".
+ */
+export interface Person {
+  id: number;
+  username: string;
+  displayName: string;
+  bio?: string | null;
+  profileImage?: (number | null) | Media;
+  socialLinks?:
+    | {
+        platform?: string | null;
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  email: string;
+  lastLogin?: string | null;
+  deleted_at?: string | null;
+  /**
+   * The type of person record
+   */
+  personType: 'admin' | 'user';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
 export interface Category {
   id: number;
   name: string;
   slug: string;
+  parent?: (number | null) | Category;
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -230,20 +286,6 @@ export interface Post {
   template?: ('standard' | 'full-width') | null;
   author: number | User;
   categories?: (number | Category)[] | null;
-  tags?: (number | Tag)[] | null;
-  deleted_at?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  slug: string;
-  posts?: (number | Post)[] | null;
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -274,14 +316,35 @@ export interface PostLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  posts?: (number | Post)[] | null;
+  deleted_at?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
+        relationTo: 'admin';
+        value: number | Admin;
+      } | null)
+    | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'person';
+        value: number | Person;
       } | null)
     | ({
         relationTo: 'media';
@@ -313,8 +376,8 @@ export interface PayloadLockedDocument {
       } | null);
   globalSlug?: string | null;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'admin';
+    value: number | Admin;
   };
   updatedAt: string;
   createdAt: string;
@@ -326,8 +389,8 @@ export interface PayloadLockedDocument {
 export interface PayloadPreference {
   id: number;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'admin';
+    value: number | Admin;
   };
   key?: string | null;
   value?:
@@ -355,6 +418,33 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "admin_select".
+ */
+export interface AdminSelect<T extends boolean = true> {
+  username?: T;
+  displayName?: T;
+  bio?: T;
+  profileImage?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
+  deleted_at?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
@@ -370,18 +460,35 @@ export interface UsersSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  email?: T;
   uid?: T;
   lastLogin?: T;
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "person_select".
+ */
+export interface PersonSelect<T extends boolean = true> {
+  username?: T;
+  displayName?: T;
+  bio?: T;
+  profileImage?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
   email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
+  lastLogin?: T;
+  deleted_at?: T;
+  personType?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -401,6 +508,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  parent?: T;
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -457,7 +565,6 @@ export interface PostsSelect<T extends boolean = true> {
   template?: T;
   author?: T;
   categories?: T;
-  tags?: T;
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -89,7 +89,7 @@ export default function About() {
             {
               title: 'Inclusivity',
               description:
-                'We create content that is accessible and valuable to people of all backgrounds.',
+                'We create content that is accessible and valuable to person of all backgrounds.',
             },
             {
               title: 'Continuous Learning',

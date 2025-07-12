@@ -4,9 +4,11 @@ import { createContext, useContext, useState, ReactNode, SetStateAction, useEffe
 import {
   signInWithPopup,
   signOut,
-  onAuthStateChanged,
   GoogleAuthProvider,
   User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  getAuth,
 } from 'firebase/auth'
 import { auth } from '../firebase'
 
@@ -14,23 +16,23 @@ type AppContextType = {
   loginDetail: null | {
     token: string
     email: string
-    uid: string
     profile_pic: string
     name: string
-    role?: string | null
+    role: string
   }
   setLoginDetail: React.Dispatch<
     SetStateAction<{
       token: string
       email: string
-      uid: string
       profile_pic: string
       name: string
-      role?: string | null
+      role: string
     } | null>
   >
   logout: () => Promise<void>
   googleSignIn: () => Promise<User>
+  emailSignIn: ({ email, password }: { email: string; password: string }) => Promise<User>
+  emailSignUp: ({ email, password }: { email: string; password: string }) => Promise<User>
   loading: boolean
   setLoading: React.Dispatch<SetStateAction<boolean>>
 }
@@ -41,23 +43,41 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   const [loginDetail, setLoginDetail] = useState<null | {
     token: string
     email: string
-    uid: string
     profile_pic: string
     name: string
-    role?: string | null
+    role: string
   }>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    console.log(loginDetail)
+  }, [loginDetail])
 
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
+    // signinWithEmailLink
+    return result.user
+  }
+
+  async function emailSignUp({ email, password }: { email: string; password: string }) {
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    return result.user
+  }
+
+  async function emailSignIn({ email, password }: { email: string; password: string }) {
+    const result = await signInWithEmailAndPassword(auth, email, password)
     return result.user
   }
 
   async function logout() {
+    getAuth().signOut()
     await signOut(auth)
-      .then(() => {
-        setLoginDetail(null)
+      .then(async () => {
+        const rawRes = await fetch('/api/user/auth/jwt/delete', {
+          method: 'DELETE',
+        })
+        if (rawRes.ok) setLoginDetail(null)
       })
       .catch((error) => {
         console.error('Error signing out:', error)
@@ -65,50 +85,28 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // if (user)
-      //   setLoginDetail((prev) => ({
-      //     ...prev,
-      //     email: user.email ?? '',
-      //     name: user.displayName ?? '',
-      //     profile_pic: user.photoURL ?? '',
-      //     token: prev?.token ?? '',
-      //     uid: user.uid,
-      //   }))
-      // else setLoginDetail(null)
-      console.log(user)
-    })
-    return () => {
-      unsubscribe
-    }
-  }, [])
-
-  useEffect(() => {
     ;(async () => {
       if (!token) return
-      const rawRes = await fetch(`/api/jwt/verify`, {
-        method: 'POST',
+      const rawRes = await fetch(`/api/user/auth/jwt/verify`, {
+        method: 'GET',
         headers: {
           Authorization: `bearer ${token}`,
         },
       })
       if (rawRes.ok) {
-        const res = await rawRes.json()
-        setLoginDetail({
-          token: token,
-          email: res.email,
-          name: res.name,
-          profile_pic: res.profile_pic,
-          uid: res.uid,
-          role: null,
-        })
+        const [data] = await rawRes.json()
+        console.log(data)
+        if (data)
+          setLoginDetail({
+            token: token,
+            email: data.email,
+            name: data.displayName,
+            role: data.role,
+            profile_pic: data.profileImage ? data.profileImage.url : null,
+          })
       }
     })()
   }, [])
-
-  useEffect(() => {
-    console.log(loginDetail)
-  }, [loginDetail])
 
   return (
     <AppContext.Provider
@@ -117,6 +115,8 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
         setLoginDetail,
         logout,
         googleSignIn,
+        emailSignIn,
+        emailSignUp,
         loading,
         setLoading,
       }}

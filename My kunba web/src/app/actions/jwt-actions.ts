@@ -1,18 +1,11 @@
-import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 
-export function verifyToken(token: string, secret: string) {
-  try {
-    const decoded = jwt.verify(token, secret)
-    return decoded
-  } catch (error) {
-    console.error('Error verifying token:', error)
-    return null
-  }
-}
-
+// Apply recursion here
+// 1. When token is present return the token but if not present and but payload-token is present then create a new access token with the help of the payload-token data and store that token in the cookie
 export async function getTokenFromCookie() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  return token || null
+  // let token =  (await cookies()).get('payload-token')?.value
+  // if (token == undefined || token == null) {
+  // token =
+  // }
+  return (await cookies()).get('access_token')?.value
 }

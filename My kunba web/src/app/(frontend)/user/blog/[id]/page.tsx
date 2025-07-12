@@ -35,8 +35,10 @@ type Blog = {
 }
 
 // Fetch blog data from API
-async function fetchBlogById(id: string): Promise<Blog> {
-  const res = await fetch(`http://localhost:3000/api/blog?id=${id}`, { next: { revalidate: 3600 } })
+async function fetchBlogById(id: string) {
+  const res = await fetch(`http://localhost:3000/api/user/blog?id=${id}`, {
+    next: { revalidate: 3600 },
+  })
 
   if (!res.ok) {
     throw new Error('Failed to fetch blog data')
@@ -45,10 +47,9 @@ async function fetchBlogById(id: string): Promise<Blog> {
   return await res.json()
 }
 
-export default async function BlogPage({ params }: { params: { id: string } }) {
-  // Fetch blog data on the server
-  const blog = await fetchBlogById(params.id)
-
+export default async function BlogPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const blog = Number.isNaN(Number(id)) ? {} : await fetchBlogById(id)
   return (
     <main className="container mx-auto px-4 py-8">
       <BlogContent blog={blog} />

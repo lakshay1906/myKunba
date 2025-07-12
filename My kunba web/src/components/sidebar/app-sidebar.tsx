@@ -26,115 +26,133 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-
-const data = {
-  user: {
-    name: 'Lakshay Bhati',
-    email: 'll3162@srmist.edu.in',
-    avatar: 'https://shoppershine.com/wp-content/uploads/2021/01/SS-PS095-1.jpg',
-  },
-  navMain: [
-    {
-      title: 'Dashboard',
-      url: '/dashboard',
-      icon: LayoutDashboardIcon,
-    },
-    {
-      title: 'Back to Frontend',
-      url: '/',
-      icon: Reply,
-    },
-    // {
-    //   title: 'Team',
-    //   url: '#',
-    //   icon: UsersIcon,
-    // },
-  ],
-  navClouds: [
-    {
-      title: 'Capture',
-      icon: CameraIcon,
-      isActive: true,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Proposal',
-      icon: FileTextIcon,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Prompts',
-      icon: FileCodeIcon,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: 'Search',
-      url: '#',
-      icon: SearchIcon,
-    },
-    {
-      title: 'Settings',
-      url: '#',
-      icon: SettingsIcon,
-    },
-    // {
-    //   title: 'Get Help',
-    //   url: '#',
-    //   icon: HelpCircleIcon,
-    // },
-  ],
-  documents: [
-    {
-      name: 'Blog',
-      url: '/dashboard/blog',
-      icon: MessageCircleHeart,
-    },
-    {
-      name: 'Category',
-      url: '/dashboard/category',
-      icon: Shapes,
-    },
-    // {
-    //   name: 'Tag',
-    //   url: '/dashboard/tags',
-    //   icon: Bookmark,
-    // },
-  ],
-}
+import { useEffect, useState } from 'react'
+import { useAppStore } from '@/lib/context/store'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { loginDetail } = useAppStore()
+  const [userData, setUserData] = useState({
+    name: 'Lakshay Bhati',
+    email: 'll3162@srmist.edu.in',
+    avatar: 'https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png',
+  })
+
+  useEffect(() => {
+    if (loginDetail)
+      setUserData({
+        name: loginDetail.name,
+        email: loginDetail.email,
+        avatar: loginDetail.profile_pic,
+      })
+    else
+      setUserData({
+        name: 'Demo user',
+        email: 'demo_user@gmail.com',
+        avatar: 'https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png',
+      })
+  }, [loginDetail])
+
+  const data = {
+    navMain: [
+      {
+        title: 'Dashboard',
+        url: '/dashboard',
+        icon: LayoutDashboardIcon,
+      },
+      {
+        title: 'Back to Frontend',
+        url: '/',
+        icon: Reply,
+      },
+      // {
+      //   title: 'Team',
+      //   url: '#',
+      //   icon: UsersIcon,
+      // },
+    ],
+    navClouds: [
+      {
+        title: 'Capture',
+        icon: CameraIcon,
+        isActive: true,
+        url: '#',
+        items: [
+          {
+            title: 'Active Proposals',
+            url: '#',
+          },
+          {
+            title: 'Archived',
+            url: '#',
+          },
+        ],
+      },
+      {
+        title: 'Proposal',
+        icon: FileTextIcon,
+        url: '#',
+        items: [
+          {
+            title: 'Active Proposals',
+            url: '#',
+          },
+          {
+            title: 'Archived',
+            url: '#',
+          },
+        ],
+      },
+      {
+        title: 'Prompts',
+        icon: FileCodeIcon,
+        url: '#',
+        items: [
+          {
+            title: 'Active Proposals',
+            url: '#',
+          },
+          {
+            title: 'Archived',
+            url: '#',
+          },
+        ],
+      },
+    ],
+    navSecondary: [
+      {
+        title: 'Search',
+        url: '#',
+        icon: SearchIcon,
+      },
+      {
+        title: 'Settings',
+        url: '#',
+        icon: SettingsIcon,
+      },
+      // {
+      //   title: 'Get Help',
+      //   url: '#',
+      //   icon: HelpCircleIcon,
+      // },
+    ],
+    documents: [
+      {
+        name: 'Blog',
+        url: '/dashboard/blog',
+        icon: MessageCircleHeart,
+      },
+      {
+        name: 'Category',
+        url: '/dashboard/category',
+        icon: Shapes,
+      },
+      // {
+      //   name: 'Tag',
+      //   url: '/dashboard/tags',
+      //   icon: Bookmark,
+      // },
+    ],
+  }
   return (
     <Sidebar collapsible="icon" {...props} className="bg-background">
       <SidebarHeader>
@@ -155,7 +173,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   )

@@ -16,13 +16,15 @@ import {
 } from '../ui/dialog'
 import { EllipsisVertical } from 'lucide-react'
 import Toast from '../Toast'
+import { useAppStore } from '@/lib/context/store'
 
 export default function BlogMain() {
   const [loading, setLoading] = useState(true)
   const [blogs, setBlogs] = useState<Record<string, any>[]>([])
+  const { loginDetail } = useAppStore()
 
   async function deleteBlog(id: string) {
-    const rawRes = await fetch(`/api/blog?id=${id}`, {
+    const rawRes = await fetch(`/api/dashboard/blog?id=${id}`, {
       method: 'DELETE',
     })
     if (!rawRes.ok) {
@@ -34,13 +36,28 @@ export default function BlogMain() {
 
   useEffect(() => {
     ;(async () => {
-      const response = await fetch(`/api/blog`)
+      if (!loginDetail) {
+        setLoading(false)
+        return (
+          <Toast
+            isSuccess={false}
+            message={'Error'}
+            description={'You are not authorized to perform this action'}
+          />
+        )
+      }
+      const response = await fetch(`/api/dashboard/blog`, {
+        method: 'GET',
+        headers: {
+          Authorization: `bearer ${loginDetail.token}`,
+        },
+      })
       const res = await response.json()
-      if (response.ok) setBlogs(res.docs)
+      if (response.ok) setBlogs(res.data)
       else <Toast isSuccess={false} description={res.message} message={'Error'} />
       setLoading(false)
     })()
-  }, [])
+  }, [loginDetail])
 
   return (
     <DataTable

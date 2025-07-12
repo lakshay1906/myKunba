@@ -14,11 +14,16 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { SetStateAction, useState } from 'react'
 import Toast from '../Toast'
+import { Category } from '@/lib/types'
 import { createCategory } from '@/app/actions/category-actions'
 
-export default function Create({ setCategories }: { setCategories: (categories: any) => void }) {
+export default function Create({
+  setCategories,
+}: {
+  setCategories: React.Dispatch<SetStateAction<Category[]>>
+}) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
@@ -37,9 +42,10 @@ export default function Create({ setCategories }: { setCategories: (categories: 
     setLoading(true)
     try {
       const cat = await createCategory(name)
+      setCategories((prev) => [...prev, cat])
+      handleOpenChange(false)
       ;<Toast message={'Success'} description={'Category created successfully'} isSuccess={true} />
     } catch (error) {
-      console.error('Error creating category:', error)
       ;<Toast
         message={'Error'}
         description={error instanceof Error ? error.message : 'Failed to create category'}
@@ -49,6 +55,7 @@ export default function Create({ setCategories }: { setCategories: (categories: 
       setLoading(false)
     }
   }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>

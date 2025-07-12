@@ -15,19 +15,22 @@ import { Likes } from './collections/Likes'
 import { PostLogs } from './collections/PostLogs'
 import { Posts } from './collections/Posts'
 import { Tags } from './collections/Tag'
+import { Admin } from './collections/Admin'
+import { Person } from './collections/Person'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: Admin.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     theme: 'all',
   },
-  collections: [Users, Media, Categories, Comments, Likes, PostLogs, Posts, Tags],
+  
+  collections: [Admin, Users, Person, Media, Categories, Comments, Likes, PostLogs, Posts, Tags],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

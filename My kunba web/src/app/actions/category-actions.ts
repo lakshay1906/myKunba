@@ -7,13 +7,13 @@ const url = process.env.NEXT_PUBLIC_NEXT_URL
 export async function createCategory(name: string) {
   try {
     // Get the authentication token if needed
-    const token = (await cookies()).get('payload-token')?.value
-    const response = await fetch(`${url}/api/category`, {
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) return null
+    const response = await fetch(`${url}/api/dashboard/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Add authentication if needed
-        authorization: `bearer ${token}`,
+        Authorization: `bearer ${token}`,
       },
       body: JSON.stringify({
         name,
@@ -34,7 +34,7 @@ export async function createCategory(name: string) {
 
 export async function fetchAllCategories() {
   try {
-    const rawRes = await fetch(`${url}/api/category`)
+    const rawRes = await fetch(`${url}/api/user/category`)
     if (!rawRes.ok) {
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to create category')
@@ -46,9 +46,17 @@ export async function fetchAllCategories() {
     throw error
   }
 }
+
 export async function fetchCategoryData(id: number) {
   try {
-    const rawRes = await fetch(`${url}/api/category?id=${id}`)
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) return null
+    const rawRes = await fetch(`${url}/api/dashboard/category?id=${id}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `bearer ${token}`,
+      },
+    })
     if (!rawRes.ok) {
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to create category')

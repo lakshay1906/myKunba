@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { ImageIcon, Upload, X } from 'lucide-react'
 import Image from 'next/image'
+import { UploadButton, UploadDropzone } from '@/utils/uploadingthing'
 
 interface MediaUploaderProps {
   value?: string
@@ -72,6 +73,25 @@ export function MediaUploader({ value, onChange, disabled = false }: MediaUpload
     }
   }
 
+  // const { startUpload } = useUploadThing('videoAndImage', {
+  //   /**
+  //    * @see https://docs.uploadthing.com/api-reference/react#useuploadthing
+  //    */
+  //   onBeforeUploadBegin: (files) => {
+  //     console.log('Uploading', files.length, 'files')
+  //     return files
+  //   },
+  //   onUploadBegin: (name) => {
+  //     console.log('Beginning upload of', name)
+  //   },
+  //   onClientUploadComplete: (res) => {
+  //     console.log('Upload Completed.', res.length, 'files uploaded')
+  //   },
+  //   onUploadProgress(p) {
+  //     console.log('onUploadProgress', p)
+  //   },
+  // })
+
   const handleRemove = () => {
     onChange('')
     setPreviewUrl('')
@@ -123,12 +143,54 @@ export function MediaUploader({ value, onChange, disabled = false }: MediaUpload
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="file">Upload File</Label>
-                <Input
+                {/* <Input
                   id="file"
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   disabled={isUploading}
+                /> */}
+                {/**
+                 * @see https://docs.uploadthing.com/api-reference/react#uploadbutton
+                 */}
+                {/* <UploadButton
+                  endpoint={(routeRegistry) => routeRegistry.videoAndImage}
+                  onClientUploadComplete={(res) => {
+                    console.log(`onClientUploadComplete`, res)
+                    alert('Upload Completed')
+                  }}
+                  onUploadBegin={() => {
+                    console.log('upload begin')
+                  }}
+                  config={{ appendOnPaste: true, mode: 'manual' }}
+                /> */}
+                {/**
+                 * @see https://docs.uploadthing.com/api-reference/react#uploaddropzone
+                 */}
+                {/* <UploadDropzone
+                  endpoint={(routeRegistry) => routeRegistry.videoAndImage}
+                  onUploadAborted={() => {
+                    alert('Upload Aborted')
+                  }}
+                  onClientUploadComplete={(res) => {
+                    console.log(`onClientUploadComplete`, res)
+                    alert('Upload Completed')
+                  }}
+                  onUploadBegin={() => {
+                    console.log('upload begin')
+                  }}
+                /> */}
+                <input
+                  type="file"
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files ?? [])
+
+                    // Do something with files
+
+                    // Then start the upload
+                    // await startUpload(files)
+                  }}
                 />
               </div>
               <div className="grid gap-2">

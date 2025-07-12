@@ -23,15 +23,15 @@ export default function CategoryDetailPage({ id }: { id: number }) {
     <div className="space-y-4">
       <div className="border rounded-lg shadow-md">
         <div>
-          <h1 className="text-xl font-medium p-4 pb-2.5">{data[0].name}</h1>
+          <h1 className="text-lg font-medium p-4 pb-2.5">{data[0].name}</h1>
         </div>
         <Separator />
-        <div className="px-4 py-2 grid grid-cols-2 gap-4">
+        <div className="px-4 py-2 grid grid-cols-2 gap-4 text-sm">
           <p>Slug</p>
           <p>{data[0].slug}</p>
         </div>
         <Separator />
-        <div className="px-4 py-2 grid grid-cols-2 gap-4">
+        <div className="px-4 py-2 grid grid-cols-2 gap-4 text-sm">
           <p>Posts Count</p>
           {/* <p>{data[0].posts.length}</p> */}
         </div>

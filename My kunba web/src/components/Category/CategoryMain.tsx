@@ -12,7 +12,7 @@ export default function CategoryMain() {
 
   async function fetchCategories() {
     setLoading(true)
-    const rawRes = await fetch('/api/category')
+    const rawRes = await fetch('/api/dashboard/category')
     if (!rawRes.ok) {
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to fetch categories')
