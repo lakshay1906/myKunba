@@ -3,10 +3,10 @@
 import { cookies } from 'next/headers'
 
 const url = process.env.NEXT_PUBLIC_NEXT_URL
-const token = (await cookies()).get('access_token')?.value
 
 export async function createCategory(name: string) {
   try {
+    const token = (await cookies()).get('access_token')?.value
     // Get the authentication token if needed
     if (!token) return null
     const response = await fetch(`${url}/api/dashboard/category`, {
@@ -49,6 +49,7 @@ export async function fetchAllCategories() {
 
 export async function fetchCategoryData(id: number) {
   try {
+    const token = (await cookies()).get('access_token')?.value
     if (!token) return null
     const rawRes = await fetch(`${url}/api/dashboard/category?id=${id}`, {
       method: 'GET',
@@ -69,6 +70,7 @@ export async function fetchCategoryData(id: number) {
 
 export async function fetchAllCategoryBlogs(catId: number) {
   try {
+    const token = (await cookies()).get('access_token')?.value
     if (!token) return null
     const rawRes = await fetch(`${url}/api/dashboard/category?id=${catId}`, {
       method: 'GET',

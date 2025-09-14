@@ -4,8 +4,10 @@ import { fetchCategoryData } from '@/app/actions/category-actions'
 import React, { useEffect, useState } from 'react'
 import { Separator } from '../ui/separator'
 import DataTable from '../DataTable'
+import { Button } from '../ui/button'
+import Link from 'next/link'
 
-export default function CategoryDetailPage({ response }: any) {
+export default function CategoryDetailPage({ id, response }: { id: string; response: any }) {
   const data: Record<string, any>[] = [{ ...response }]
   const [loading, setLoading] = useState(false)
 
@@ -50,7 +52,11 @@ export default function CategoryDetailPage({ response }: any) {
         isEllipsisRequired={false}
         fetchDataFunction={fetchCategoryData}
         loading={loading}
-        AddProductButton={<></>}
+        AddProductButton={
+          <Link href={`/dashboard/category/${id}/add-posts`}>
+            <Button variant={'outline'}>Add Posts</Button>
+          </Link>
+        }
       />
     </div>
   ) : (
