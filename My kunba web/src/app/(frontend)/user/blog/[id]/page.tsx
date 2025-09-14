@@ -17,7 +17,6 @@ type Blog = {
   publishDate: string
   metaTitle: string
   metaDescription: string
-  template: string
   author: {
     id: number
     username: string

@@ -32,26 +32,24 @@ import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
-// import { RichTextEditor } from './rich-text-editor'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
-import { MediaUploader } from './media-uploader'
 import { MultiSelect } from './multi-select'
 import Toast from '../Toast'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { useAppStore } from '@/lib/context/store'
+import ImageUploadDialog from '../image-uploader/image-upload-dialog'
+import { ImageUploadData, UploadResponse } from '@/lib/types'
 
 // Define the form schema with Zod
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   slug: z.string().min(1, 'Slug is required'),
-  excerpt: z.string().optional(),
+  excerpt: z.string().min(1, 'Excerpt is required'),
   content: z.string().min(1, 'Content is required'),
-  coverImage: z.string().optional(),
-  status: z.enum(['draft', 'published', 'pending_approval']),
+  status: z.enum(['draft', 'published']),
   publishDate: z.date().optional(),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
-  template: z.enum(['standard', 'full-width']),
   categories: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
 })
@@ -64,6 +62,18 @@ export function CreatePostForm() {
   const router = useRouter()
   const [catLoading, setCatLoading] = useState(true)
   const { loginDetail } = useAppStore()
+  const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
+    file: null,
+    imageUrl: '',
+    alt: '',
+    preview: null,
+    result: null,
+    dimensions: null,
+    loadingDimensions: false,
+    uploadMethod: null,
+    isOpen: false,
+    coverImage: null,
+  })
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -74,23 +84,108 @@ export function CreatePostForm() {
       excerpt: '',
       content: '',
       status: 'draft',
-      template: 'standard',
       categories: [],
       tags: [],
     },
   })
 
+  function handleImageUploaded(imageData: any) {
+    // Assuming the uploaded image returns a URL or path
+    const imageUrl = imageData.url || imageData.filename || imageData.src
+    setImageUploadData((prev) => ({ ...prev, coverImage: imageUrl, isOpen: false }))
+  }
+
+  async function handleUpload() {
+    setImageUploadData((prev) => ({ ...prev, result: null }))
+
+    try {
+      let response: Response
+
+      if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
+        // Upload file
+        const formData = new FormData()
+        formData.append('file', imageUploadData.file)
+        formData.append('alt', imageUploadData.alt.trim())
+
+        response = await fetch('/api/image/upload', {
+          method: 'POST',
+          body: formData,
+        })
+      } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
+        // Upload from URL
+        response = await fetch('/api/image/upload-from-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageUrl: imageUploadData.imageUrl.trim(),
+            alt: imageUploadData.alt.trim(),
+          }),
+        })
+      } else {
+        throw new Error('Invalid upload method')
+      }
+
+      const data: UploadResponse = await response.json()
+      setImageUploadData((prev) => ({
+        ...prev,
+        result: data,
+      }))
+
+      if (data.success) {
+        // Call the callback with the uploaded image data
+        handleImageUploaded(data.data)
+        // Reset form on success
+        clearAll()
+      }
+      return data
+    } catch (error) {
+      setImageUploadData((prev) => ({
+        ...prev,
+        result: {
+          success: false,
+          error: 'Network error occurred',
+        },
+      }))
+    } finally {
+      setImageUploadData((prev) => ({
+        ...prev,
+        uploading: false,
+      }))
+    }
+  }
+
+  function clearAll() {
+    setImageUploadData((prev) => ({
+      ...prev,
+      alt: '',
+      file: null,
+      imageUrl: '',
+      preview: null,
+      dimensions: null,
+      result: null,
+      uploadMethod: null,
+    }))
+    // Reset file input
+    const fileInput = document.getElementById('file-input') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+  }
+
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
     try {
-      if (loginDetail) {
+      if (!loginDetail) {
         ;<Toast
           description="You're not authorized to perform this action"
           isSuccess={false}
           message="Error"
         />
+        return
       }
+      const imageData = await handleUpload()
+      console.log(imageData)
       const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
@@ -99,6 +194,7 @@ export function CreatePostForm() {
         },
         body: JSON.stringify({
           ...data,
+          coverImage: imageData?.data.id,
           categories: data.categories?.map((item) => Number(item)),
           // tags: data.tags?.map((id) => ({ id })),
         }),
@@ -228,23 +324,15 @@ export function CreatePostForm() {
               />
 
               {/* Cover Image Field */}
-              <FormField
-                control={form.control}
-                name="coverImage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cover Image</FormLabel>
-                    <FormControl>
-                      <MediaUploader
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div>
+                <FormLabel>Cover Image</FormLabel>
+                <ImageUploadDialog
+                  imageUploadData={imageUploadData}
+                  setImageUploadData={setImageUploadData}
+                  clearAll={clearAll}
+                  placeholder="Upload cover image"
+                />
+              </div>
 
               {/* Status Field */}
               <FormField
@@ -266,7 +354,6 @@ export function CreatePostForm() {
                       <SelectContent>
                         <SelectItem value="draft">Draft</SelectItem>
                         <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="pending_approval">Pending Approval</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -314,7 +401,7 @@ export function CreatePostForm() {
               />
 
               {/* Template Field */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="template"
                 render={({ field }) => (
@@ -339,7 +426,7 @@ export function CreatePostForm() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Categories Field */}
               <FormField

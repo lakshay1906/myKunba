@@ -86,24 +86,6 @@ export default function EmptyBlogState({
           ))}
         </div>
       </div>
-
-      <div className="mt-12 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl max-w-2xl">
-        <h3 className="text-xl font-semibold mb-3">Not ready to write yet?</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          You can still be part of our community! Subscribe to our newsletter to get notified when
-          new content is available.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            className="flex-grow px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          />
-          <button className="px-4 py-2 bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200">
-            Subscribe
-          </button>
-        </div>
-      </div>
     </div>
   )
 }

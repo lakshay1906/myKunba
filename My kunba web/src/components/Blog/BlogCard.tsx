@@ -39,11 +39,13 @@ export default function BlogCard({ post }: BlogCardProps) {
     <Link href={`/user/blog/${post.id}`} className="group">
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
         <div className="h-48 w-full overflow-hidden">
-          <img
-            src={post.media.url || '/placeholder.svg'}
-            alt={post.title}
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {post.media !== null && (
+            <img
+              src={post.media.url || '/placeholder.svg'}
+              alt={post.title}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
         </div>
         <CardHeader className="pb-2">
           <div className="flex flex-wrap gap-2 mb-2">

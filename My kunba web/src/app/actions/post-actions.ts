@@ -12,7 +12,6 @@ interface PostData {
   publishDate?: Date
   metaTitle?: string
   metaDescription?: string
-  template: 'standard' | 'full-width'
   categories?: number[]
   tags?: { id: string }[]
 }

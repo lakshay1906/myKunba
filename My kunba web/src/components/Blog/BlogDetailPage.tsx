@@ -29,13 +29,14 @@ import CategorySelector from '../../components/Blog/category-selector'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import Toast from '../Toast'
 import Loading from '../Loading'
+import Link from 'next/link'
 
-const templates = [
-  { id: 'standard', name: 'Standard' },
-  { id: 'featured', name: 'Featured' },
-  { id: 'video', name: 'Video' },
-  { id: 'gallery', name: 'Gallery' },
-]
+// const templates = [
+//   { id: 'standard', name: 'Standard' },
+//   { id: 'featured', name: 'Featured' },
+//   { id: 'video', name: 'Video' },
+//   { id: 'gallery', name: 'Gallery' },
+// ]
 
 const statuses = [
   { id: 'draft', name: 'Draft' },
@@ -147,10 +148,12 @@ export default function EditBlogPage({ id }: { id: number }) {
     <div className="container mx-auto py-6 px-4 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/admin/blogs')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Blogs
-          </Button>
+          <Link href={'/dashboard/blog'}>
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Blogs
+            </Button>
+          </Link>
           <h1 className="text-2xl font-bold">Edit Blog</h1>
         </div>
         <div className="flex items-center space-x-2">
@@ -422,7 +425,7 @@ export default function EditBlogPage({ id }: { id: number }) {
                   </Popover>
                 </div>
               )}
-              <Separator />
+              {/* <Separator />
               <div className="space-y-2">
                 <Label htmlFor="template">Template</Label>
                 <Select
@@ -440,7 +443,7 @@ export default function EditBlogPage({ id }: { id: number }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
               <Separator />
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

@@ -5,19 +5,9 @@ import React, { useEffect, useState } from 'react'
 import { Separator } from '../ui/separator'
 import DataTable from '../DataTable'
 
-export default function CategoryDetailPage({ id }: { id: number }) {
-  const [data, setData] = useState<Record<string, any>[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    ;(async () => {
-      setLoading(true)
-      const response = await fetchCategoryData(id)
-      setData([{ ...response }])
-      setLoading(false)
-      console.log('category data', [{ ...response }])
-    })()
-  }, [])
+export default function CategoryDetailPage({ response }: any) {
+  const data: Record<string, any>[] = [{ ...response }]
+  const [loading, setLoading] = useState(false)
 
   return !loading ? (
     <div className="space-y-4">

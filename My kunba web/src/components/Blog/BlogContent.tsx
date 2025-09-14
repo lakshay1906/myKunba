@@ -7,6 +7,7 @@ import { Calendar } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import PayloadRichTextRenderer, { PayloadRichTextContent } from './payload-richtext-renderer'
 
 // Define the Blog type
 type Blog = {
@@ -14,18 +15,16 @@ type Blog = {
   title: string
   slug: string
   excerpt: string
-  content: string
+  content: PayloadRichTextContent
   media: {
     id: number
     url: string
     alt: string | null
-    caption: string | null
   } | null
   status: string
   publishDate: string
   metaTitle: string
   metaDescription: string
-  template: string
   author: {
     id: number
     username: string
@@ -48,6 +47,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true)
+    console.log(blog)
   }, [])
 
   // Format date for display
@@ -72,15 +72,17 @@ export default function BlogContent({ blog }: { blog: Blog }) {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Categories */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {blog.categories.map((category) => (
-          <Link href={`/category/${category.slug}`} key={category.id}>
-            <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
-              {category.name}
-            </Badge>
-          </Link>
-        ))}
-      </div>
+      {blog.categories.length > 0 && (
+        <div className="mb-4  flex flex-wrap gap-2">
+          {blog.categories.map((category) => (
+            <Link href={`/category/${category.slug}`} key={category.id}>
+              <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
+                {category.name}
+              </Badge>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Title */}
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
@@ -102,7 +104,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
       {/* Featured Image */}
       {blog.media && (
-        <div className="relative w-full h-[400px] mb-8 rounded-lg overflow-hidden">
+        <div className="relative w-full aspect-video mb-8 rounded-lg overflow-hidden">
           <Image
             src={blog.media.url || '/placeholder.svg'}
             alt={blog.media.alt || blog.title}
@@ -110,11 +112,6 @@ export default function BlogContent({ blog }: { blog: Blog }) {
             className="object-cover"
             priority
           />
-          {blog.media.caption && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm">
-              {blog.media.caption}
-            </div>
-          )}
         </div>
       )}
 
@@ -122,10 +119,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       <Card className="mb-8">
         <CardContent className="p-6">
           {isClient ? (
-            <div
-              className="prose prose-lg max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: blog.content }}
-            />
+            <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
           ) : (
             <div className="animate-pulse">
               <div className="h-4 bg-muted rounded w-3/4 mb-4"></div>
@@ -135,34 +129,6 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           )}
         </CardContent>
       </Card>
-
-      {/* Share Buttons */}
-      {isClient && (
-        <div className="flex justify-center gap-4 mb-8">
-          <button
-            onClick={() =>
-              window.open(
-                `https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}&url=${encodeURIComponent(window.location.href)}`,
-                '_blank',
-              )
-            }
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#1DA1F2] text-white hover:bg-[#1a91da] transition-colors"
-          >
-            Share on Twitter
-          </button>
-          <button
-            onClick={() =>
-              window.open(
-                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
-                '_blank',
-              )
-            }
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#4267B2] text-white hover:bg-[#3b5998] transition-colors"
-          >
-            Share on Facebook
-          </button>
-        </div>
-      )}
 
       {/* Related Articles Placeholder */}
       <div className="mt-12">

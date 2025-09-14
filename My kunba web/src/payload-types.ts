@@ -69,7 +69,6 @@ export interface Config {
   collections: {
     admin: Admin;
     users: User;
-    person: Person;
     media: Media;
     categories: Category;
     comments: Comment;
@@ -85,7 +84,6 @@ export interface Config {
   collectionsSelect: {
     admin: AdminSelect<false> | AdminSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
-    person: PersonSelect<false> | PersonSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
@@ -164,11 +162,18 @@ export interface Admin {
  */
 export interface Media {
   id: number;
-  url: string;
-  alt?: string | null;
-  caption?: string | null;
+  alt: string;
   updatedAt: string;
   createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -177,8 +182,9 @@ export interface Media {
 export interface User {
   id: number;
   username: string;
-  displayName: string;
+  displayName?: string | null;
   bio?: string | null;
+  verified: boolean;
   profileImage?: (number | null) | Media;
   role: 'admin' | 'author' | 'user';
   socialLinks?:
@@ -195,35 +201,6 @@ export interface User {
   uid: string;
   lastLogin?: string | null;
   deleted_at?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Base collection for all person-related data
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "person".
- */
-export interface Person {
-  id: number;
-  username: string;
-  displayName: string;
-  bio?: string | null;
-  profileImage?: (number | null) | Media;
-  socialLinks?:
-    | {
-        platform?: string | null;
-        url?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  email: string;
-  lastLogin?: string | null;
-  deleted_at?: string | null;
-  /**
-   * The type of person record
-   */
-  personType: 'admin' | 'user';
   updatedAt: string;
   createdAt: string;
 }
@@ -262,8 +239,8 @@ export interface Post {
   id: number;
   title: string;
   slug: string;
-  excerpt?: string | null;
-  content?: {
+  excerpt: string;
+  content: {
     root: {
       type: string;
       children: {
@@ -277,13 +254,12 @@ export interface Post {
       version: number;
     };
     [k: string]: unknown;
-  } | null;
-  media?: (number | null) | Media;
+  };
+  media: number | Media;
   status: 'draft' | 'published' | 'pending_approval';
-  publishDate?: string | null;
+  publishDate: string;
   metaTitle?: string | null;
   metaDescription?: string | null;
-  template?: ('standard' | 'full-width') | null;
   author: number | User;
   categories?: (number | Category)[] | null;
   deleted_at?: string | null;
@@ -341,10 +317,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
-      } | null)
-    | ({
-        relationTo: 'person';
-        value: number | Person;
       } | null)
     | ({
         relationTo: 'media';
@@ -451,6 +423,7 @@ export interface UsersSelect<T extends boolean = true> {
   username?: T;
   displayName?: T;
   bio?: T;
+  verified?: T;
   profileImage?: T;
   role?: T;
   socialLinks?:
@@ -469,37 +442,21 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "person_select".
- */
-export interface PersonSelect<T extends boolean = true> {
-  username?: T;
-  displayName?: T;
-  bio?: T;
-  profileImage?: T;
-  socialLinks?:
-    | T
-    | {
-        platform?: T;
-        url?: T;
-        id?: T;
-      };
-  email?: T;
-  lastLogin?: T;
-  deleted_at?: T;
-  personType?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  url?: T;
   alt?: T;
-  caption?: T;
   updatedAt?: T;
   createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -562,7 +519,6 @@ export interface PostsSelect<T extends boolean = true> {
   publishDate?: T;
   metaTitle?: T;
   metaDescription?: T;
-  template?: T;
   author?: T;
   categories?: T;
   deleted_at?: T;

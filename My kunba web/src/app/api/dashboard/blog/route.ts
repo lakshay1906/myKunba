@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 
 export async function GET(req: NextRequest) {
   try {
@@ -67,9 +68,7 @@ export async function POST(req: NextRequest) {
       publishDate,
       metaTitle,
       metaDescription,
-      template,
       categories,
-      tags,
     } = await req.json()
     const accessToken = req.headers.get('Authorization')?.split(' ')[1]
     const accessSecret = process.env.ACCESS_SECRET
@@ -100,36 +99,10 @@ export async function POST(req: NextRequest) {
         { status: 401 },
       )
     }
-    const coverImg = await payload.create({
-      collection: 'media',
-      data: {
-        url: coverImage,
-      },
-    })
-    if (!coverImg.id)
+    if (!coverImage)
       return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
 
-    console.log(
-      {
-        collection: 'posts',
-        data: {
-          title,
-          author: author.docs[0].id,
-          slug,
-          status,
-          categories,
-          content,
-          media: coverImg.id,
-          excerpt,
-          metaDescription,
-          metaTitle,
-          publishDate,
-          tags,
-          template,
-        },
-      },
-      'data',
-    )
+    const lexicalContent = convertHtmlToLexicalWithParser(content)
 
     await payload.create({
       collection: 'posts',
@@ -139,13 +112,12 @@ export async function POST(req: NextRequest) {
         slug,
         status,
         categories,
-        content,
-        media: coverImg.id,
+        content: lexicalContent,
+        media: Number(coverImage),
         excerpt,
         metaDescription,
         metaTitle,
-        publishDate,
-        template,
+        publishDate: publishDate ? publishDate : Date.now(),
       },
     })
     return NextResponse.json({}, { status: 201 })

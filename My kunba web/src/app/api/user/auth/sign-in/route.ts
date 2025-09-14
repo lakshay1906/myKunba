@@ -36,26 +36,20 @@ export async function POST(req: NextRequest) {
     if (isOldUser?.totalDocs > 0)
       return NextResponse.json({ message: 'User already exists' }, { status: 400 })
 
-    let profile_pic = null
-    if (data.profile_pic)
-      profile_pic = await payload.create({
-        collection: 'media',
-        data: {
-          url: data.profile_pic,
-        },
-      })
+    const profile_pic = null
 
-    const user = await payload.create({
+    await payload.create({
       collection: 'users',
       data: {
         email: userData?.email,
-        profileImage: profile_pic ? profile_pic.id : null,
+        profileImage: profile_pic,
         uid: userData.uid,
         socialLinks: data.socialLinks,
         displayName: data.name,
         username: data.username,
         bio: data.bio,
         role: data.role,
+        verified: data.verified,
         lastLogin: new Date(), // Ignore this error
       },
     })
@@ -70,7 +64,7 @@ export async function POST(req: NextRequest) {
       expires: new Date('2099-12-31T23:59:59Z'),
     })
 
-    return NextResponse.json(user, { status: 201 })
+    return NextResponse.json({}, { status: 201 })
   } catch (error) {
     console.log(error)
     return NextResponse.json({ message: 'Error creating user' }, { status: 500 })

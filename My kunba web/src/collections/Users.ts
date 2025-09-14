@@ -1,39 +1,5 @@
 import type { CollectionConfig } from 'payload'
 
-{
-  /*export const Users: CollectionConfig = {
-  slug: 'users',
-  auth: false,
-  admin: {
-    useAsTitle: 'email', // ✅ Use email instead of displayName
-    group: 'Users',
-  },
-  timestamps: true,
-  fields: [
-    {
-      name: 'person',
-      type: 'relationship',
-      relationTo: 'person',
-      required: true,
-      hasMany: false,
-    },
-    // {
-    //   name: 'role',
-    //   type: 'select',
-    //   defaultValue: 'user',
-    //   options: ['author', 'user'],
-    //   required: true,
-    // },
-    {
-      name: 'email',
-      type: 'email',
-      required: true,
-      unique: true,
-    },
-  ],
-}*/
-}
-
 export const Users: CollectionConfig = {
   slug: 'users',
   auth: false,
@@ -41,8 +7,9 @@ export const Users: CollectionConfig = {
   timestamps: true,
   fields: [
     { name: 'username', type: 'text', required: true, unique: true },
-    { name: 'displayName', type: 'text', required: true },
+    { name: 'displayName', type: 'text' },
     { name: 'bio', type: 'textarea' },
+    { name: 'verified', type: 'checkbox', required: true },
     { name: 'profileImage', type: 'relationship', relationTo: 'media' },
     {
       name: 'role',

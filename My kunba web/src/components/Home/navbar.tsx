@@ -1,6 +1,15 @@
 'use client'
 
-import { Book, ContactRound, Menu, MessageCircleQuestion, Newspaper, Send, Zap } from 'lucide-react'
+import {
+  Book,
+  ContactRound,
+  Menu,
+  MessageCircleQuestion,
+  Newspaper,
+  Send,
+  UserCircle,
+  Zap,
+} from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -181,6 +190,9 @@ export default function Navbar({
               >
                 Sign Out
               </Button>
+              <Link href={'/user/profile'} className="rounded-full p-1 border border-white">
+                <UserCircle />
+              </Link>
             </div>
           ) : (
             <div className="flex gap-2 justify-between items-center">

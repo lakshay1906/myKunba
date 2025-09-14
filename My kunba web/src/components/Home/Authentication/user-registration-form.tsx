@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { PlusCircle, Trash2 } from 'lucide-react'
-import { useAppStore } from '@/lib/context/store'
 import Toast from '@/components/Toast'
 import {
   Select,
@@ -26,9 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { UserDetails } from './user-registration-sheet'
 
 interface UserRegistrationFormProps {
-  userDetails: Record<string, any>
+  userDetails: UserDetails | Record<string, any>
   onComplete: (role: string) => void
   onInComplete: () => void
 }
@@ -96,7 +96,7 @@ export function UserRegistrationForm({
       onInComplete()
       return
     }
-    await fetch(`/api/user/auth/sign-in`, {
+    const rawRes = await fetch(`/api/user/auth/sign-in`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,13 +106,14 @@ export function UserRegistrationForm({
         profile_pic: userDetails.profile_pic,
         username: values.username,
         bio: values.bio,
-        role: values.role,
+        verified: userDetails.emailVerified,
+        role: userDetails.emailVerified ? values.role : 'user',
         socialLinks: values.socialLinks,
         name: values.displayName,
       }),
     })
-      .then(() => onComplete(values.role))
-      .catch(() => onInComplete())
+    if (rawRes.status !== 201) onInComplete()
+    else onComplete(values.role)
   }
 
   return (
@@ -178,27 +179,29 @@ export function UserRegistrationForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="author">Author</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {userDetails.emailVerified && (
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="author">Author</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-2">

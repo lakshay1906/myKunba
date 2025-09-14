@@ -3,7 +3,9 @@ import { cookies } from 'next/headers'
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
-  if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
+  if (path === '/') {
+    return NextResponse.redirect(new URL('/user', request.url))
+  } else if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
     let token: String | undefined | null = (await cookies()).get('access_token')?.value
     if (!token || token === '') {
       token = request.headers.get('Authorization')?.split(' ')[1]
@@ -26,6 +28,14 @@ export async function middleware(request: NextRequest) {
           return NextResponse.next({ request: { headers: requestHeaders } })
         } else return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
+    }
+  } else if (path === '/user/profile') {
+    const token: string | undefined | null = (await cookies()).get('access_token')?.value
+    if (!token || token === '') return NextResponse.redirect(new URL('/unauthorised', request.url))
+    else {
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-token', token)
+      return NextResponse.next({ request: { headers: requestHeaders } })
     }
   }
 }

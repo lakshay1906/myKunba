@@ -20,29 +20,35 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['mykunba.org'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: true,
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/user',
-        permanent: true, // use false if it's not a permanent redirect
-      },
-      {
-        source: '/blog',
-        destination: '/user',
-        permanent: true, // use false if it's not a permanent redirect
-      },
-    ]
-  },
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: '/',
+  //       destination: '/user',
+  //       permanent: true, // use false if it's not a permanent redirect
+  //     },
+  //     {
+  //       source: '/blog',
+  //       destination: '/user',
+  //       permanent: true, // use false if it's not a permanent redirect
+  //     },
+  //   ]
+  // },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

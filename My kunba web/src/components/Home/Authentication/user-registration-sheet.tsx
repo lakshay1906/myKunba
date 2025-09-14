@@ -24,10 +24,19 @@ interface UserRegistrationSheetProps {
   btnText: 'Sign In' | 'Login'
 }
 
+export interface UserDetails {
+  emailVerified: boolean
+  token: string
+  email: string
+  uid: string
+  profile_pic: string | null
+  name: string
+}
+
 export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegistrationSheetProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const { googleSignIn, emailSignIn, emailSignUp, setLoginDetail, setLoading } = useAppStore()
-  const [userDetails, setuserDetails] = useState<Record<string, any>>({})
+  const [userDetails, setuserDetails] = useState<UserDetails | Record<string, any>>({})
   const [loginForm, setLoginForm] = useState<{
     email: string
     password: string
@@ -55,6 +64,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
           setUser(data)
         }
       }
+      console.log(data)
       if (data) {
         let body: Record<string, any> = {
           email: data.email,
@@ -97,6 +107,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
             }
           } else if (btnText === 'Sign In') {
             setuserDetails({
+              emailVerified: data.emailVerified,
               token: token,
               email: data.email ?? '',
               uid: data.uid ?? '',
@@ -164,6 +175,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                   password: '',
                   confirmPassword: '',
                 })
+                setLoginDetail(null)
                 onOpenChange(false)
               }}
             />

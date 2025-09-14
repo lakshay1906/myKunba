@@ -49,10 +49,6 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   }>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    console.log(loginDetail)
-  }, [loginDetail])
-
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)

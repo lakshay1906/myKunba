@@ -7,7 +7,6 @@ import { fetchAllCategories } from '@/app/actions/category-actions'
 import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
-import Toast from '../Toast'
 
 export default function Blog(posts: Record<string, any>) {
   const [data, setData] = useState<

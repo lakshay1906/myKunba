@@ -11,6 +11,7 @@ export const Posts: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+      unique: true,
     },
     {
       name: 'slug',
@@ -21,15 +22,18 @@ export const Posts: CollectionConfig = {
     {
       name: 'excerpt',
       type: 'textarea',
+      required: true,
     },
     {
       name: 'content',
       type: 'richText',
+      required: true,
     },
     {
       name: 'media',
       type: 'relationship',
       relationTo: 'media',
+      required: true,
     },
     {
       name: 'status',
@@ -40,6 +44,7 @@ export const Posts: CollectionConfig = {
     {
       name: 'publishDate',
       type: 'date',
+      required: true,
     },
     {
       name: 'metaTitle',
@@ -49,11 +54,11 @@ export const Posts: CollectionConfig = {
       name: 'metaDescription',
       type: 'text',
     },
-    {
-      name: 'template',
-      type: 'select',
-      options: ['standard', 'full-width'],
-    },
+    // {
+    //   name: 'template',
+    //   type: 'select',
+    //   options: ['standard', 'full-width'],
+    // },
     {
       name: 'author',
       type: 'relationship',

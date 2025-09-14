@@ -1,6 +1,5 @@
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,11 +8,31 @@ export async function GET(req: NextRequest) {
     const offset = req.nextUrl.searchParams.get('offset')
     let data
     if (id) {
-      data = await payload.findByID({
+      data = await payload.find({
         collection: 'posts',
-        id: Number(id),
+        select: {
+          title: true,
+          slug: true,
+          media: true,
+          author: true,
+          excerpt: true,
+          categories: true,
+          publishDate: true,
+        },
+        where: {
+          id: {
+            equals: Number(id),
+          },
+          deleted_at: {
+            equals: null,
+          },
+          status: {
+            equals: 'published',
+          },
+        },
         depth: 2,
       })
+      data = data.docs[0]
     } else {
       data = await payload.find({
         collection: 'posts',
@@ -21,6 +40,9 @@ export async function GET(req: NextRequest) {
         where: {
           deleted_at: {
             equals: null,
+          },
+          status: {
+            equals: 'published',
           },
         },
         pagination: true,
