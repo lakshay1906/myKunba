@@ -71,7 +71,7 @@ const getRoleConfig = (role: string) => {
 
 export default function Profile({ user }: { user: Record<string, any> }) {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
-  // const [editData, setEditData] = useState(user)
+  const [editData, setEditData] = useState(user)
 
   const handleEditProfile = () => {
     setIsEditSheetOpen(true)
@@ -81,37 +81,37 @@ export default function Profile({ user }: { user: Record<string, any> }) {
     console.log('Sign out clicked')
   }
 
-  // const handleSaveProfile = () => {
-  //   console.log('Saving profile:', editData)
-  //   setIsEditSheetOpen(false)
-  // }
+  const handleSaveProfile = () => {
+    console.log('Saving profile:', editData)
+    setIsEditSheetOpen(false)
+  }
 
-  // const addSocialLink = () => {
-  //   setEditData({
-  //     ...editData,
-  //     socialLinks: [...editData.socialLinks, { platform: '', url: '' }],
-  //   })
-  // }
+  const addSocialLink = () => {
+    setEditData({
+      ...editData,
+      socialLinks: [...editData.socialLinks, { platform: '', url: '' }],
+    })
+  }
 
-  // const removeSocialLink = (index: number) => {
-  //   setEditData({
-  //     ...editData,
-  //     socialLinks: editData.socialLinks.filter((_: any, i: number) => i !== index),
-  //   })
-  // }
+  const removeSocialLink = (index: number) => {
+    setEditData({
+      ...editData,
+      socialLinks: editData.socialLinks.filter((_: any, i: number) => i !== index),
+    })
+  }
 
-  // const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
-  //   const updatedLinks = editData.socialLinks.map((link: any, i: number) =>
-  //     i === index ? { ...link, [field]: value } : link,
-  //   )
-  //   setEditData({ ...editData, socialLinks: updatedLinks })
-  // }
+  const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
+    const updatedLinks = editData.socialLinks.map((link: any, i: number) =>
+      i === index ? { ...link, [field]: value } : link,
+    )
+    setEditData({ ...editData, socialLinks: updatedLinks })
+  }
 
   const roleConfig = getRoleConfig(user.role)
 
   useEffect(() => {
-    console.log(user)
-  }, [])
+    console.log(editData)
+  }, [editData])
 
   return (
     // <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -121,26 +121,26 @@ export default function Profile({ user }: { user: Record<string, any> }) {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Profile</h1>
-            <p className=" mt-1">Manage your account settings and preferences</p>
+            <p className="mt-1">Manage your account settings and preferences</p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 p-0 border-slate-200 bg-transparent"
+                className="size-9 p-0 border-slate-200 bg-transparent"
               >
                 <MoreHorizontal className="h-3 w-4 dark:text-white" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleEditProfile}>
-                <Edit className="mr-2 h-4 w-4" />
+                <Edit className="mr-2 size-4" />
                 Edit Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className="mr-2 size-4" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -153,24 +153,24 @@ export default function Profile({ user }: { user: Record<string, any> }) {
             {/* Centered Profile Section */}
             <div className="text-center mb-8">
               <div className="relative inline-block mb-6">
-                <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+                <Avatar className="size-28 border-4 border-white shadow-xl">
                   <AvatarImage
                     src={user.profileImage || '/placeholder.svg'}
                     alt={user.displayName}
                   />
-                  <AvatarFallback className="bg-slate-100 text-slate-600 text-2xl">
+                  <AvatarFallback className="bg-slate-100 text-gray-900 text-2xl uppercase">
                     {user.displayName
                       ?.split(' ')
                       .map((n: any[]) => n[0])
-                      .join('') || <User className="h-12 w-12" />}
+                      .join('') || <User className="size-12" />}
                   </AvatarFallback>
                 </Avatar>
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-slate-900">{user.displayName}</h2>
-                <p className="text-slate-600 text-lg">@{user.username}</p>
-                <Badge className={`${roleConfig.color} border font-medium px-3 py-1`}>
+                <h2 className="text-2xl font-bold capitalize">{user.displayName}</h2>
+                <p className=" text-lg">@{user.username}</p>
+                <Badge className={`${roleConfig.color} border font-semibold px-3 py-1`}>
                   {roleConfig.label}
                 </Badge>
               </div>
@@ -181,8 +181,8 @@ export default function Profile({ user }: { user: Record<string, any> }) {
             {/* Bio Section */}
             {user.bio && (
               <div className="text-center mb-8">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">About</h3>
-                <p className="text-slate-700 leading-relaxed max-w-2xl mx-auto">{user.bio}</p>
+                <h3 className="text-lg font-semibold mb-3">About</h3>
+                <p className="leading-relaxed max-w-2xl mx-auto">{user.bio}</p>
               </div>
             )}
 
@@ -190,20 +190,20 @@ export default function Profile({ user }: { user: Record<string, any> }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Contact Information */}
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-slate-900 flex items-center">
-                  <Mail className="mr-2 h-5 w-5 text-slate-500" />
+                <h3 className="text-lg font-semibold flex items-center">
+                  <Mail className="mr-2 size-5" />
                   Contact Information
                 </h3>
                 <div className="space-y-4 pl-7">
                   <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-                    <span className="text-slate-700">{user.email}</span>
+                    <div className="size-2 bg-slate-400 rounded-full"></div>
+                    <span className="">{user.email}</span>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <Calendar className="size-4 text-slate-400" />
                     <div>
-                      <span className="text-sm text-slate-500">Last active: </span>
-                      <span className="text-slate-700">
+                      <span className="text-sm">Last active: </span>
+                      <span className="">
                         {new Date(user.lastLogin).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -218,8 +218,8 @@ export default function Profile({ user }: { user: Record<string, any> }) {
               {/* Social Links */}
               {user.socialLinks && user.socialLinks.length > 0 && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-slate-900 flex items-center">
-                    <Globe className="mr-2 h-5 w-5 text-slate-500" />
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <Globe className="mr-2 size-5" />
                     Social Links
                   </h3>
                   <div className="space-y-3 pl-7">
@@ -252,12 +252,10 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                         index: number,
                       ) => (
                         <div key={index} className="flex items-center space-x-3">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <div className="size-2 bg-blue-400 rounded-full"></div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium text-slate-900 text-sm">
-                                {link.platform}
-                              </span>
+                              <span className="font-medium text-sm">{link.platform}</span>
                               <a
                                 href={link.url}
                                 target="_blank"
@@ -280,8 +278,8 @@ export default function Profile({ user }: { user: Record<string, any> }) {
       </div>
 
       {/* Edit Profile Sheet */}
-      {/* <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+      <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
+        <SheetContent className="w-full sm:max-w-md md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Edit Profile</SheetTitle>
             <SheetDescription>Update your profile information and preferences.</SheetDescription>
@@ -321,7 +319,9 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                   id="email"
                   type="email"
                   value={editData.email}
-                  onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  disabled
+                  readOnly
+                  // onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                   className="mt-1"
                 />
               </div>
@@ -335,12 +335,14 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                   onValueChange={(value) => setEditData({ ...editData, role: value as any })}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue />
+                    <SelectValue placeholder="Select a role" defaultValue={editData.role} />
                   </SelectTrigger>
                   <SelectContent>
+                    {user.verified && editData.role === 'admin' && (
+                      <SelectItem value="admin">Admin</SelectItem>
+                    )}
                     <SelectItem value="user">User</SelectItem>
                     <SelectItem value="author">Author</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -396,7 +398,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                       onClick={() => removeSocialLink(index)}
                       className="px-3"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </Button>
                   </div>
                 ),
@@ -407,14 +409,14 @@ export default function Profile({ user }: { user: Record<string, any> }) {
               <Button variant="outline" onClick={() => setIsEditSheetOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveProfile} className="bg-slate-900 hover:bg-slate-800">
-                <Save className="mr-2 h-4 w-4" />
+              <Button onClick={handleSaveProfile} className="">
+                <Save className="mr-2 size-4" />
                 Save Changes
               </Button>
             </div>
           </div>
         </SheetContent>
-      </Sheet> */}
+      </Sheet>
     </>
   )
 }

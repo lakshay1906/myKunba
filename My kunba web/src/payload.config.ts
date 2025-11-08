@@ -38,9 +38,17 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI,
-      ssl: {
-        rejectUnauthorized: false, // allow self-signed certificates
-      },
+      ssl: process.env.DATABASE_CA_CERT
+        ? {
+            rejectUnauthorized: true,
+            ca: process.env.DATABASE_CA_CERT,
+          }
+        : {
+            rejectUnauthorized: false, // Fallback if no CA cert provided
+          },
+      max: 20, // Maximum number of clients in the pool
+      idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+      connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
     },
   }),
   sharp,
