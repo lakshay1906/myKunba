@@ -112,11 +112,6 @@ export default function EditBlogPage({ id }: { id: number }) {
   async function handleSave() {
     setSaving(true)
     try {
-      console.log('Saving blog:', {
-        ...blog,
-        categories: selectedCategories,
-        tags: tags.map((tag) => ({ name: tag })),
-      })
 
       await new Promise((resolve) => setTimeout(resolve, 1000))
       ;<Toast

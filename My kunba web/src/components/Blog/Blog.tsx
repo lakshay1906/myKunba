@@ -40,7 +40,7 @@ export default function Blog(posts: Record<string, any>) {
   //   })()
   // }, [])
   useEffect(() => {
-    console.log(posts)
+    // console.log(posts.posts.docs)
     setData(posts.posts.docs)
     setLoading(false)
   }, [])

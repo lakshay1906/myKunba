@@ -78,11 +78,9 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   }
 
   const handleSignOut = () => {
-    console.log('Sign out clicked')
   }
 
   const handleSaveProfile = () => {
-    console.log('Saving profile:', editData)
     setIsEditSheetOpen(false)
   }
 
@@ -110,7 +108,6 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   const roleConfig = getRoleConfig(user.role)
 
   useEffect(() => {
-    console.log(editData)
   }, [editData])
 
   return (

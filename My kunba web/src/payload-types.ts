@@ -255,6 +255,8 @@ export interface Post {
     };
     [k: string]: unknown;
   };
+  commentsEnabled?: boolean | null;
+  isFeatured?: boolean | null;
   media: number | Media;
   status: 'draft' | 'published' | 'pending_approval';
   publishDate: string;
@@ -514,6 +516,8 @@ export interface PostsSelect<T extends boolean = true> {
   slug?: T;
   excerpt?: T;
   content?: T;
+  commentsEnabled?: T;
+  isFeatured?: T;
   media?: T;
   status?: T;
   publishDate?: T;

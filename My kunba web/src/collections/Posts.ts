@@ -30,6 +30,16 @@ export const Posts: CollectionConfig = {
       required: true,
     },
     {
+      name: 'commentsEnabled',
+      type: 'checkbox',
+      defaultValue: true,
+    },
+    {
+      name: 'isFeatured',
+      type: 'checkbox',
+      defaultValue: false,
+    },
+    {
       name: 'media',
       type: 'relationship',
       relationTo: 'media',

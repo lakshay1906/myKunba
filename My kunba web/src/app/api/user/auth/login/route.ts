@@ -58,7 +58,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(updatedUser.docs[0], { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Error logging in' }, { status: 500 })
   }
 }

@@ -91,7 +91,6 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
       })
       if (rawRes.ok) {
         const [data] = await rawRes.json()
-        console.log(data)
         if (data)
           setLoginDetail({
             token: token,

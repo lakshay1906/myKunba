@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(data.docs, { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Error verifying JWT' }, { status: 500 })
   }
 }

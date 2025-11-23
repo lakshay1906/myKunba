@@ -18,7 +18,6 @@ export default function CategoryMain() {
       throw new Error(error.message || 'Failed to fetch categories')
     }
     const data = await rawRes.json()
-    console.log('data', data)
     setCategories(data.docs)
     setLoading(false)
   }

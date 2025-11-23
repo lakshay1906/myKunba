@@ -78,33 +78,28 @@ export default function App() {
   // const classes = useStyles()
   // const { register, handleSubmit, reset } = useForm()
   const [uploadState, setUploadState] = useState('initial')
-  const [image, setImage] = useState('')
+  const [image, setImage] = useState<string | null>(null)
 
-  useEffect(() => {
-    console.log(image)
-  }, [image])
+  useEffect(() => {}, [image])
 
-  const handleUploadClick = (event) => {
-    var file = event.target.files[0]
+  const handleUploadClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     const reader = new FileReader()
     if (file) {
       reader.readAsDataURL(file)
       reader.onloadend = function (e) {
-        setImage(reader.result)
+        setImage(reader.result as string)
         setUploadState('uploaded')
       }
     }
   }
 
-  const handleResetClick = (event) => {
+  const handleResetClick = (event: any) => {
     setImage(null)
     setUploadState('initial')
-    reset({ logo: null })
   }
 
-  const onUpload = (data) => {
-    console.log(data.logo[0])
-  }
+  const onUpload = (data: any) => {}
 
   return (
     <div>
@@ -112,7 +107,7 @@ export default function App() {
         <div
         // className={uploadState !== 'uploaded' ? classes.cardRoot : classes.cardRootHide}
         >
-          <div container justify="center" alignItems="center">
+          <div className="flex items-center justify-center">
             <input
               accept="image/jpeg,image/png,image/tiff,image/webp"
               // className={classes.input}
@@ -132,7 +127,7 @@ export default function App() {
             </label>
           </div>
         </div>
-        {uploadState === 'uploaded' && (
+        {uploadState === 'uploaded' && image && (
           <div onClick={handleResetClick}>
             <img
               // className={classes.logo}

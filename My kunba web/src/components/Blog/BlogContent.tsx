@@ -47,7 +47,6 @@ export default function BlogContent({ blog }: { blog: Blog }) {
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true)
-    console.log(blog)
   }, [])
 
   // Format date for display

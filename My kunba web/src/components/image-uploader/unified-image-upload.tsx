@@ -174,7 +174,6 @@ export default function UnifiedImageUpload({
           if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
             const reader = new FileReader()
             reader.onload = (e) => {
-              console.log(e.target?.result)
               setImageUploadData((prev) => ({
                 ...prev,
                 uploading: false,

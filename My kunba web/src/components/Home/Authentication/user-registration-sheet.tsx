@@ -64,7 +64,6 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
           setUser(data)
         }
       }
-      console.log(data)
       if (data) {
         let body: Record<string, any> = {
           email: data.email,
@@ -154,7 +153,6 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
             <UserRegistrationForm
               userDetails={userDetails}
               onComplete={(role) => {
-                console.log('setting login detail')
                 setLoginDetail((prev) => ({
                   ...prev,
                   token: userDetails.token,
@@ -166,7 +164,6 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 onOpenChange(false)
               }}
               onInComplete={() => {
-                console.log('Something went wrong deleting the user from the firebase')
                 if (user) deleteUser(user)
                 setIsAuthenticated(false)
                 setuserDetails({})

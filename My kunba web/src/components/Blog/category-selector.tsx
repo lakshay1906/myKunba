@@ -46,7 +46,6 @@ export default function CategorySelector({
   const [open, setOpen] = useState(false)
   const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
-  console.log('allCategories', allCategories)
   const selectedItems = allCategories.filter((category) => selectedCategories.includes(category.id))
 
   const handleSelect = (id: number) => {

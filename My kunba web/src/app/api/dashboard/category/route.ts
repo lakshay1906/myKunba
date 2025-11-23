@@ -33,24 +33,20 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('hii')
     const data = await req.json()
     if (!data) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
-    console.log(data, ':: data')
     const createdCat = await payload.create({
       collection: 'categories',
       data: data,
     })
     return NextResponse.json(createdCat, { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -75,7 +71,6 @@ export async function PUT(req: NextRequest) {
     })
     return NextResponse.json({}, { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -100,7 +95,6 @@ export async function DELETE(req: NextRequest) {
     })
     return NextResponse.json({}, { status: 200 })
   } catch (error) {
-    console.log(error, 'error')
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

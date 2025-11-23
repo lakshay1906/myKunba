@@ -348,7 +348,6 @@ export default function DataTable({ data: initialData }: { data: z.infer<typeof 
   const { loginDetail } = useAppStore()
 
   React.useEffect(() => {
-    console.log(loginDetail)
   }, [loginDetail])
 
   const table = useReactTable({

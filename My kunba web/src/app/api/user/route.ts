@@ -5,7 +5,6 @@ import { payload } from '@/payload-client'
 export async function GET(req: NextRequest) {
   try {
     const token = req.headers.get('x-token')
-    console.log(token, '::token')
     if (!token || token === '') {
       return NextResponse.json(
         { message: `You're not authorized to perform this action` },
@@ -34,7 +33,6 @@ export async function GET(req: NextRequest) {
     })
     return NextResponse.json(data.docs[0], { status: 200 })
   } catch (error) {
-    console.log(error, 'profile error')
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 })
   }
 }

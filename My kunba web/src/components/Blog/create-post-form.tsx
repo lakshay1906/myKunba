@@ -83,6 +83,9 @@ export function CreatePostForm() {
       slug: '',
       excerpt: '',
       content: '',
+      publishDate: new Date(),
+      metaTitle: '',
+      metaDescription: '',
       status: 'draft',
       categories: [],
       tags: [],
@@ -185,7 +188,6 @@ export function CreatePostForm() {
         return
       }
       const imageData = await handleUpload()
-      console.log(imageData)
       const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
@@ -253,7 +255,6 @@ export function CreatePostForm() {
     ;(async () => {
       setCatLoading(true)
       const categories = await fetchAllCategories()
-      console.log(categories)
       setCategories(categories.docs)
       setCatLoading(false)
     })()

@@ -8,6 +8,22 @@ const nextConfig = {
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
       }),
     )
+    
+    // Suppress critical dependency warnings from prettier (used by Payload dependencies)
+    config.module = config.module || {}
+    config.module.exprContextCritical = false
+    config.module.unknownContextCritical = false
+    
+    // Suppress warnings for dynamic requires in dependencies (prettier, etc.)
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/prettier/,
+      },
+      {
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ]
+    
     return config
   },
   eslint: {
@@ -32,6 +48,9 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: true,
   },
+  // Explicitly set turbopack config to avoid deprecation warning
+  // (even if empty, this helps suppress the experimental.turbo warning)
+  turbopack: {},
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

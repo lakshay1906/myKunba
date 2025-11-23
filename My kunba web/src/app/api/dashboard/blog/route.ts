@@ -6,7 +6,6 @@ import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 export async function GET(req: NextRequest) {
   try {
     const accessToken = req.headers.get('Authorization')?.split(' ')[1]
-    console.log(accessToken)
     if (!accessToken)
       return NextResponse.json(
         { message: "You're not authorized to perform this action" },
@@ -122,7 +121,6 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({}, { status: 201 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -147,7 +145,6 @@ export async function DELETE(req: NextRequest) {
     })
     return NextResponse.json({}, { status: 200 })
   } catch (error) {
-    console.log(error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

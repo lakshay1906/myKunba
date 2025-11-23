@@ -37,8 +37,6 @@ interface PayloadLexicalContent {
 }
 
 export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalContent {
-  console.log('Converting HTML with parser:', html.substring(0, 200))
-
   const root = parse(html)
   const children: LexicalElementNode[] = []
 

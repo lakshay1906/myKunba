@@ -17,10 +17,10 @@ import { Label } from '../ui/label'
 
 export function SiteHeader() {
   return (
-    <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-      <div className="flex justify-between w-full">
-        <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-          <SidebarTrigger className="-ml-1" />
+    <header className="sticky top-0 z-99 flex shrink-0 items-center gap-2 border-b bg-background transition-[width,height] ease-linear py-4 px-2">
+      <div className="flex justify-between w-full gap-x-4">
+        <div className="flex w-full items-center gap-1 lg:gap-2 ml-2">
+          <SidebarTrigger />
           <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           <h1 className="text-base font-medium">Documents</h1>
         </div>
@@ -34,7 +34,7 @@ export function SiteHeader() {
               <SheetHeader>
                 <SheetTitle>Notification</SheetTitle>
               </SheetHeader>
-              <div className=" py-4">No notification to display</div>
+              <div className="py-4">No notification to display</div>
             </SheetContent>
           </Sheet>
         </div>

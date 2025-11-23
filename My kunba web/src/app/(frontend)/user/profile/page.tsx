@@ -28,7 +28,6 @@ export default async function Page() {
 
     return <Profile user={data.docs[0]} />
   } catch (error) {
-    console.log(error, 'SSR profile fetch error')
     return <div>Error fetching profile</div>
   }
 }

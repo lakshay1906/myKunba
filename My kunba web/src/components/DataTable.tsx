@@ -94,7 +94,7 @@ export default function DataTable({
   return (
     <Card id="Main-DataTable" className={`${cardStyle}`}>
       {tableTitle !== undefined && (
-        <div className="p-5 flex justify-between items-center border-b-[1px]">
+        <div className="p-5 flex justify-between items-center border-b">
           <div>
             <p className="font-medium text-lg">{tableTitle}</p>
             <p className="text-sm text-muted-foreground">{tableSubTitle}</p>
@@ -220,15 +220,15 @@ export default function DataTable({
                                     'enable'
                                       ? 'green'
                                       : col.Status.toLowerCase() === 'draft'
-                                        ? 'gray'
-                                        : col.Status.toLowerCase() === 'proposed'
-                                          ? 'orange'
-                                          : col.Status.toLowerCase() === 'rejected' ||
-                                              'Inactive' ||
-                                              'disabled' ||
-                                              'disable'
-                                            ? 'red'
-                                            : 'black',
+                                      ? 'gray'
+                                      : col.Status.toLowerCase() === 'proposed'
+                                      ? 'orange'
+                                      : col.Status.toLowerCase() === 'rejected' ||
+                                        'Inactive' ||
+                                        'disabled' ||
+                                        'disable'
+                                      ? 'red'
+                                      : 'black',
                                 }}
                                 styles="border-none"
                               />
@@ -256,8 +256,8 @@ export default function DataTable({
                             ? Object.keys(data[0]).length + 2
                             : Object.keys(data[0]).length + 1
                           : isEllipsisRequired
-                            ? Object.keys(data[0]).length + 1
-                            : Object.keys(data[0]).length) ?? 0
+                          ? Object.keys(data[0]).length + 1
+                          : Object.keys(data[0]).length) ?? 0
                       }
                       className="p-0"
                     >

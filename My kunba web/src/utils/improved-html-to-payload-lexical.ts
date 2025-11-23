@@ -37,8 +37,6 @@ interface PayloadLexicalContent {
 }
 
 export function convertHtmlToPayloadLexical(html: string): PayloadLexicalContent {
-  console.log('Converting HTML:', html.substring(0, 200))
-
   // Clean up the HTML and split into meaningful chunks
   const cleanHtml = html
     .replace(/\r\n/g, '\n')

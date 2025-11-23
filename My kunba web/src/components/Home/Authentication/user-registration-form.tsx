@@ -86,7 +86,6 @@ export function UserRegistrationForm({
 
   async function onSubmit(values: FormValues) {
     // Here you would typically send the form data to your backend
-    console.log(values, userDetails)
     if (!userDetails || userDetails.token === '' || userDetails.token === null) {
       Toast({
         message: 'Error',
@@ -179,7 +178,8 @@ export function UserRegistrationForm({
           )}
         />
 
-        {userDetails.emailVerified && (
+        {/* Role selection is disabled for now */}
+        {/* {userDetails.emailVerified && (
           <FormField
             control={form.control}
             name="role"
@@ -201,7 +201,7 @@ export function UserRegistrationForm({
               </FormItem>
             )}
           />
-        )}
+        )} */}
 
         <div>
           <div className="flex items-center justify-between mb-2">
