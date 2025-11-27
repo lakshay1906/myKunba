@@ -229,7 +229,7 @@ export default function RichTextEditor({
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full overflow-hidden">
       {/* Fixed Toolbar */}
       <div className="sticky top-4 z-50 border-b p-2 flex flex-wrap gap-1 bg-white dark:bg-gray-900 shadow-sm">
         {/* Undo/Redo */}

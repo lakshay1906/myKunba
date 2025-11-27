@@ -6,6 +6,6 @@ export default async function page({ params }: { params: any }) {
   const param = await params
   const id = param.slug
   const response = await fetchCategoryData(id)
-  // const res = await fetchAllCategoryBlogs(id)
+  const res = await fetchAllCategoryBlogs(id)
   return <CategoryDetailPage id={id} response={response} />
 }
