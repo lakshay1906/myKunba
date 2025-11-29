@@ -35,18 +35,34 @@ export async function GET(req: NextRequest) {
       },
     })
     if (data.totalDocs > 0) {
-      const blog = await payload.find({
-        collection: 'posts',
-        where: {
-          author: {
-            equals: data.docs[0].id,
+      const slug = req.nextUrl.searchParams.get('slug')
+      if (slug) {
+        const blog = await payload.find({
+          collection: 'posts',
+          where: {
+            slug: {
+              equals: slug,
+            },
+            deleted_at: {
+              equals: null,
+            },
           },
-          deleted_at: {
-            equals: null,
+        })
+        return NextResponse.json({ data: blog.docs }, { status: 200 })
+      } else {
+        const blog = await payload.find({
+          collection: 'posts',
+          where: {
+            author: {
+              equals: data.docs[0].id,
+            },
+            deleted_at: {
+              equals: null,
+            },
           },
-        },
-      })
-      return NextResponse.json({ data: blog.docs }, { status: 200 })
+        })
+        return NextResponse.json({ data: blog.docs }, { status: 200 })
+      }
     }
 
     return NextResponse.json({ message: 'Something went wrong' }, { status: 403 })

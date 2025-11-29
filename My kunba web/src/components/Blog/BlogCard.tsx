@@ -36,7 +36,7 @@ export default function BlogCard({ post }: BlogCardProps) {
     .join('')
 
   return (
-    <Link href={`/user/blog/${post.id}`} className="group">
+    <Link href={`/user/blog/${post.slug}`} className="group">
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
         <div className="h-48 w-full overflow-hidden">
           {post.media !== null && (
@@ -70,7 +70,10 @@ export default function BlogCard({ post }: BlogCardProps) {
               <AvatarImage
                 src={
                   post.author.profileImage === null
-                    ? `https://source.unsplash.com/featured/?portrait,${post.author.username.replace(' ', '')}`
+                    ? `https://source.unsplash.com/featured/?portrait,${post.author.username.replace(
+                        ' ',
+                        '',
+                      )}`
                     : post.author.profileImage.url
                 }
                 alt={post.author.username}

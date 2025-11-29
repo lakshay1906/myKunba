@@ -40,6 +40,7 @@ export default function DataTable({
   isCheckBoxRequired,
   isEllipsisRequired,
   detailPageLink,
+  slug,
   EllipsisComponent,
   fetchDataFunction,
   loading,
@@ -49,6 +50,7 @@ export default function DataTable({
   tableSubTitle?: string
   AddProductButton: React.JSX.Element
   detailPageLink: string
+  slug: boolean
   selectedProductsState: Record<string, any>
   total: number
   currentPage: number
@@ -178,7 +180,8 @@ export default function DataTable({
                     <TableRow
                       key={col.id}
                       onClick={() => {
-                        if (detailPageLink !== '') route.push(`${detailPageLink}/${col.id}`)
+                        if (detailPageLink && detailPageLink !== '')
+                          route.push(`${detailPageLink}/${slug ? col.Slug || col.slug : col.id}`)
                       }}
                       className="cursor-pointer"
                     >

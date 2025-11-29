@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
   try {
-    const id = req.nextUrl.searchParams.get('id')
+    const slug = req.nextUrl.searchParams.get('slug')
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
     let data
-    if (id) {
+    if (slug) {
       data = await payload.find({
         collection: 'posts',
         select: {
@@ -18,10 +18,12 @@ export async function GET(req: NextRequest) {
           excerpt: true,
           categories: true,
           publishDate: true,
+          content: true,
+          commentsEnabled: true,
         },
         where: {
-          id: {
-            equals: Number(id),
+          slug: {
+            equals: slug,
           },
           deleted_at: {
             equals: null,

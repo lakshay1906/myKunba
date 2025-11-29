@@ -69,6 +69,7 @@ export default function BlogMain() {
         </Link>
       }
       detailPageLink={'/dashboard/blog'}
+      slug={true}
       selectedProductsState={{}}
       total={0}
       currentPage={0}
@@ -106,7 +107,7 @@ export default function BlogMain() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Link href={`/dashboard/blog/${value.id}`}>
+            <Link href={`/dashboard/blog/${value.slug || value.Slug}`}>
               <Button variant={'ghost'} className="w-full justify-start py-1.5 h-fit">
                 View
               </Button>

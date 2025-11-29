@@ -44,7 +44,141 @@ const statuses = [
   { id: 'scheduled', name: 'Scheduled' },
 ]
 
-export default function EditBlogPage({ id }: { id: number }) {
+export default function EditBlogPage({
+  id,
+  blogData,
+}: {
+  id: string
+  blogData: Record<string, any>
+}) {
+  const demoBlogData = {
+    id: 2,
+    title: 'BLOG: Teacher’s Day',
+    slug: 'blog-teachers-day',
+    excerpt:
+      'In 1994, the United Nations Educational, Scientific and Cultural Organization declared Oct. 5 as “World Teacher’s Day.”',
+    content: {
+      root: {
+        type: 'root',
+        format: '',
+        indent: 0,
+        version: 1,
+        children: [
+          {
+            tag: 'h1',
+            type: 'heading',
+            format: '',
+            indent: 0,
+            version: 1,
+            children: [
+              {
+                mode: 'normal',
+                text: 'BLOG: Teacher’s Day',
+                type: 'text',
+                style: '',
+                detail: 0,
+                format: 1,
+                version: 1,
+              },
+              {
+                mode: 'normal',
+                text: 'Share',
+                type: 'text',
+                style: '',
+                detail: 0,
+                format: 0,
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            textFormat: 1,
+          },
+          {
+            type: 'paragraph',
+            format: '',
+            indent: 0,
+            version: 1,
+            children: [
+              {
+                mode: 'normal',
+                text: 'In 1994, the United Nations Educational, Scientific and Cultural Organization declared Oct. 5 as “World Teacher’s Day.”',
+                type: 'text',
+                style: '',
+                detail: 0,
+                format: 0,
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            textStyle: '',
+            textFormat: 0,
+          },
+          {
+            type: 'paragraph',
+            format: '',
+            indent: 0,
+            version: 1,
+            children: [
+              {
+                mode: 'normal',
+                text: 'This blog was to honor World Teacher’s Day celebrating all teachers around the world for their hard work in educating the generations — school teachers, college teachers and parents, who are the first teachers in any human society.',
+                type: 'text',
+                style: '',
+                detail: 0,
+                format: 0,
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            textStyle: '',
+            textFormat: 0,
+          },
+        ],
+        direction: 'ltr',
+      },
+    },
+    commentsEnabled: true,
+    isFeatured: false,
+    media: {
+      id: 2,
+      alt: "Teacher's day",
+      updatedAt: '2025-11-27T15:11:44.213Z',
+      createdAt: '2025-11-27T15:11:44.163Z',
+      url: '/api/media/file/Art-1024x675.jpg',
+      thumbnailURL: null,
+      filename: 'Art-1024x675.jpg',
+      mimeType: 'image/jpeg',
+      filesize: 105299,
+      width: 1024,
+      height: 675,
+      focalX: 50,
+      focalY: 50,
+    },
+    status: 'published',
+    publishDate: '2025-11-27T14:58:33.855Z',
+    metaTitle: '',
+    metaDescription: '',
+    author: {
+      id: 1,
+      username: 'lakshay_un',
+      displayName: 'Lakshay Unofficial',
+      bio: '',
+      verified: true,
+      profileImage: null,
+      role: 'admin',
+      socialLinks: [],
+      email: 'lakshayunofficial@gmail.com',
+      uid: 'Q5nNVVx1kMQGzjcPpnjGxTcA96u2',
+      lastLogin: '2025-11-27T17:26:56.582Z',
+      deleted_at: null,
+      updatedAt: '2025-11-27T17:26:56.603Z',
+      createdAt: '2025-11-26T14:52:41.326Z',
+    },
+    categories: [],
+    deleted_at: null,
+    updatedAt: '2025-11-27T15:13:14.843Z',
+    createdAt: '2025-11-27T15:11:59.180Z',
+  }
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -59,7 +193,7 @@ export default function EditBlogPage({ id }: { id: number }) {
   // Fetch blog data
   useEffect(() => {
     ;(async () => {
-      const rawRes = await fetch(`/api/dashboard/blog?id=${id}`)
+      const rawRes = await fetch(`/api/dashboard/blog?slug=${id}`)
       const blog = await rawRes.json()
       setBlog(blog)
       setSelectedCategories(blog.categories.map((cat: any) => cat.id))
@@ -112,7 +246,6 @@ export default function EditBlogPage({ id }: { id: number }) {
   async function handleSave() {
     setSaving(true)
     try {
-
       await new Promise((resolve) => setTimeout(resolve, 1000))
       ;<Toast
         isSuccess={true}
