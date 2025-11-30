@@ -49,9 +49,8 @@ async function fetchBlogById(slug: string) {
 export default async function BlogPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const blog = await fetchBlogById(slug)
-  console.log(blog, 'blog')
   return (
-    <main className="container mx-auto px-4 py-8">
+    <main className="container mx-auto">
       <BlogContent blog={blog} />
     </main>
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 // import { UploadButton } from '@/utils/uploadingthing'
 
 // export default function Home() {
@@ -129,10 +130,12 @@ export default function App() {
         </div>
         {uploadState === 'uploaded' && image && (
           <div onClick={handleResetClick}>
-            <img
+            <Image
               // className={classes.logo}
               src={image}
               alt="LOGO"
+              width={100}
+              height={100}
             />
           </div>
         )}

@@ -8,12 +8,12 @@ const nextConfig = {
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
       }),
     )
-    
+
     // Suppress critical dependency warnings from prettier (used by Payload dependencies)
     config.module = config.module || {}
     config.module.exprContextCritical = false
     config.module.unknownContextCritical = false
-    
+
     // Suppress warnings for dynamic requires in dependencies (prettier, etc.)
     config.ignoreWarnings = [
       {
@@ -23,7 +23,7 @@ const nextConfig = {
         message: /Critical dependency: the request of a dependency is an expression/,
       },
     ]
-    
+
     return config
   },
   eslint: {
@@ -48,9 +48,39 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: true,
   },
-  // Explicitly set turbopack config to avoid deprecation warning
-  // (even if empty, this helps suppress the experimental.turbo warning)
+  // Turbopack configuration (migrated from experimental.turbo)
   turbopack: {},
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+// Wrap the config to ensure experimental.turbo is removed if it exists
+const payloadConfig = withPayload(nextConfig, { devBundleServerPackages: false })
+
+// Function to remove experimental.turbo from config
+function removeExperimentalTurbo(config) {
+  if (config.experimental?.turbo !== undefined) {
+    delete config.experimental.turbo
+    // Clean up experimental object if it's now empty
+    if (Object.keys(config.experimental || {}).length === 0) {
+      delete config.experimental
+    }
+  }
+  return config
+}
+
+// Handle both function and object configs
+let finalConfig
+if (typeof payloadConfig === 'function') {
+  finalConfig = function nextConfigWrapper(...args) {
+    const config = payloadConfig(...args)
+    // Handle both sync and async configs
+    if (config && typeof config.then === 'function') {
+      return config.then(removeExperimentalTurbo)
+    }
+    return removeExperimentalTurbo(config)
+  }
+} else {
+  removeExperimentalTurbo(payloadConfig)
+  finalConfig = payloadConfig
+}
+
+export default finalConfig

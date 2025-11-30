@@ -31,6 +31,7 @@ import ThemeToggle from './ThemeToggle'
 import { Badge } from '../ui/badge'
 import { SignInButton } from './Authentication/sign-in-button'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface MenuItem {
   title: string
@@ -152,7 +153,7 @@ export default function Navbar({
         <div className="flex items-center gap-6">
           <a href={logo.url} className="flex items-center gap-2 bg-none">
             <div className="overflow-hidden rounded-lg">
-              <img src={logo.src} className="w-8" alt={logo.alt} />
+              <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
             </div>
             <span className="text-lg font-semibold">{logo.title}</span>
           </a>
@@ -205,7 +206,7 @@ export default function Navbar({
       <div className="block lg:hidden">
         <div className="flex items-center justify-between">
           <a href={logo.url} className="flex items-center gap-2">
-            <img src={logo.src} className="w-8" alt={logo.alt} />
+            <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
             <span className="text-lg font-semibold">{logo.title}</span>
           </a>
           <Sheet>
@@ -218,7 +219,7 @@ export default function Navbar({
               <SheetHeader>
                 <SheetTitle>
                   <a href={logo.url} className="flex items-center gap-2">
-                    <img src={logo.src} className="w-8" alt={logo.alt} />
+                    <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
                     <span className="text-lg font-semibold">{logo.title}</span>
                   </a>
                 </SheetTitle>

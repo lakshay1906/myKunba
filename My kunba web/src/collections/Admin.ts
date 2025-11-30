@@ -73,16 +73,16 @@ export const Admin: CollectionConfig = {
     { name: 'email', type: 'email', required: true, unique: true },
     { name: 'username', type: 'text', required: true, unique: true },
     { name: 'displayName', type: 'text', required: true },
-    { name: 'bio', type: 'textarea' },
-    { name: 'profileImage', type: 'relationship', relationTo: 'media' },
-    {
-      name: 'socialLinks',
-      type: 'array',
-      fields: [
-        { name: 'platform', type: 'text' },
-        { name: 'url', type: 'text' },
-      ],
-    },
+    // { name: 'bio', type: 'textarea' },
+    // { name: 'profileImage', type: 'relationship', relationTo: 'media' },
+    // {
+    //   name: 'socialLinks',
+    //   type: 'array',
+    //   fields: [
+    //     { name: 'platform', type: 'text' },
+    //     { name: 'url', type: 'text' },
+    //   ],
+    // },
     // { name: 'last_login', type: 'date' },
     { name: 'deleted_at', type: 'date' },
   ],

@@ -193,9 +193,9 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
 function getHeadingClasses(tag: string): string {
   switch (tag) {
     case 'h1':
-      return 'text-3xl font-bold  mb-6 mt-8 first:mt-0'
+      return 'text-3xl font-bold  mb-6 mt-2 md:mt-4 lg:mt-6 first:mt-0'
     case 'h2':
-      return 'text-2xl font-semibold  mb-4 mt-8'
+      return 'text-2xl font-semibold  mb-4 mt-2 md:mt-4 lg:mt-6'
     case 'h3':
       return 'text-xl font-semibold  mb-3 mt-6'
     case 'h4':

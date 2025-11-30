@@ -17,7 +17,7 @@ export default function Blog(posts: Record<string, any>) {
       author: Record<string, any>
       categories: Record<string, any>[]
       excerpt: string
-      media: Record<string, any>
+      media: string | null
       content: string
       createdAt: string
       updatedAt: string
@@ -40,14 +40,13 @@ export default function Blog(posts: Record<string, any>) {
   //   })()
   // }, [])
   useEffect(() => {
-    // console.log(posts.posts.docs)
     setData(posts.posts.docs)
     setLoading(false)
   }, [])
 
   return (
     <div id="blog" className="w-full h-full">
-      <div>
+      <div className="mt-2 md:mt-4 lg:mt-6">
         <h1 className="text-2xl font-semibold">Blog</h1>
         <p className="text-sm text-muted-foreground">
           Discover stories, insights, and updates from our community.
@@ -59,7 +58,7 @@ export default function Blog(posts: Record<string, any>) {
         </div>
       ) : (
         <>
-          <div className="flex flex-nowrap gap-2 mt-2 overflow-x-auto scrollbar-hidden">
+          <div className="flex flex-nowrap gap-2 mt-0 sm:mt-2 md:mt-4 overflow-x-auto scrollbar-hidden">
             {categories.map((ele) => (
               <Badge
                 variant={ele.id === selectedCat ? 'default' : 'secondary'}
@@ -77,7 +76,7 @@ export default function Blog(posts: Record<string, any>) {
               return category.id === selectedCat
             })
           }).length > 0 ? (
-            <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-3">
+            <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
               {data
                 .filter((post) => {
                   if (selectedCat === 0) return true

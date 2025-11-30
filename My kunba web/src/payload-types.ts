@@ -135,15 +135,6 @@ export interface Admin {
   id: number;
   username: string;
   displayName: string;
-  bio?: string | null;
-  profileImage?: (number | null) | Media;
-  socialLinks?:
-    | {
-        platform?: string | null;
-        url?: string | null;
-        id?: string | null;
-      }[]
-    | null;
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -155,25 +146,6 @@ export interface Admin {
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -203,6 +175,25 @@ export interface User {
   deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -257,7 +248,10 @@ export interface Post {
   };
   commentsEnabled?: boolean | null;
   isFeatured?: boolean | null;
-  media: number | Media;
+  /**
+   * URL of the cover image stored in Cloudflare R2
+   */
+  media: string;
   status: 'draft' | 'published' | 'pending_approval';
   publishDate: string;
   metaTitle?: string | null;
@@ -397,15 +391,6 @@ export interface PayloadMigration {
 export interface AdminSelect<T extends boolean = true> {
   username?: T;
   displayName?: T;
-  bio?: T;
-  profileImage?: T;
-  socialLinks?:
-    | T
-    | {
-        platform?: T;
-        url?: T;
-        id?: T;
-      };
   deleted_at?: T;
   updatedAt?: T;
   createdAt?: T;

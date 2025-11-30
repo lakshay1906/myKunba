@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
@@ -30,6 +30,11 @@ import { fetchAllCategories } from '@/app/actions/category-actions'
 import Toast from '../Toast'
 import Loading from '../Loading'
 import Link from 'next/link'
+import { convertLexicalToHtml } from '@/utils/lexical-to-html'
+import { toast } from 'sonner'
+import { useAppStore } from '@/lib/context/store'
+import ImageUploadDialog from '../image-uploader/image-upload-dialog'
+import { ImageUploadData, UploadResponse } from '@/lib/types'
 
 // const templates = [
 //   { id: 'standard', name: 'Standard' },
@@ -41,7 +46,7 @@ import Link from 'next/link'
 const statuses = [
   { id: 'draft', name: 'Draft' },
   { id: 'published', name: 'Published' },
-  { id: 'scheduled', name: 'Scheduled' },
+  { id: 'pending_approval', name: 'Pending Approval' },
 ]
 
 export default function EditBlogPage({
@@ -51,160 +56,74 @@ export default function EditBlogPage({
   id: string
   blogData: Record<string, any>
 }) {
-  const demoBlogData = {
-    id: 2,
-    title: 'BLOG: Teacher’s Day',
-    slug: 'blog-teachers-day',
-    excerpt:
-      'In 1994, the United Nations Educational, Scientific and Cultural Organization declared Oct. 5 as “World Teacher’s Day.”',
-    content: {
-      root: {
-        type: 'root',
-        format: '',
-        indent: 0,
-        version: 1,
-        children: [
-          {
-            tag: 'h1',
-            type: 'heading',
-            format: '',
-            indent: 0,
-            version: 1,
-            children: [
-              {
-                mode: 'normal',
-                text: 'BLOG: Teacher’s Day',
-                type: 'text',
-                style: '',
-                detail: 0,
-                format: 1,
-                version: 1,
-              },
-              {
-                mode: 'normal',
-                text: 'Share',
-                type: 'text',
-                style: '',
-                detail: 0,
-                format: 0,
-                version: 1,
-              },
-            ],
-            direction: 'ltr',
-            textFormat: 1,
-          },
-          {
-            type: 'paragraph',
-            format: '',
-            indent: 0,
-            version: 1,
-            children: [
-              {
-                mode: 'normal',
-                text: 'In 1994, the United Nations Educational, Scientific and Cultural Organization declared Oct. 5 as “World Teacher’s Day.”',
-                type: 'text',
-                style: '',
-                detail: 0,
-                format: 0,
-                version: 1,
-              },
-            ],
-            direction: 'ltr',
-            textStyle: '',
-            textFormat: 0,
-          },
-          {
-            type: 'paragraph',
-            format: '',
-            indent: 0,
-            version: 1,
-            children: [
-              {
-                mode: 'normal',
-                text: 'This blog was to honor World Teacher’s Day celebrating all teachers around the world for their hard work in educating the generations — school teachers, college teachers and parents, who are the first teachers in any human society.',
-                type: 'text',
-                style: '',
-                detail: 0,
-                format: 0,
-                version: 1,
-              },
-            ],
-            direction: 'ltr',
-            textStyle: '',
-            textFormat: 0,
-          },
-        ],
-        direction: 'ltr',
-      },
-    },
-    commentsEnabled: true,
-    isFeatured: false,
-    media: {
-      id: 2,
-      alt: "Teacher's day",
-      updatedAt: '2025-11-27T15:11:44.213Z',
-      createdAt: '2025-11-27T15:11:44.163Z',
-      url: '/api/media/file/Art-1024x675.jpg',
-      thumbnailURL: null,
-      filename: 'Art-1024x675.jpg',
-      mimeType: 'image/jpeg',
-      filesize: 105299,
-      width: 1024,
-      height: 675,
-      focalX: 50,
-      focalY: 50,
-    },
-    status: 'published',
-    publishDate: '2025-11-27T14:58:33.855Z',
-    metaTitle: '',
-    metaDescription: '',
-    author: {
-      id: 1,
-      username: 'lakshay_un',
-      displayName: 'Lakshay Unofficial',
-      bio: '',
-      verified: true,
-      profileImage: null,
-      role: 'admin',
-      socialLinks: [],
-      email: 'lakshayunofficial@gmail.com',
-      uid: 'Q5nNVVx1kMQGzjcPpnjGxTcA96u2',
-      lastLogin: '2025-11-27T17:26:56.582Z',
-      deleted_at: null,
-      updatedAt: '2025-11-27T17:26:56.603Z',
-      createdAt: '2025-11-26T14:52:41.326Z',
-    },
-    categories: [],
-    deleted_at: null,
-    updatedAt: '2025-11-27T15:13:14.843Z',
-    createdAt: '2025-11-27T15:11:59.180Z',
-  }
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+  const { loginDetail } = useAppStore()
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [blog, setBlog] = useState<Record<string, any>>({})
+  const [contentHtml, setContentHtml] = useState<string>('')
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [allCategories, setAllCategories] = useState<Record<string, any>[]>([])
+  const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
+    file: null,
+    imageUrl: '',
+    alt: '',
+    preview: null,
+    result: null,
+    dimensions: null,
+    loadingDimensions: false,
+    uploadMethod: null,
+    isOpen: false,
+    coverImage: null,
+  })
+  const isUploadingRef = useRef(false)
 
-  // Fetch blog data
+  // Initialize blog data from prop
   useEffect(() => {
-    ;(async () => {
-      const rawRes = await fetch(`/api/dashboard/blog?slug=${id}`)
-      const blog = await rawRes.json()
-      setBlog(blog)
-      setSelectedCategories(blog.categories.map((cat: any) => cat.id))
-      const allCategories = await fetchAllCategories()
-      setAllCategories(allCategories.docs)
-    })()
-    if (blog && blog.publishDate) setDate(new Date(blog.publishDate))
-    setLoading(false)
-  }, [])
+    if (blogData) {
+      // Convert lexical content to HTML for the editor
+      const htmlContent = blogData.content ? convertLexicalToHtml(blogData.content) : ''
+
+      setBlog(blogData)
+      setContentHtml(htmlContent)
+
+      // Set categories
+      if (blogData.categories && Array.isArray(blogData.categories)) {
+        setSelectedCategories(blogData.categories.map((cat: any) => cat.id || cat))
+      }
+
+      // Set publish date
+      if (blogData.publishDate) {
+        setDate(new Date(blogData.publishDate))
+      }
+
+      // Show date picker if status is published or pending_approval
+      if (blogData.status === 'published' || blogData.status === 'pending_approval') {
+        setShowDatePicker(true)
+      }
+
+      // Set cover image if exists
+      if (blogData.media && typeof blogData.media === 'string') {
+        setImageUploadData((prev) => ({
+          ...prev,
+          coverImage: blogData.media,
+        }))
+      }
+
+      // Fetch all categories for selector
+      fetchAllCategories().then((result) => {
+        setAllCategories(result.docs || [])
+      })
+    }
+  }, [blogData])
 
   function handleContentChange(newContent: string) {
+    setContentHtml(newContent)
+    // Store HTML content, will be converted to lexical on save
     setBlog({ ...blog, content: newContent })
   }
 
@@ -216,10 +135,10 @@ export default function EditBlogPage({
   function handleSelectChange(name: string, value: string) {
     setBlog({ ...blog, [name]: value })
 
-    // If status is changed to scheduled, show date picker
-    if (name === 'status' && value === 'scheduled') {
+    // Show date picker for published or pending_approval status
+    if (name === 'status' && (value === 'published' || value === 'pending_approval')) {
       setShowDatePicker(true)
-    } else if (name === 'status' && value !== 'scheduled') {
+    } else if (name === 'status' && value === 'draft') {
       setShowDatePicker(false)
     }
   }
@@ -246,28 +165,233 @@ export default function EditBlogPage({
   async function handleSave() {
     setSaving(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      ;<Toast
-        isSuccess={true}
-        message={'Blog saved successfully'}
-        description={`Your changes have been saved.`}
-      />
-    } catch (error) {
+      // Check if user is logged in and has proper role
+      if (!loginDetail) {
+        toast.error('Unauthorized', {
+          description: 'Please log in to save changes.',
+        })
+        router.push('/unauthorised')
+        return
+      }
+
+      // Check if user role is not "user" (must be admin or author)
+      if (loginDetail.role === 'user') {
+        toast.error('Access Denied', {
+          description: 'You do not have permission to edit blogs.',
+        })
+        router.push('/unauthorised')
+        return
+      }
+
+      // Upload image if a new one was selected (file upload or URL)
+      let finalImageUrl = blog.media && typeof blog.media === 'string' ? blog.media : null
+
+      // Check if user selected a new image
+      if (imageUploadData.coverImage && imageUploadData.coverImage !== blog.media) {
+        // If it's a data URL, it means a file was selected and needs to be uploaded
+        if (
+          imageUploadData.coverImage.startsWith('data:') &&
+          imageUploadData.uploadMethod === 'file' &&
+          imageUploadData.file
+        ) {
+          try {
+            const uploadResult = await handleUpload()
+            if (uploadResult?.success && uploadResult.data?.url) {
+              finalImageUrl = uploadResult.data.url
+            } else {
+              throw new Error('Failed to upload image')
+            }
+          } catch (error: any) {
+            toast.error('Failed to upload image', {
+              description: error.message || 'There was an error uploading the image.',
+            })
+            setSaving(false)
+            return
+          }
+        }
+        // If it's a URL (not data URL), validate it
+        else if (
+          !imageUploadData.coverImage.startsWith('data:') &&
+          imageUploadData.uploadMethod === 'url' &&
+          imageUploadData.imageUrl
+        ) {
+          try {
+            const uploadResult = await handleUpload()
+            if (uploadResult?.success && uploadResult.data?.url) {
+              finalImageUrl = uploadResult.data.url
+            } else {
+              throw new Error('Failed to validate image URL')
+            }
+          } catch (error: any) {
+            toast.error('Failed to validate image URL', {
+              description: error.message || 'There was an error validating the image URL.',
+            })
+            setSaving(false)
+            return
+          }
+        }
+        // If coverImage is already a URL (not data URL and not the current blog.media), use it directly
+        else if (!imageUploadData.coverImage.startsWith('data:')) {
+          finalImageUrl = imageUploadData.coverImage
+        }
+      }
+
+      // Prepare data for API
+      const updateData: any = {
+        id: blog.id,
+        title: blog.title,
+        slug: blog.slug,
+        excerpt: blog.excerpt,
+        content: blog.content, // HTML content, will be converted to lexical in API
+        status: blog.status,
+        metaTitle: blog.metaTitle || '',
+        metaDescription: blog.metaDescription || '',
+        commentsEnabled: blog.commentsEnabled !== false,
+        isFeatured: blog.isFeatured === true,
+      }
+
+      // Add categories if selected
+      if (selectedCategories.length > 0) {
+        updateData.categories = selectedCategories
+      }
+
+      // Add publish date if set
+      if (date) {
+        updateData.publishDate = date.toISOString()
+      }
+
+      // Add cover image if exists
+      // OLD: Database storage - COMMENTED OUT
+      // if (blog.media?.id) {
+      //   updateData.coverImage = blog.media.id // OLD: Media ID from database
+      // }
+      // NEW: Cloudflare R2 storage - ACTIVE
+      if (finalImageUrl) {
+        updateData.coverImage = finalImageUrl // NEW: URL string from Cloudflare R2 or external URL
+      }
+
+      // Call PUT API
+      const response = await fetch('/api/dashboard/blog', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify(updateData),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save blog')
+      }
+
+      toast.success('Blog saved successfully', {
+        description: 'Your changes have been saved.',
+      })
+
+      // Optionally refresh the page or redirect
+      router.push(`/dashboard/blog`)
+    } catch (error: any) {
       console.error('Error saving blog:', error)
-      ;<Toast
-        isSuccess={false}
-        message={'Error saving blog'}
-        description={`There was an error saving your changes. Please try again.`}
-      />
+      toast.error('Error saving blog', {
+        description: error.message || 'There was an error saving your changes. Please try again.',
+      })
     } finally {
       setSaving(false)
     }
   }
 
-  function handleImageUpload() {
-    // In a real app, you would implement file upload functionality
-    alert('Image upload functionality would be implemented here')
+  function handleImageUploaded(imageData: any) {
+    // Update the blog state with the new image URL
+    const imageUrl = imageData.url || imageData.filename || imageData.src
+    setBlog({ ...blog, media: imageUrl })
+    setImageUploadData((prev) => ({ ...prev, coverImage: imageUrl, isOpen: false }))
   }
+
+  function clearImageUpload() {
+    setImageUploadData({
+      file: null,
+      imageUrl: '',
+      alt: '',
+      preview: null,
+      result: null,
+      dimensions: null,
+      loadingDimensions: false,
+      uploadMethod: null,
+      isOpen: false,
+      coverImage: null,
+    })
+    // Reset file input
+    const fileInput = document.getElementById('file-input') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+  }
+
+  async function handleUpload() {
+    if (isUploadingRef.current) {
+      return // Prevent duplicate uploads
+    }
+
+    isUploadingRef.current = true
+    setImageUploadData((prev) => ({ ...prev, result: null }))
+
+    try {
+      let response: Response
+
+      if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
+        // Upload file
+        const formData = new FormData()
+        formData.append('file', imageUploadData.file)
+        formData.append('alt', imageUploadData.alt.trim())
+
+        response = await fetch('/api/image/upload', {
+          method: 'POST',
+          body: formData,
+        })
+      } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
+        // Upload from URL
+        response = await fetch('/api/image/upload-from-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageUrl: imageUploadData.imageUrl.trim(),
+            alt: imageUploadData.alt.trim(),
+          }),
+        })
+      } else {
+        throw new Error('Invalid upload method')
+      }
+
+      const data: UploadResponse = await response.json()
+      setImageUploadData((prev) => ({
+        ...prev,
+        result: data,
+      }))
+
+      if (data.success) {
+        // Call the callback with the uploaded image data
+        handleImageUploaded(data.data)
+        // Reset form on success
+        clearImageUpload()
+      }
+      return data
+    } catch (error) {
+      setImageUploadData((prev) => ({
+        ...prev,
+        result: {
+          success: false,
+          error: 'Network error occurred',
+        },
+      }))
+      throw error
+    } finally {
+      isUploadingRef.current = false
+    }
+  }
+
+  // Note: Image upload is now handled in handleSave, not automatically when dialog closes
   if (loading) {
     return <Loading />
   }
@@ -350,66 +474,46 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label>Featured Image</Label>
                 <div className="border rounded-md p-4">
-                  {blog.media && blog.media.url ? (
+                  {/* NEW: Cloudflare R2 storage - ACTIVE */}
+                  {imageUploadData.coverImage || (blog.media && typeof blog.media === 'string') ? (
                     <div className="space-y-4">
                       <div className="relative h-64 w-full overflow-hidden rounded-md">
                         <Image
-                          src={blog.media.url || '/placeholder.svg'}
-                          alt={blog.media.alt || blog.title}
+                          src={imageUploadData.coverImage || blog.media || '/placeholder.svg'}
+                          alt={blog.title || 'Blog cover image'}
                           fill
                           className="object-cover"
+                          unoptimized={
+                            ((imageUploadData.coverImage || blog.media) &&
+                              !(imageUploadData.coverImage || blog.media)?.startsWith('/') &&
+                              !(imageUploadData.coverImage || blog.media)?.startsWith('data:')) ||
+                            undefined
+                          }
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="imageAlt">Alt Text</Label>
-                          <Input
-                            id="imageAlt"
-                            name="media.alt"
-                            value={blog.media.alt || ''}
-                            onChange={(e) =>
-                              setBlog({
-                                ...blog,
-                                media: { ...blog.media, alt: e.target.value },
-                              })
-                            }
-                            placeholder="Image alt text"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="imageCaption">Caption</Label>
-                          <Input
-                            id="imageCaption"
-                            name="media.caption"
-                            value={blog.media.caption || ''}
-                            onChange={(e) =>
-                              setBlog({
-                                ...blog,
-                                media: { ...blog.media, caption: e.target.value },
-                              })
-                            }
-                            placeholder="Image caption"
-                          />
-                        </div>
+                      <div className="text-sm text-muted-foreground break-all">
+                        Image URL: {imageUploadData.coverImage || blog.media}
                       </div>
-                      <Button variant="outline" onClick={handleImageUpload}>
-                        Change Image
-                      </Button>
+                      <ImageUploadDialog
+                        imageUploadData={imageUploadData}
+                        setImageUploadData={setImageUploadData}
+                        clearAll={clearImageUpload}
+                        placeholder="Change Image"
+                      />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-64 bg-muted rounded-md">
-                      <ImagePlus className="h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-4">No image selected</p>
-                      <Button variant="outline" onClick={handleImageUpload}>
-                        Upload Image
-                      </Button>
-                    </div>
+                    <ImageUploadDialog
+                      imageUploadData={imageUploadData}
+                      setImageUploadData={setImageUploadData}
+                      clearAll={clearImageUpload}
+                      placeholder="Upload Image"
+                    />
                   )}
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <RichTextEditor value={blog.content} onChange={handleContentChange} />
+                <RichTextEditor value={contentHtml} onChange={handleContentChange} />
               </div>
             </CardContent>
           </Card>
@@ -596,8 +700,8 @@ export default function EditBlogPage({
                   </div>
                   <Switch
                     id="featured"
-                    checked={blog.featured === true}
-                    onCheckedChange={(checked) => setBlog({ ...blog, featured: checked })}
+                    checked={blog.isFeatured === true}
+                    onCheckedChange={(checked) => setBlog({ ...blog, isFeatured: checked })}
                   />
                 </div>
               </div>

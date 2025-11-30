@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import Image from 'next/image'
 
 const sections = [
   {
@@ -32,7 +33,7 @@ export default function Footer() {
           <div className="flex flex-col justify-start gap-3">
             <div className="flex justify-start gap-3 items-center">
               <div className="overflow-hidden rounded-xl">
-                <img src="/logo.png" alt="logo" className="h-10 w-10" />
+                <Image src="/logo.png" width={40} height={40} alt="logo" className="h-10 w-10" />
               </div>
               <p className="text-xl font-bold">myKunba.org</p>
             </div>

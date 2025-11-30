@@ -39,11 +39,21 @@ export const Posts: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
     },
+    // OLD: Media relationship field (stored in database) - COMMENTED OUT
+    // {
+    //   name: 'media',
+    //   type: 'relationship',
+    //   relationTo: 'media',
+    //   required: true,
+    // },
+    // NEW: Media URL field (stored in Cloudflare R2) - ACTIVE
     {
       name: 'media',
-      type: 'relationship',
-      relationTo: 'media',
+      type: 'text',
       required: true,
+      admin: {
+        description: 'URL of the cover image stored in Cloudflare R2',
+      },
     },
     {
       name: 'status',

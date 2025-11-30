@@ -16,11 +16,14 @@ type Blog = {
   slug: string
   excerpt: string
   content: PayloadRichTextContent
-  media: {
-    id: number
-    url: string
-    alt: string | null
-  } | null
+  // OLD: Media was an object with id, url, and alt properties - COMMENTED OUT
+  // media: {
+  //   id: number
+  //   url: string
+  //   alt: string | null
+  // } | null
+  // NEW: Media is now a string URL from Cloudflare R2 - ACTIVE
+  media: string | null
   status: string
   publishDate: string
   metaTitle: string
@@ -69,10 +72,10 @@ export default function BlogContent({ blog }: { blog: Blog }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto mt-4 md:mt-6 lg:mt-8">
       {/* Categories */}
       {blog.categories.length > 0 && (
-        <div className="mb-4  flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {blog.categories.map((category) => (
             <Link href={`/category/${category.slug}`} key={category.id}>
               <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
@@ -87,16 +90,18 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
 
       {/* Author and Date */}
-      <div className="flex items-center gap-6 mb-8 text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 lg:gap-6 mb-8 text-muted-foreground">
         <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
+          <Avatar className="size-8">
             <AvatarImage src={blog.author.profileImage || ''} alt={blog.author.displayName} />
             <AvatarFallback>{getAuthorInitials(blog.author.displayName)}</AvatarFallback>
           </Avatar>
           <span>{blog.author.displayName}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
+          <div className="flex items-center justify-center size-8">
+            <Calendar className="size-4" />
+          </div>
           <span>{formatDate(blog.publishDate)}</span>
         </div>
       </div>
@@ -105,8 +110,12 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       {blog.media && (
         <div className="relative w-full aspect-video mb-8 rounded-lg overflow-hidden">
           <Image
-            src={blog.media.url || '/placeholder.svg'}
-            alt={blog.media.alt || blog.title}
+            // OLD: Database storage - COMMENTED OUT
+            // src={blog.media.url || '/placeholder.svg'} // OLD: Media object with url property
+            // alt={blog.media.alt || blog.title} // OLD: Media object with alt property
+            // NEW: Cloudflare R2 storage - ACTIVE
+            src={blog.media || '/placeholder.svg'} // NEW: Media is now a URL string
+            alt={blog.title} // NEW: Using blog title as alt text
             fill
             className="object-cover"
             priority
@@ -116,7 +125,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
       {/* Blog Content */}
       <Card className="mb-8">
-        <CardContent className="p-6">
+        <CardContent className="p-2 md:p-4">
           {isClient ? (
             <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
           ) : (

@@ -47,7 +47,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
     name: string
     role: string
   }>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(!!token) // Initialize as true if token exists
 
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
@@ -82,23 +82,33 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
 
   useEffect(() => {
     ;(async () => {
-      if (!token) return
-      const rawRes = await fetch(`/api/user/auth/jwt/verify`, {
-        method: 'GET',
-        headers: {
-          Authorization: `bearer ${token}`,
-        },
-      })
-      if (rawRes.ok) {
-        const [data] = await rawRes.json()
-        if (data)
-          setLoginDetail({
-            token: token,
-            email: data.email,
-            name: data.displayName,
-            role: data.role,
-            profile_pic: data.profileImage ? data.profileImage.url : null,
-          })
+      if (!token) {
+        setLoading(false)
+        return
+      }
+      setLoading(true)
+      try {
+        const rawRes = await fetch(`/api/user/auth/jwt/verify`, {
+          method: 'GET',
+          headers: {
+            Authorization: `bearer ${token}`,
+          },
+        })
+        if (rawRes.ok) {
+          const [data] = await rawRes.json()
+          if (data)
+            setLoginDetail({
+              token: token,
+              email: data.email,
+              name: data.displayName,
+              role: data.role,
+              profile_pic: data.profileImage ? data.profileImage.url : null,
+            })
+        }
+      } catch (error) {
+        console.error('Error verifying token:', error)
+      } finally {
+        setLoading(false)
       }
     })()
   }, [])

@@ -187,7 +187,61 @@ export function CreatePostForm() {
         />
         return
       }
-      const imageData = await handleUpload()
+
+      // Upload image if one was selected
+      let coverImageUrl: string | null = null
+      if (imageUploadData.coverImage) {
+        // If it's a data URL, it means a file was selected and needs to be uploaded
+        if (
+          imageUploadData.coverImage.startsWith('data:') &&
+          imageUploadData.uploadMethod === 'file' &&
+          imageUploadData.file
+        ) {
+          try {
+            const imageData = await handleUpload()
+            if (imageData?.success && imageData.data?.url) {
+              coverImageUrl = imageData.data.url
+            } else {
+              throw new Error('Failed to upload image')
+            }
+          } catch (error: any) {
+            console.error('Error uploading image:', error)
+            setIsLoading(false)
+            return
+          }
+        }
+        // If it's a URL (not data URL), validate it
+        else if (
+          !imageUploadData.coverImage.startsWith('data:') &&
+          imageUploadData.uploadMethod === 'url' &&
+          imageUploadData.imageUrl
+        ) {
+          try {
+            const imageData = await handleUpload()
+            if (imageData?.success && imageData.data?.url) {
+              coverImageUrl = imageData.data.url
+            } else {
+              throw new Error('Failed to validate image URL')
+            }
+          } catch (error: any) {
+            console.error('Error validating image URL:', error)
+            setIsLoading(false)
+            return
+          }
+        }
+        // If coverImage is already a URL (not data URL), use it directly
+        else if (!imageUploadData.coverImage.startsWith('data:')) {
+          coverImageUrl = imageUploadData.coverImage
+        }
+      }
+
+      // Cover image is required
+      if (!coverImageUrl) {
+        setIsLoading(false)
+        // Show error toast
+        return
+      }
+
       const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
@@ -196,7 +250,10 @@ export function CreatePostForm() {
         },
         body: JSON.stringify({
           ...data,
-          coverImage: imageData?.data.id,
+          // OLD: Database storage - COMMENTED OUT
+          // coverImage: imageData?.data.id, // OLD: Media ID from database
+          // NEW: Cloudflare R2 storage - ACTIVE
+          coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
           categories: data.categories?.map((item) => Number(item)),
           // tags: data.tags?.map((id) => ({ id })),
         }),

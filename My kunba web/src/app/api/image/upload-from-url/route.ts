@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { payload } from '@/payload-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,73 +13,92 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate URL format
-    let url: URL
     try {
-      url = new URL(imageUrl)
+      new URL(imageUrl)
     } catch {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
     }
 
-    // Fetch the image from the URL
-    const imageResponse = await fetch(imageUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
-      },
-    })
-
-    if (!imageResponse.ok) {
-      return NextResponse.json(
-        {
-          error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`,
+    // Validate that the URL points to an image
+    try {
+      const imageResponse = await fetch(imageUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
         },
-        { status: 400 },
-      )
+        method: 'HEAD', // Only fetch headers to validate
+      })
+
+      if (!imageResponse.ok) {
+        return NextResponse.json(
+          {
+            error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`,
+          },
+          { status: 400 },
+        )
+      }
+
+      const contentType = imageResponse.headers.get('content-type')
+      if (!contentType || !contentType.startsWith('image/')) {
+        return NextResponse.json(
+          {
+            error: 'URL does not point to a valid image',
+          },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      // If HEAD request fails, try GET request as fallback
+      try {
+        const imageResponse = await fetch(imageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
+          },
+        })
+
+        if (!imageResponse.ok) {
+          return NextResponse.json(
+            {
+              error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`,
+            },
+            { status: 400 },
+          )
+        }
+
+        const contentType = imageResponse.headers.get('content-type')
+        if (!contentType || !contentType.startsWith('image/')) {
+          return NextResponse.json(
+            {
+              error: 'URL does not point to a valid image',
+            },
+            { status: 400 },
+          )
+        }
+      } catch (fetchError) {
+        return NextResponse.json(
+          {
+            error: 'Failed to validate image URL',
+          },
+          { status: 400 },
+        )
+      }
     }
 
-    // Check if it's actually an image
-    const contentType = imageResponse.headers.get('content-type')
-    if (!contentType || !contentType.startsWith('image/')) {
-      return NextResponse.json(
-        {
-          error: 'URL does not point to a valid image',
-        },
-        { status: 400 },
-      )
-    }
-
-    // Convert response to buffer
-    const arrayBuffer = await imageResponse.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Extract filename from URL or generate one
-    const pathname = url.pathname
-    const filename = pathname.split('/').pop() || `image-${Date.now()}`
-    const extension = contentType.split('/')[1] || 'jpg'
-    const finalFilename = filename.includes('.') ? filename : `${filename}.${extension}`
-
-    // Create the media document using Payload's local API
-    const result = await payload.create({
-      collection: 'media',
-      data: {
-        alt: alt,
-      },
-      file: {
-        data: buffer,
-        mimetype: contentType,
-        name: finalFilename,
-        size: buffer.length,
-      },
-    })
-
+    // NEW: Return URL directly without uploading to Cloudflare
+    // When user provides a URL, it should be saved directly to the database
     return NextResponse.json({
       success: true,
-      data: result,
-      message: 'Image uploaded successfully from URL',
+      data: {
+        url: imageUrl, // Return the original URL directly
+        alt: alt,
+        originalUrl: imageUrl,
+      },
+      message: 'Image URL validated successfully',
     })
   } catch (error) {
+    console.error('Upload from URL error:', error)
     return NextResponse.json(
       {
-        error: 'Failed to upload image from URL',
+        error: error instanceof Error ? error.message : 'Failed to validate image URL',
       },
       { status: 500 },
     )
