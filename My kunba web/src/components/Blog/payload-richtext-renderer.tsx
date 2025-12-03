@@ -75,7 +75,7 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
     case 'paragraph':
       const paragraphNode = node as PayloadElementNode
       return (
-        <p className=" leading-relaxed mb-4">
+        <p className="leading-relaxed mb-4 text-justify">
           {paragraphNode.children?.map((child, index) => (
             <RenderNode key={index} node={child} />
           ))}

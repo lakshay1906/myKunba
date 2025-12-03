@@ -9,7 +9,7 @@ export const Users: CollectionConfig = {
     { name: 'username', type: 'text', required: true, unique: true },
     { name: 'displayName', type: 'text' },
     { name: 'bio', type: 'textarea' },
-    { name: 'verified', type: 'checkbox', required: true },
+    { name: 'verified', type: 'checkbox', required: true, defaultValue: false },
     { name: 'profileImage', type: 'relationship', relationTo: 'media' },
     {
       name: 'role',
