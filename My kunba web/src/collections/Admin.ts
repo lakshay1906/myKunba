@@ -71,7 +71,6 @@ export const Admin: CollectionConfig = {
   timestamps: true,
   fields: [
     { name: 'email', type: 'email', required: true, unique: true },
-    { name: 'username', type: 'text', required: true, unique: true },
     { name: 'displayName', type: 'text', required: true },
     // { name: 'bio', type: 'textarea' },
     // { name: 'profileImage', type: 'relationship', relationTo: 'media' },

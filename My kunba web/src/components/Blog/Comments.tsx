@@ -21,7 +21,6 @@ type Comment = {
   createdAt: string
   user: {
     id: number
-    username: string
     displayName: string
     profileImage?: {
       url?: string

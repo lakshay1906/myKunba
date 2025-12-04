@@ -31,7 +31,6 @@ type Blog = {
   metaDescription: string
   author: {
     id: number
-    username: string
     displayName: string
     bio: string | null
     profileImage: string | null

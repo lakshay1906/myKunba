@@ -133,7 +133,6 @@ export interface AdminAuthOperations {
  */
 export interface Admin {
   id: number;
-  username: string;
   displayName: string;
   deleted_at?: string | null;
   updatedAt: string;
@@ -153,7 +152,6 @@ export interface Admin {
  */
 export interface User {
   id: number;
-  username: string;
   displayName?: string | null;
   bio?: string | null;
   verified: boolean;
@@ -389,7 +387,6 @@ export interface PayloadMigration {
  * via the `definition` "admin_select".
  */
 export interface AdminSelect<T extends boolean = true> {
-  username?: T;
   displayName?: T;
   deleted_at?: T;
   updatedAt?: T;
@@ -407,7 +404,6 @@ export interface AdminSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  username?: T;
   displayName?: T;
   bio?: T;
   verified?: T;

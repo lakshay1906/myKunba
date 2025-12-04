@@ -80,13 +80,12 @@ export default function BlogCard({ post }: BlogCardProps) {
                 <AvatarImage
                   src={
                     post.author.profileImage === null
-                      ? `https://source.unsplash.com/featured/?portrait,${post.author.username.replace(
-                          ' ',
-                          '',
-                        )}`
+                      ? `https://source.unsplash.com/featured/?portrait,${
+                          post.author.displayName?.replace(' ', '') || 'user'
+                        }`
                       : post.author.profileImage.url
                   }
-                  alt={post.author.username}
+                  alt={post.author.displayName || 'Author'}
                 />
                 <AvatarFallback>{authorInitials}</AvatarFallback>
               </Avatar>

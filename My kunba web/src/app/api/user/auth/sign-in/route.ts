@@ -46,7 +46,6 @@ export async function POST(req: NextRequest) {
         uid: userData.uid,
         socialLinks: data.socialLinks,
         displayName: data.name,
-        username: data.username,
         bio: data.bio,
         role: data.role,
         verified: data.verified,

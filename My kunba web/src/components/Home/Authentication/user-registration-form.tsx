@@ -34,7 +34,6 @@ interface UserRegistrationFormProps {
 }
 
 const formSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
   displayName: z.string().min(2, 'Display name must be at least 2 characters').max(50),
   bio: z.string().optional(),
   role: z.enum(['admin', 'author', 'user']),
@@ -60,7 +59,6 @@ export function UserRegistrationForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: '',
       displayName: userDetails ? userDetails.name : '',
       bio: '',
       role: 'user',
@@ -72,17 +70,6 @@ export function UserRegistrationForm({
     control: form.control,
     name: 'socialLinks',
   })
-
-  function generateUsername(displayName: string) {
-    const base = displayName
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]/g, '')
-      .trim()
-      .replace(/\s+/g, '_')
-
-    const randomNum = Math.floor(100 + Math.random() * 900) // random 3-digit number
-    return `${base}_${randomNum}`
-  }
 
   async function onSubmit(values: FormValues) {
     // Here you would typically send the form data to your backend
@@ -103,7 +90,6 @@ export function UserRegistrationForm({
       },
       body: JSON.stringify({
         profile_pic: userDetails.profile_pic,
-        username: values.username,
         bio: values.bio,
         verified: userDetails.emailVerified,
         role: userDetails.emailVerified ? values.role : 'user',
@@ -128,23 +114,6 @@ export function UserRegistrationForm({
                 <Input placeholder="Your Name" {...field} />
               </FormControl>
               <FormDescription>This is how your name will appear publicly.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="username" {...field} />
-              </FormControl>
-              <FormDescription>
-                This will be your unique identifier on the platform.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

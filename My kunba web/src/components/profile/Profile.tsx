@@ -77,8 +77,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
     setIsEditSheetOpen(true)
   }
 
-  const handleSignOut = () => {
-  }
+  const handleSignOut = () => {}
 
   const handleSaveProfile = () => {
     setIsEditSheetOpen(false)
@@ -107,8 +106,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
 
   const roleConfig = getRoleConfig(user.role)
 
-  useEffect(() => {
-  }, [editData])
+  useEffect(() => {}, [editData])
 
   return (
     // <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -166,7 +164,6 @@ export default function Profile({ user }: { user: Record<string, any> }) {
 
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold capitalize">{user.displayName}</h2>
-                <p className=" text-lg">@{user.username}</p>
                 <Badge className={`${roleConfig.color} border font-semibold px-3 py-1`}>
                   {roleConfig.label}
                 </Badge>
@@ -292,18 +289,6 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                   id="displayName"
                   value={editData.displayName}
                   onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="username" className="text-sm font-medium">
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  value={editData.username}
-                  onChange={(e) => setEditData({ ...editData, username: e.target.value })}
                   className="mt-1"
                 />
               </div>
