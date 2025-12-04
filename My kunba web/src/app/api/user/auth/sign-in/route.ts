@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     if (isOldUser?.totalDocs > 0)
       return NextResponse.json({ message: 'User already exists' }, { status: 400 })
 
+    // Profile image is a relationship to 'media' collection, not a URL
+    // For now, we'll set it to null. Users can update their profile picture later
+    // TODO: In the future, we could create a media entry from the URL if needed
     const profile_pic = null
 
     await payload.create({
@@ -44,11 +47,11 @@ export async function POST(req: NextRequest) {
         email: userData?.email,
         profileImage: profile_pic,
         uid: userData.uid,
-        socialLinks: data.socialLinks,
+        socialLinks: data.socialLinks || [],
         displayName: data.name,
-        bio: data.bio,
-        role: data.role,
-        verified: data.verified,
+        bio: data.bio || null,
+        role: data.role || 'user',
+        verified: data.verified || false,
         lastLogin: new Date(), // Ignore this error
       },
     })

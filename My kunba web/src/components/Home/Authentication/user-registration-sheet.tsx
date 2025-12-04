@@ -105,14 +105,87 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
               })
             }
           } else if (btnText === 'Sign In') {
-            setuserDetails({
-              emailVerified: data.emailVerified,
-              token: token,
-              email: data.email ?? '',
-              uid: data.uid ?? '',
-              profile_pic: data.photoURL ?? '',
-              name: data.displayName ?? '',
-            })
+            // For Google auth users, auto-complete registration without showing profile form
+            if (loginText === 'google') {
+              // Google auth provides displayName and email, so we can auto-create the user
+              const signInRes = await fetch(`/api/user/auth/sign-in`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  profile_pic: data.photoURL ?? null,
+                  bio: '', // Optional field, can be empty
+                  verified: data.emailVerified,
+                  role: data.emailVerified ? 'user' : 'user', // Default to 'user' role
+                  socialLinks: [], // Optional field, can be empty
+                  name: data.displayName ?? data.email?.split('@')[0] ?? 'User', // Use displayName from Google or fallback
+                }),
+              })
+
+              if (signInRes.ok) {
+                // User created successfully, set login detail and close sheet
+                setLoginDetail({
+                  token: token,
+                  email: data.email ?? '',
+                  name: data.displayName ?? data.email?.split('@')[0] ?? 'User',
+                  profile_pic: data.photoURL ?? '',
+                  role: 'user',
+                })
+                Toast({
+                  message: 'Success',
+                  description: 'Account created successfully!',
+                  isSuccess: true,
+                })
+                onOpenChange(false)
+              } else {
+                const errorData = await signInRes.json()
+                // If user already exists, try to login instead
+                if (errorData.message === 'User already exists') {
+                  const loginRes = await fetch(`/api/user/auth/login`, {
+                    method: 'GET',
+                    headers: {
+                      Authorization: `bearer ${token}`,
+                    },
+                  })
+                  if (loginRes.ok) {
+                    const userData = await loginRes.json()
+                    setLoginDetail({
+                      token: token,
+                      email: userData.email,
+                      name: userData.displayName,
+                      profile_pic: userData.profileImage ? userData.profileImage.url : null,
+                      role: userData.role,
+                    })
+                    onOpenChange(false)
+                  } else {
+                    Toast({
+                      message: 'Error',
+                      description: 'Failed to login with existing account',
+                      isSuccess: false,
+                    })
+                  }
+                } else {
+                  Toast({
+                    message: 'Error',
+                    description: errorData.message ?? 'Failed to create account',
+                    isSuccess: false,
+                  })
+                }
+              }
+            } else {
+              // For email-password auth, show profile form (user might need to set displayName)
+              setuserDetails({
+                emailVerified: data.emailVerified,
+                token: token,
+                email: data.email ?? '',
+                uid: data.uid ?? '',
+                profile_pic: data.photoURL ?? '',
+                name: data.displayName ?? '',
+              })
+              setIsAuthenticated(true)
+            }
           }
         } else
           Toast({
@@ -121,8 +194,6 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
             isSuccess: false,
           })
       }
-      if (btnText === 'Sign In') setIsAuthenticated(true)
-      else onOpenChange(false)
     } catch (error) {
       console.error('Error signing in:', error)
       setLoginDetail(null)
