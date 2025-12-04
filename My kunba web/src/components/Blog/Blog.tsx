@@ -8,7 +8,12 @@ import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 
-export default function Blog(posts: Record<string, any>) {
+type BlogProps = {
+  posts: Record<string, any>
+  initialCategories?: Record<string, any>[]
+}
+
+export default function Blog({ posts, initialCategories = [] }: BlogProps) {
   const [data, setData] = useState<
     {
       id: number
@@ -22,27 +27,13 @@ export default function Blog(posts: Record<string, any>) {
       createdAt: string
       updatedAt: string
     }[]
-  >([])
-  const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<Record<string, any>[]>([{ id: 0, name: 'All' }])
+  >(posts?.docs || [])
+  const [loading, setLoading] = useState(false) // Start with false since we have initial data
+  const [categories, setCategories] = useState<Record<string, any>[]>([
+    { id: 0, name: 'All' },
+    ...initialCategories,
+  ])
   const [selectedCat, setSelectedCat] = useState<number>(0)
-
-  // useEffect(() => {
-  //   ;(async () => {
-  //     const rawRes = await fetch(`/api/user/blog`)
-  //     const res = await rawRes.json()
-  //     if (rawRes.ok) setData(res.docs)
-  //     else <Toast isSuccess={false} description={res.message} message={'Error'} />
-  //     setLoading(false)
-  //     if (categories.length > 1) return
-  //     const response = await fetchAllCategories()
-  //     setCategories((prev) => [...prev, ...response.docs])
-  //   })()
-  // }, [])
-  useEffect(() => {
-    setData(posts.posts.docs)
-    setLoading(false)
-  }, [])
 
   return (
     <div id="blog" className="w-full h-full">

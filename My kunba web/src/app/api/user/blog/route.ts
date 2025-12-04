@@ -36,6 +36,10 @@ export async function GET(req: NextRequest) {
       })
       data = data.docs[0]
     } else {
+      const limitNum = limit ? Number(limit) : undefined
+      const offsetNum = offset ? Number(offset) : 0
+      const page = limitNum ? Math.floor(offsetNum / limitNum) + 1 : 1
+
       data = await payload.find({
         collection: 'posts',
         depth: 2,
@@ -48,8 +52,8 @@ export async function GET(req: NextRequest) {
           },
         },
         pagination: true,
-        limit: Number(limit),
-        page: Math.floor(Number(offset) / Number(limit)) + 1,
+        ...(limitNum && { limit: limitNum }),
+        page: page,
       })
     }
     return NextResponse.json(data, { status: 200 })

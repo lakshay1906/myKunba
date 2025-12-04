@@ -44,7 +44,21 @@ type Blog = {
   tags: Array<any>
 }
 
-export default function BlogContent({ blog }: { blog: Blog }) {
+type BlogContentProps = {
+  blog: Blog
+  initialComments?: any[]
+  totalComments?: number
+  hasMore?: boolean
+  currentUserId?: number | null
+}
+
+export default function BlogContent({
+  blog,
+  initialComments = [],
+  totalComments = 0,
+  hasMore = false,
+  currentUserId = null,
+}: BlogContentProps) {
   const [isClient, setIsClient] = useState(false)
 
   // Set isClient to true once component mounts
@@ -155,7 +169,14 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       </Card>
       <div id="comments" />
       {/* Comments Section */}
-      <Comments postId={blog.id} postAuthorId={blog.author.id} />
+      <Comments
+        postId={blog.id}
+        postAuthorId={blog.author.id}
+        initialComments={initialComments}
+        totalComments={totalComments}
+        hasMore={hasMore}
+        initialCurrentUserId={currentUserId}
+      />
 
       {/* Related Articles Placeholder */}
       <div className="mt-12">

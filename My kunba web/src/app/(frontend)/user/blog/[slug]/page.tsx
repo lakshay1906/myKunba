@@ -1,5 +1,6 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import type { Metadata } from 'next'
+import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
 
 type Blog = {
   id: number
@@ -34,7 +35,8 @@ type Blog = {
 
 // Fetch blog data from API
 async function fetchBlogById(slug: string) {
-  const res = await fetch(`http://localhost:3000/api/user/blog?slug=${slug}`, {
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const res = await fetch(`${baseUrl}/api/user/blog?slug=${slug}`, {
     next: { revalidate: 3600 },
   })
 
@@ -48,9 +50,22 @@ async function fetchBlogById(slug: string) {
 export default async function BlogPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const blog = await fetchBlogById(slug)
+
+  // Fetch comments and current user ID server-side
+  const [commentsData, currentUserId] = await Promise.all([
+    fetchComments(blog.id, 10),
+    getCurrentUserId(),
+  ])
+
   return (
     <main className="container mx-auto">
-      <BlogContent blog={blog} />
+      <BlogContent
+        blog={blog}
+        initialComments={commentsData.comments}
+        totalComments={commentsData.total}
+        hasMore={commentsData.hasMore}
+        currentUserId={currentUserId}
+      />
     </main>
   )
 }

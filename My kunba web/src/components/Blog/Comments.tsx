@@ -33,6 +33,10 @@ type Comment = {
 type CommentsProps = {
   postId: number
   postAuthorId: number
+  initialComments?: Comment[]
+  totalComments?: number
+  hasMore?: boolean
+  initialCurrentUserId?: number | null
 }
 
 // Recursive component to render nested comments/replies
@@ -256,24 +260,32 @@ function CommentItem({
   )
 }
 
-export default function Comments({ postId, postAuthorId }: CommentsProps) {
+export default function Comments({
+  postId,
+  postAuthorId,
+  initialComments = [],
+  totalComments: initialTotalComments = 0,
+  hasMore: initialHasMore = false,
+  initialCurrentUserId = null,
+}: CommentsProps) {
   const { loginDetail } = useAppStore()
-  const [comments, setComments] = useState<Comment[]>([])
-  const [loading, setLoading] = useState(true)
+  const [comments, setComments] = useState<Comment[]>(initialComments)
+  const [loading, setLoading] = useState(false) // Start with false since we have initial data
   const [submitting, setSubmitting] = useState(false)
   const [commentContent, setCommentContent] = useState('')
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
   const [replyContent, setReplyContent] = useState('')
   // Track reply content for each comment being replied to
   const [replyContents, setReplyContents] = useState<Record<number, string>>({})
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<number | null>(initialCurrentUserId)
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editContent, setEditContent] = useState('')
-  const [hasMore, setHasMore] = useState(false)
+  const [hasMore, setHasMore] = useState(initialHasMore)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [totalComments, setTotalComments] = useState(0)
+  const [totalComments, setTotalComments] = useState(initialTotalComments)
+  const [loadedCount, setLoadedCount] = useState(initialComments.length)
 
-  // Fetch comments
+  // Fetch comments (only needed for refresh after mutations or load more)
   const fetchComments = async (append = false) => {
     try {
       if (!append) {
@@ -283,14 +295,19 @@ export default function Comments({ postId, postAuthorId }: CommentsProps) {
       }
 
       const limit = 10
-      const res = await fetch(`/api/user/comments?postId=${postId}&limit=${limit}`)
+      const offset = append ? loadedCount : 0
+      const res = await fetch(`/api/user/comments?postId=${postId}&limit=${limit}&offset=${offset}`)
       if (res.ok) {
         const data = await res.json()
         if (append) {
-          // Append new comments to existing ones
-          setComments((prev) => [...prev, ...(data.comments || [])])
+          // Append new comments to existing ones (avoid duplicates)
+          const existingIds = new Set(comments.map((c) => c.id))
+          const newComments = (data.comments || []).filter((c: Comment) => !existingIds.has(c.id))
+          setComments((prev) => [...prev, ...newComments])
+          setLoadedCount((prev) => prev + newComments.length)
         } else {
           setComments(data.comments || [])
+          setLoadedCount(data.comments?.length || 0)
         }
         setHasMore(data.hasMore || false)
         setTotalComments(data.total || 0)
@@ -308,76 +325,49 @@ export default function Comments({ postId, postAuthorId }: CommentsProps) {
     await fetchComments(true)
   }
 
-  // Fetch current user ID
+  // Fetch current user ID if not provided initially (for client-side updates)
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      if (!loginDetail) {
-        setCurrentUserId(null)
-        return
-      }
+    // Only fetch if we don't have initialCurrentUserId and loginDetail exists
+    if (initialCurrentUserId === null && loginDetail) {
+      const fetchCurrentUser = async () => {
+        try {
+          let token = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('access_token='))
+            ?.split('=')[1]
 
-      try {
-        // Try to get token from cookies
-        let token = document.cookie
-          .split('; ')
-          .find((row) => row.startsWith('access_token='))
-          ?.split('=')[1]
-
-        // If not found in cookies, try from loginDetail
-        if (!token && loginDetail?.token) {
-          token = loginDetail.token
-        }
-
-        if (!token) {
-          console.warn('No token found for fetching user ID')
-          setCurrentUserId(null)
-          return
-        }
-
-        console.log('Fetching user ID with token:', token.substring(0, 20) + '...')
-
-        const res = await fetch('/api/user/auth/jwt/verify', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (res.ok) {
-          const data = await res.json()
-          console.log('JWT Verify Response:', data) // Debug log
-          // The API returns an array of users
-          if (Array.isArray(data) && data.length > 0 && data[0]?.id) {
-            console.log('Setting currentUserId to:', data[0].id) // Debug log
-            setCurrentUserId(data[0].id)
-          } else if (data?.id) {
-            // Fallback: if it's not an array but has id directly
-            console.log('Setting currentUserId to (fallback):', data.id) // Debug log
-            setCurrentUserId(data.id)
-          } else {
-            console.warn('No user ID found in response:', data) // Debug log
+          if (!token && loginDetail?.token) {
+            token = loginDetail.token
           }
-        } else {
-          console.error('Failed to verify JWT:', res.status)
-          setCurrentUserId(null)
+
+          if (!token) {
+            setCurrentUserId(null)
+            return
+          }
+
+          const res = await fetch('/api/user/auth/jwt/verify', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            if (Array.isArray(data) && data.length > 0 && data[0]?.id) {
+              setCurrentUserId(data[0].id)
+            } else if (data?.id) {
+              setCurrentUserId(data.id)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching current user:', error)
         }
-      } catch (error) {
-        console.error('Error fetching current user:', error)
-        setCurrentUserId(null)
       }
+
+      fetchCurrentUser()
     }
-
-    fetchCurrentUser()
-  }, [loginDetail])
-
-  useEffect(() => {
-    fetchComments()
-  }, [postId])
-
-  // Debug: Log when currentUserId changes
-  useEffect(() => {
-    console.log('currentUserId changed:', currentUserId)
-  }, [currentUserId])
+  }, [loginDetail, initialCurrentUserId])
 
   // Get user initials for avatar
   const getInitials = (name: string) => {
@@ -412,96 +402,46 @@ export default function Comments({ postId, postAuthorId }: CommentsProps) {
   // Author can delete comments on their own posts
   // Users can delete their own comments
   const canDeleteComment = (comment: Comment) => {
-    if (!loginDetail) {
-      console.log('canDeleteComment: No loginDetail')
-      return false
-    }
+    if (!loginDetail) return false
 
     // Admin can delete any comment (show immediately, don't wait for currentUserId)
-    if (loginDetail.role === 'admin') {
-      console.log('canDeleteComment: User is admin')
-      return true
-    }
+    if (loginDetail.role === 'admin') return true
 
     // If currentUserId is not loaded yet, return false to avoid showing button prematurely
-    if (!currentUserId) {
-      console.log('canDeleteComment: currentUserId not loaded yet')
-      return false
-    }
+    if (!currentUserId) return false
 
     // Ensure we're comparing numbers
     const userId = Number(currentUserId)
     const commentUserId = Number(comment.user.id)
 
-    console.log('canDeleteComment: Comparing', {
-      userId,
-      commentUserId,
-      postAuthorId: Number(postAuthorId),
-      role: loginDetail.role,
-    })
-
     // Author can delete comments on their own posts (if they own the post)
-    if (loginDetail.role === 'author' && Number(postAuthorId) === userId) {
-      console.log('canDeleteComment: Author owns the post')
-      return true
-    }
+    if (loginDetail.role === 'author' && Number(postAuthorId) === userId) return true
 
     // Users can delete their own comments
-    if (commentUserId === userId) {
-      console.log('canDeleteComment: User owns the comment')
-      return true
-    }
+    if (commentUserId === userId) return true
 
-    console.log('canDeleteComment: No permission')
     return false
   }
 
   // Check if user can edit comment
   // Users can only edit their own comments
   const canEditComment = (comment: Comment) => {
-    if (!loginDetail) {
-      console.log('canEditComment: No loginDetail')
-      return false
-    }
+    if (!loginDetail) return false
 
     // If currentUserId is not loaded yet, return false to avoid showing button prematurely
-    if (!currentUserId) {
-      console.log('canEditComment: currentUserId not loaded yet')
-      return false
-    }
+    if (!currentUserId) return false
 
     // Ensure we're comparing numbers
     const userId = Number(currentUserId)
     const commentUserId = Number(comment.user.id)
 
-    const canEdit = commentUserId === userId
-    console.log('canEditComment:', {
-      userId,
-      commentUserId,
-      canEdit,
-    })
-
     // Users can only edit their own comments
-    return canEdit
+    return commentUserId === userId
   }
 
   // Check if user can see the menu (either edit or delete)
   const canSeeMenu = (comment: Comment) => {
-    const canEdit = canEditComment(comment)
-    const canDelete = canDeleteComment(comment)
-    const result = canEdit || canDelete
-
-    console.log('canSeeMenu:', {
-      commentId: comment.id,
-      commentUserId: comment.user.id,
-      currentUserId,
-      canEdit,
-      canDelete,
-      result,
-      loginDetailRole: loginDetail?.role,
-    })
-
-    return result
+    return canEditComment(comment) || canDeleteComment(comment)
   }
 
   // Submit comment
@@ -768,7 +708,8 @@ export default function Comments({ postId, postAuthorId }: CommentsProps) {
     }
   }
 
-  if (loading) {
+  // Only show loading if we don't have initial data
+  if (loading && comments.length === 0) {
     return (
       <div className="mt-8 space-y-4">
         <div className="h-6 bg-muted rounded w-32 animate-pulse"></div>
@@ -875,6 +816,20 @@ export default function Comments({ postId, postAuthorId }: CommentsProps) {
           ))
         )}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <Button
+            variant="outline"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="min-w-[120px]"
+          >
+            {loadingMore ? 'Loading...' : 'Load More Comments'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
