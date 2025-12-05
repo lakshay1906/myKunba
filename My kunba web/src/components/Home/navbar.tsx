@@ -32,6 +32,7 @@ import { Badge } from '../ui/badge'
 import { SignInButton } from './Authentication/sign-in-button'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface MenuItem {
   title: string
@@ -191,9 +192,21 @@ export default function Navbar({
               >
                 Sign Out
               </Button>
-              <Link href={'/user/profile'} className="rounded-full p-1 border border-white">
-                <UserCircle />
-              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href={'/user/profile'} className="rounded-full p-1 border border-white">
+                      <UserCircle />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">{loginDetail.email}</p>
+                      <p className="text-xs capitalize">{loginDetail.role}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           ) : (
             <div className="flex gap-2 justify-between items-center">
