@@ -34,7 +34,7 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { MultiSelect } from './multi-select'
-import Toast from '../Toast'
+import { toast } from 'sonner'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
@@ -254,34 +254,33 @@ export function CreatePostForm() {
           // coverImage: imageData?.data.id, // OLD: Media ID from database
           // NEW: Cloudflare R2 storage - ACTIVE
           coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
-          categories: data.categories?.map((item) => Number(item)),
+          // Ensure categories is an array of numbers, or undefined if empty
+          categories:
+            data.categories && data.categories.length > 0
+              ? data.categories
+                  .map((item: string | number) => (typeof item === 'string' ? Number(item) : item))
+                  .filter((item: number) => !isNaN(item))
+              : undefined,
           // tags: data.tags?.map((id) => ({ id })),
         }),
       })
       if (!response.ok) {
         const res = await response.json()
-        {
-          ;<Toast
-            description={res.message ?? "You're not authorized to perform this action"}
-            isSuccess={false}
-            message="Error"
-          />
-        }
+        toast.error('Error', {
+          description: res.message ?? "You're not authorized to perform this action",
+        })
+        return
       }
 
+      toast.success('Success', {
+        description: 'Post created successfully',
+      })
       router.push('/dashboard/blog')
-      return (
-        <Toast isSuccess={true} message={'Success'} description={'Post created successfully'} />
-      )
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating post:', error)
-      return (
-        <Toast
-          isSuccess={false}
-          message={'Error'}
-          description={`'Error creating post:' ${error}`}
-        />
-      )
+      toast.error('Error', {
+        description: error?.message || 'Error creating post',
+      })
     } finally {
       setIsLoading(false)
     }

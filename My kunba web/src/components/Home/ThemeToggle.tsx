@@ -13,10 +13,7 @@ export default function ThemeToggle() {
   if (!mounted) return null // Prevent hydration mismatch
 
   return (
-    <div
-      className="rounded-full p-1 border border-muted-foreground animate-pulse"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-    >
+    <div className="" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
       {theme === 'dark' ? (
         <Sun className="" size={'1.2rem'} />
       ) : (

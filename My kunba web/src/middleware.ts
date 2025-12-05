@@ -6,28 +6,52 @@ export async function middleware(request: NextRequest) {
   if (path === '/') {
     return NextResponse.redirect(new URL('/user', request.url))
   } else if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
-    let token: String | undefined | null = (await cookies()).get('access_token')?.value
+    // Always verify token, whether from cookies or headers
+    let token: string | undefined | null = (await cookies()).get('access_token')?.value
     if (!token || token === '') {
       token = request.headers.get('Authorization')?.split(' ')[1]
-      if (!token || token === '')
+    }
+
+    // If no token found, redirect to unauthorized
+    if (!token || token === '') {
+      return NextResponse.redirect(new URL('/unauthorised', request.url))
+    }
+
+    // Always verify the token and check user role
+    try {
+      const res = await fetch(`${request.nextUrl.origin}/api/user/auth/jwt/verify`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) {
         return NextResponse.redirect(new URL('/unauthorised', request.url))
-      else {
-        const res = await fetch(`${request.nextUrl.origin}/api/user/auth/jwt/verify`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `bearer ${token}`,
-          },
-        })
-        const val = await res.json()
-        if (res.status !== 200) return NextResponse.redirect(new URL('/unauthorised', request.url))
-        else if (val[0].role === 'author' || val[0].role === 'admin') {
-          // add the val[0] to the request
-          const requestHeaders = new Headers(request.headers)
-          requestHeaders.set('x-user', JSON.stringify(val[0]))
-          return NextResponse.next({ request: { headers: requestHeaders } })
-        } else return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
+
+      const val = await res.json()
+
+      // Check if response is an array and has valid user data
+      if (!Array.isArray(val) || val.length === 0 || !val[0]) {
+        return NextResponse.redirect(new URL('/unauthorised', request.url))
+      }
+
+      const user = val[0]
+
+      // Verify user has admin or author role
+      if (user.role !== 'author' && user.role !== 'admin') {
+        return NextResponse.redirect(new URL('/unauthorised', request.url))
+      }
+
+      // Add user data to request headers for use in API routes
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-user', JSON.stringify(user))
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    } catch (error) {
+      console.error('Middleware auth error:', error)
+      return NextResponse.redirect(new URL('/unauthorised', request.url))
     }
   } else if (path === '/user/profile') {
     const token: string | undefined | null = (await cookies()).get('access_token')?.value

@@ -16,6 +16,7 @@ import { PostLogs } from './collections/PostLogs'
 import { Posts } from './collections/Posts'
 import { Tags } from './collections/Tag'
 import { Admin } from './collections/Admin'
+import { Notifications } from './collections/Notifications'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -29,7 +30,18 @@ export default buildConfig({
     theme: 'all',
   },
 
-  collections: [Admin, Users, Media, Categories, Comments, Likes, PostLogs, Posts, Tags],
+  collections: [
+    Admin,
+    Users,
+    Media,
+    Categories,
+    Comments,
+    Likes,
+    PostLogs,
+    Posts,
+    Tags,
+    Notifications,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

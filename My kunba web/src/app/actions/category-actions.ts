@@ -50,20 +50,32 @@ export async function fetchAllCategories() {
 export async function fetchCategoryData(id: number) {
   try {
     const token = (await cookies()).get('access_token')?.value
-    if (!token) return null
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
     const rawRes = await fetch(`${url}/api/dashboard/category?id=${id}`, {
       method: 'GET',
       headers: {
         Authorization: `bearer ${token}`,
       },
     })
+
     if (!rawRes.ok) {
-      const error = await rawRes.json()
-      throw new Error(error.message || 'Failed to create category')
+      const error = await rawRes.json().catch(() => ({ message: 'Failed to fetch category' }))
+      throw new Error(error.message || 'Failed to fetch category')
     }
 
-    return await rawRes.json()
-  } catch (error) {
+    const data = await rawRes.json()
+
+    // Check if category exists
+    if (!data || !data.id) {
+      throw new Error('Category not found')
+    }
+
+    return data
+  } catch (error: any) {
+    console.error('Error fetching category data:', error)
     throw error
   }
 }

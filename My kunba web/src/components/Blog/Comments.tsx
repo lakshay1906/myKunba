@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore } from '@/lib/context/store'
 import Toast from '@/components/Toast'
-import { MoreVertical, Trash2, Edit2 } from 'lucide-react'
+import { MoreVertical, Trash2, Edit2, ThumbsUp, ThumbsDown } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -731,10 +731,16 @@ export default function Comments({
   return (
     <div className="mt-8 space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">
-          {totalComments > 0 ? totalComments : comments.length}{' '}
-          {(totalComments > 0 ? totalComments : comments.length) === 1 ? 'Comment' : 'Comments'}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold mb-2">
+            {totalComments > 0 ? totalComments : comments.length}{' '}
+            {(totalComments > 0 ? totalComments : comments.length) === 1 ? 'Comment' : 'Comments'}
+          </h2>
+          <div className="flex items-center gap-2">
+            <ThumbsUp className="size-5 cursor-pointer" />
+            <ThumbsDown className="size-5 cursor-pointer" />
+          </div>
+        </div>
         <Separator />
       </div>
 

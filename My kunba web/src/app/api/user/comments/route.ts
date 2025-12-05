@@ -242,10 +242,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify post exists
+    // Verify post exists and fetch with author relationship
     const post = await payload.findByID({
       collection: 'posts',
       id: Number(postId),
+      depth: 1, // Fetch author relationship
     })
 
     if (!post) {
@@ -263,6 +264,40 @@ export async function POST(req: NextRequest) {
         ...(parentId && { parent: Number(parentId) }),
       },
     })
+
+    // Get the post author
+    const postAuthorId = typeof post.author === 'object' ? post.author.id : post.author
+
+    // Create notification for the blog author (only if commenter is not the author)
+    if (postAuthorId && postAuthorId !== user.id) {
+      try {
+        // Determine notification type and message
+        const isReply = !!parentId
+        const notificationType = isReply ? 'reply' : 'comment'
+        const notificationTitle = isReply ? 'New Reply to Your Comment' : 'New Comment on Your Blog'
+        const notificationMessage = isReply
+          ? `${user.displayName || 'Someone'} replied to a comment on your blog "${post.title}"`
+          : `${user.displayName || 'Someone'} commented on your blog "${post.title}"`
+
+        await payload.create({
+          collection: 'notifications',
+          data: {
+            user: postAuthorId,
+            title: notificationTitle,
+            message: notificationMessage,
+            type: notificationType,
+            read: false,
+            relatedPost: Number(postId),
+            relatedComment: comment.id,
+            fromUser: user.id,
+          },
+          depth: 0, // Don't populate relationships on create
+        })
+      } catch (notificationError) {
+        // Log error but don't fail the comment creation
+        console.error('Error creating notification:', notificationError)
+      }
+    }
 
     // Fetch the created comment with relations
     const commentWithRelations = await payload.findByID({

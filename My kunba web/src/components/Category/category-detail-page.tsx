@@ -9,6 +9,17 @@ import Link from 'next/link'
 import { useAppStore } from '@/lib/context/store'
 
 export default function CategoryDetailPage({ id, response }: { id: string; response: any }) {
+  // Validate response exists
+  if (!response || !response.id) {
+    return (
+      <div className="space-y-4">
+        <div className="border rounded-lg shadow-md p-4">
+          <p className="text-red-500">Category not found</p>
+        </div>
+      </div>
+    )
+  }
+
   const data: Record<string, any>[] = [{ ...response }]
   const [loading, setLoading] = useState(false)
   const [posts, setPosts] = useState<Record<string, any>[]>([])

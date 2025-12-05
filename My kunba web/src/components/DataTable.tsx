@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import StatusTag from './StatusTag'
+import { motion } from 'framer-motion'
 
 export default function DataTable({
   tableTitle,
@@ -175,79 +176,85 @@ export default function DataTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((col: any) => {
+                {data.map((col: any, index: number) => {
                   return (
-                    <TableRow
+                    <motion.div
                       key={col.id}
+                      initial={{ x: -50, opacity: 0 }}
+                      whileInView={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      viewport={{ once: false, amount: 0.3 }}
                       onClick={() => {
                         if (detailPageLink && detailPageLink !== '')
                           route.push(`${detailPageLink}/${slug ? col.Slug || col.slug : col.id}`)
                       }}
                       className="cursor-pointer"
                     >
-                      {isCheckBoxRequired && (
-                        <TableCell
-                          className="font-medium flex items-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Checkbox
-                            checked={
-                              selectedProducts.find((ele: { id: any }) => ele.id === col.id)
-                                ? true
-                                : false
-                            }
-                            onCheckedChange={(value) => handleChildCheckboxChange(value, col)}
+                      <TableRow>
+                        {isCheckBoxRequired && (
+                          <TableCell
+                            className="font-medium flex items-center"
                             onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
-                      )}
-                      {headers.map((header, idx) => {
-                        if (header !== 'Status') {
-                          return (
-                            <TableCell key={idx} className="text-nowrap">
-                              {(String(col[header]).trim().length > 15
-                                ? `${String(col[header]).substring(0, 15)}...`
-                                : col[header]) || '-'}
-                            </TableCell>
-                          )
-                        } else {
-                          return (
-                            <TableCell key={idx} className="capitalize">
-                              <StatusTag
-                                product={{
-                                  product_status: col.Status,
-                                  indicator:
-                                    col.Status.toLowerCase() === 'published' ||
-                                    'active' ||
-                                    'enabled' ||
-                                    'enable'
-                                      ? 'green'
-                                      : col.Status.toLowerCase() === 'draft'
-                                      ? 'gray'
-                                      : col.Status.toLowerCase() === 'proposed'
-                                      ? 'orange'
-                                      : col.Status.toLowerCase() === 'rejected' ||
-                                        'Inactive' ||
-                                        'disabled' ||
-                                        'disable'
-                                      ? 'red'
-                                      : 'black',
-                                }}
-                                styles="border-none"
-                              />
-                            </TableCell>
-                          )
-                        }
-                      })}
-                      {isEllipsisRequired && (
-                        <TableCell
-                          className="text-right flex justify-end pr-5 h-full"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <EllipsisComponent value={col} />
-                        </TableCell>
-                      )}
-                    </TableRow>
+                          >
+                            <Checkbox
+                              checked={
+                                selectedProducts.find((ele: { id: any }) => ele.id === col.id)
+                                  ? true
+                                  : false
+                              }
+                              onCheckedChange={(value) => handleChildCheckboxChange(value, col)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </TableCell>
+                        )}
+                        {headers.map((header, idx) => {
+                          if (header !== 'Status') {
+                            return (
+                              <TableCell key={idx} className="text-nowrap">
+                                {(String(col[header]).trim().length > 15
+                                  ? `${String(col[header]).substring(0, 15)}...`
+                                  : col[header]) || '-'}
+                              </TableCell>
+                            )
+                          } else {
+                            return (
+                              <TableCell key={idx} className="capitalize">
+                                <StatusTag
+                                  product={{
+                                    product_status: col.Status,
+                                    indicator:
+                                      col.Status.toLowerCase() === 'published' ||
+                                      'active' ||
+                                      'enabled' ||
+                                      'enable'
+                                        ? 'green'
+                                        : col.Status.toLowerCase() === 'draft'
+                                        ? 'gray'
+                                        : col.Status.toLowerCase() === 'proposed'
+                                        ? 'orange'
+                                        : col.Status.toLowerCase() === 'rejected' ||
+                                          'Inactive' ||
+                                          'disabled' ||
+                                          'disable'
+                                        ? 'red'
+                                        : 'black',
+                                  }}
+                                  styles="border-none"
+                                />
+                              </TableCell>
+                            )
+                          }
+                        })}
+                        {isEllipsisRequired && (
+                          <TableCell
+                            className="text-right flex justify-end pr-5 h-full"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <EllipsisComponent value={col} />
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    </motion.div>
                   )
                 })}
                 {totalPages > 1 && (

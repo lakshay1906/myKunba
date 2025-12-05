@@ -76,6 +76,7 @@ export interface Config {
     'post-logs': PostLog;
     posts: Post;
     tags: Tag;
+    notifications: Notification;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -91,6 +92,7 @@ export interface Config {
     'post-logs': PostLogsSelect<false> | PostLogsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -299,6 +301,47 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  /**
+   * The user who will receive this notification
+   */
+  user: number | User;
+  /**
+   * Notification title
+   */
+  title: string;
+  /**
+   * Notification message/content
+   */
+  message: string;
+  /**
+   * Type of notification
+   */
+  type: 'comment' | 'reply' | 'system';
+  /**
+   * Whether the notification has been read
+   */
+  read?: boolean | null;
+  /**
+   * The post related to this notification (if applicable)
+   */
+  relatedPost?: (number | null) | Post;
+  /**
+   * The comment related to this notification (if applicable)
+   */
+  relatedComment?: (number | null) | Comment;
+  /**
+   * The user who triggered this notification (e.g., who commented)
+   */
+  fromUser?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -339,6 +382,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tags';
         value: number | Tag;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -519,6 +566,22 @@ export interface TagsSelect<T extends boolean = true> {
   slug?: T;
   posts?: T;
   deleted_at?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  title?: T;
+  message?: T;
+  type?: T;
+  read?: T;
+  relatedPost?: T;
+  relatedComment?: T;
+  fromUser?: T;
   updatedAt?: T;
   createdAt?: T;
 }

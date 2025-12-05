@@ -108,7 +108,7 @@ export default function BlogContent({
       {blog.categories.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {blog.categories.map((category) => (
-            <Link href={`/category/${category.slug}`} key={category.id}>
+            <Link href={`/user?category=${category.id}`} key={category.id}>
               <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
                 {category.name}
               </Badge>

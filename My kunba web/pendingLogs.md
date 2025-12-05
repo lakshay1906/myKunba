@@ -5,3 +5,6 @@
 ### 2. Trash Blogs => 1\*1-Img, Name, Scheduled Time, CreatedAt
 
 add loading in login process
+
+Pagination
+Likes and dislikes

@@ -141,25 +141,83 @@ export async function POST(req: NextRequest) {
 
     // NEW: Cloudflare R2 storage - ACTIVE
     // coverImage is now a URL string instead of a media ID
+
+    // Prepare categories - ensure it's an array of numbers
+    // Payload CMS expects relationship fields with hasMany to be an array of IDs (numbers)
+    let categoriesData: number[] = []
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      categoriesData = categories
+        .map((cat) => {
+          // Handle both string and number inputs
+          const num = typeof cat === 'string' ? Number(cat) : cat
+          return typeof num === 'number' && !isNaN(num) ? num : null
+        })
+        .filter((cat): cat is number => cat !== null)
+    }
+
+    // Log categories for debugging
+    console.log('Categories received:', categories)
+    console.log('Categories processed:', categoriesData)
+
+    // Build the data object
+    const postData: any = {
+      title,
+      author: author.docs[0].id,
+      slug,
+      status,
+      content: lexicalContent,
+      media: coverImage, // NEW: URL string from Cloudflare R2
+      excerpt,
+      metaDescription,
+      metaTitle,
+      publishDate: publishDate ? publishDate : Date.now(),
+    }
+
+    // Add categories - Payload accepts array of numbers for hasMany relationships
+    // Include empty array if no categories to ensure field is set
+    postData.categories = categoriesData
+
+    console.log('Post data being created:', {
+      ...postData,
+      content: '[Lexical content]', // Don't log full content
+    })
+
     await payload.create({
       collection: 'posts',
-      data: {
-        title,
-        author: author.docs[0].id,
-        slug,
-        status,
-        categories,
-        content: lexicalContent,
-        media: coverImage, // NEW: URL string from Cloudflare R2
-        excerpt,
-        metaDescription,
-        metaTitle,
-        publishDate: publishDate ? publishDate : Date.now(),
-      },
+      data: postData,
     })
     return NextResponse.json({}, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error creating blog post:', error)
+    console.error('Error stack:', error?.stack)
+    console.error('Error details:', JSON.stringify(error, null, 2))
+
+    // Return more detailed error message
+    let errorMessage = 'Internal server error'
+    let errorDetails = null
+
+    if (error?.message) {
+      errorMessage = error.message
+    } else if (error?.data?.message) {
+      errorMessage = error.data.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
+
+    if (error?.data?.errors) {
+      errorDetails = error.data.errors
+    } else if (error?.errors) {
+      errorDetails = error.errors
+    }
+
+    return NextResponse.json(
+      {
+        message: errorMessage,
+        details: errorDetails,
+        fullError: process.env.NODE_ENV === 'development' ? error : undefined,
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -303,9 +361,15 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Update categories if provided
-    if (categories && Array.isArray(categories)) {
-      updateData.categories = categories
+    // Update categories if provided - ensure it's an array of numbers
+    if (categories !== undefined) {
+      if (Array.isArray(categories) && categories.length > 0) {
+        const categoriesData = categories.map((cat) => Number(cat)).filter((cat) => !isNaN(cat))
+        updateData.categories = categoriesData.length > 0 ? categoriesData : []
+      } else {
+        // If categories is provided but empty, set to empty array
+        updateData.categories = []
+      }
     }
 
     // Update the blog post

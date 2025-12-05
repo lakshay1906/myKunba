@@ -2,18 +2,27 @@
 
 import React, { useEffect } from 'react'
 import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
+import { motion } from 'framer-motion'
 
 type BlogProps = {
   posts: Record<string, any>
   initialCategories?: Record<string, any>[]
+  initialSelectedCategory?: number
 }
 
-export default function Blog({ posts, initialCategories = [] }: BlogProps) {
+export default function Blog({
+  posts,
+  initialCategories = [],
+  initialSelectedCategory,
+}: BlogProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [data, setData] = useState<
     {
       id: number
@@ -33,7 +42,48 @@ export default function Blog({ posts, initialCategories = [] }: BlogProps) {
     { id: 0, name: 'All' },
     ...initialCategories,
   ])
-  const [selectedCat, setSelectedCat] = useState<number>(0)
+  const [selectedCat, setSelectedCat] = useState<number>(initialSelectedCategory || 0)
+
+  // Update selected category when initialSelectedCategory changes
+  useEffect(() => {
+    if (initialSelectedCategory !== undefined) {
+      setSelectedCat(initialSelectedCategory)
+      // Scroll to blog section when category is selected from URL
+      setTimeout(() => {
+        const blogSection = document.getElementById('blog')
+        if (blogSection) {
+          blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [initialSelectedCategory])
+
+  // Handle category selection and update URL
+  const handleCategoryClick = (categoryId: number) => {
+    setSelectedCat(categoryId)
+
+    // Update URL query parameter
+    const params = new URLSearchParams(searchParams.toString())
+    if (categoryId === 0) {
+      // Remove category parameter if "All" is selected
+      params.delete('category')
+    } else {
+      // Set category parameter
+      params.set('category', categoryId.toString())
+    }
+
+    // Update URL without page reload
+    const newUrl = params.toString() ? `/user?${params.toString()}` : '/user'
+    router.push(newUrl, { scroll: false })
+
+    // Scroll to blog section
+    setTimeout(() => {
+      const blogSection = document.getElementById('blog')
+      if (blogSection) {
+        blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+  }
 
   return (
     <div id="blog" className="w-full h-full">
@@ -54,7 +104,7 @@ export default function Blog({ posts, initialCategories = [] }: BlogProps) {
               <Badge
                 variant={ele.id === selectedCat ? 'default' : 'secondary'}
                 key={ele.id}
-                onClick={() => setSelectedCat(ele.id)}
+                onClick={() => handleCategoryClick(ele.id)}
                 className="text-sm lg:text-[14px] font-normal text-nowrap cursor-pointer"
               >
                 {ele.name}
@@ -75,8 +125,17 @@ export default function Blog({ posts, initialCategories = [] }: BlogProps) {
                     return category.id === selectedCat
                   })
                 })
-                .map((ele) => (
-                  <BlogCard key={ele.id} post={ele} />
+                .map((ele, idx) => (
+                  <motion.div
+                    key={ele.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 * idx }}
+                    viewport={{ once: false, amount: 0.3 }}
+                    className="size-full"
+                  >
+                    <BlogCard key={ele.id} post={ele} />
+                  </motion.div>
                 ))}
             </div>
           ) : (
