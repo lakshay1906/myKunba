@@ -3,10 +3,13 @@ import CategoryDetailPage from '@/components/Category/category-detail-page'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
-export default async function page({ params }: { params: Promise<{ slug: string }> }) {
+// Mark this route as dynamic since it uses cookies() in fetchCategoryData
+export const dynamic = 'force-dynamic'
+
+export default async function page({ params }: { params: Promise<{ id: string }> }) {
   try {
     const param = await params
-    const id = param.slug
+    const id = param.id
 
     // Validate ID is a number
     const categoryId = Number(id)
@@ -27,3 +30,4 @@ export default async function page({ params }: { params: Promise<{ slug: string 
     redirect('/dashboard/category')
   }
 }
+

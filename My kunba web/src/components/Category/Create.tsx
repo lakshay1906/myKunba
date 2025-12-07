@@ -21,8 +21,10 @@ import { createCategory } from '@/app/actions/category-actions'
 
 export default function Create({
   setCategories,
+  onCategoryCreated,
 }: {
-  setCategories: React.Dispatch<SetStateAction<Category[]>>
+  setCategories?: React.Dispatch<SetStateAction<Category[]>>
+  onCategoryCreated?: (category: Category) => void
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -42,8 +44,14 @@ export default function Create({
     setLoading(true)
     try {
       const cat = await createCategory(name)
-      setCategories((prev) => [...prev, cat])
+      if (setCategories) {
+        setCategories((prev) => [...prev, cat])
+      }
+      if (onCategoryCreated) {
+        onCategoryCreated(cat)
+      }
       handleOpenChange(false)
+      setName('') // Reset form
       ;<Toast message={'Success'} description={'Category created successfully'} isSuccess={true} />
     } catch (error) {
       ;<Toast

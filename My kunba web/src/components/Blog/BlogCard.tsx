@@ -39,8 +39,31 @@ export default function BlogCard({ post }: BlogCardProps) {
     .map((name: any[]) => name[0])
     .join('')
 
+  // Track impression on click
+  const handleClick = async () => {
+    try {
+      // Track impression asynchronously (don't block navigation)
+      fetch('/api/user/posts/impressions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId: post.id }),
+      }).catch((error) => {
+        console.error('Error tracking impression:', error)
+        // Silently fail - don't block user navigation
+      })
+    } catch (error) {
+      // Silently fail - don't block user navigation
+    }
+  }
+
   return (
-    <Link href={`/user/blog/${post.slug}`} className="group cursor-pointer size-full">
+    <Link
+      href={`/blog/${post.slug}`}
+      className="group cursor-pointer size-full"
+      onClick={handleClick}
+    >
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg size-full flex flex-col justify-between">
         <div className="h-48 w-full overflow-hidden">
           {post.media && (

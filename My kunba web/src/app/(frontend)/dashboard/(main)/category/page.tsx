@@ -18,9 +18,37 @@ export const metadata = {
   // },
 }
 
+// Mark this route as dynamic since the dashboard layout uses cookies()
+export const dynamic = 'force-dynamic'
+
 import React from 'react'
 import CategoryMain from '@/components/Category/CategoryMain'
+import { fetchDashboardCategories } from '@/app/actions/dashboard-actions'
+import { redirect } from 'next/navigation'
 
-export default function page() {
-  return <CategoryMain />
+export default async function page({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  try {
+    const params = await searchParams
+    const page = params.page ? Number(params.page) : 1
+    const limit = 10
+
+    const categoryData = await fetchDashboardCategories(page, limit)
+
+    return (
+      <CategoryMain
+        initialCategories={categoryData.docs}
+        initialTotal={categoryData.totalDocs}
+        initialCurrentPage={categoryData.page}
+        initialTotalPages={categoryData.totalPages}
+        initialLimit={categoryData.limit}
+      />
+    )
+  } catch (error) {
+    console.error('Error loading categories:', error)
+    redirect('/unauthorised')
+  }
 }

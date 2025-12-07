@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 
 export const Likes: CollectionConfig = {
   slug: 'likes',
+  timestamps: true,
   fields: [
     {
       name: 'post',
@@ -14,6 +15,16 @@ export const Likes: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+    },
+    {
+      name: 'type',
+      type: 'select',
+      options: [
+        { label: 'Like', value: 'like' },
+        { label: 'Dislike', value: 'dislike' },
+      ],
+      required: true,
+      defaultValue: 'like',
     },
   ],
   admin: {

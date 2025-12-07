@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Dashboard by my kunba',
 }
 
+// Mark all dashboard routes as dynamic since they use cookies() for authentication
+export const dynamic = 'force-dynamic'
+
 export default async function RootLayout({
   children,
 }: Readonly<{

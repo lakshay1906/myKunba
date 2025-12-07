@@ -75,16 +75,16 @@ export default function Navbar({
     title: 'My Kunba',
   },
   menu = [
-    { title: 'Home', url: '/user' },
+    { title: 'Home', url: '/blog' },
     {
       title: 'Products',
-      url: '/user',
+      url: '/blog',
       items: [
         {
           title: 'Blog',
           description: 'The latest industry news, updates, and info',
           icon: <Book className="size-5 shrink-0" />,
-          url: '/user',
+          url: '/blog',
         },
         {
           title: 'Quiz',
@@ -117,19 +117,19 @@ export default function Navbar({
     },
     {
       title: 'Website',
-      url: '/user',
+      url: '/blog',
       items: [
         {
           title: 'About Us',
           description: 'Get all the answers you need right here',
           icon: <ContactRound className="size-5 shrink-0" />,
-          url: '/user/about',
+          url: '/about',
         },
         {
           title: 'Contact Us',
           description: 'We are here to help you with any questions you have',
           icon: <Send className="size-5 shrink-0" />,
-          url: '/user/contact',
+          url: '/contact',
         },
         // {
         //   title: 'Terms of Service',
@@ -162,14 +162,14 @@ export default function Navbar({
             <NavigationMenu>
               <NavigationMenuList>
                 {menu.map((item) => renderMenuItem(item))}
-                {loginDetail?.role === 'admin' && (
+                {/* {loginDetail?.role === 'admin' && (
                   <a
                     className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
                     href={'/dashboard'}
                   >
                     Dashboard
                   </a>
-                )}
+                )} */}
               </NavigationMenuList>
             </NavigationMenu>
           </div>
@@ -195,7 +195,7 @@ export default function Navbar({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href={'/user/profile'} className="rounded-full p-1 border border-white">
+                    <Link href={'/profile'} className="rounded-full p-1 border border-white">
                       <UserCircle />
                     </Link>
                   </TooltipTrigger>

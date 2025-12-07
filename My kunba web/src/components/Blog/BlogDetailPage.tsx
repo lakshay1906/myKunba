@@ -129,7 +129,23 @@ export default function EditBlogPage({
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
-    setBlog({ ...blog, [name]: value })
+    const updatedBlog = { ...blog, [name]: value }
+
+    // Auto-fill metaTitle when title changes
+    if (name === 'title') {
+      if (!blog.metaTitle || blog.metaTitle === blog.title) {
+        updatedBlog.metaTitle = value
+      }
+    }
+
+    // Auto-fill metaDescription when excerpt changes
+    if (name === 'excerpt') {
+      if (!blog.metaDescription || blog.metaDescription === blog.excerpt) {
+        updatedBlog.metaDescription = value
+      }
+    }
+
+    setBlog(updatedBlog)
   }
 
   function handleSelectChange(name: string, value: string) {
@@ -370,21 +386,44 @@ export default function EditBlogPage({
         result: data,
       }))
 
+      // Check if response was not ok
+      if (!response.ok) {
+        const errorMessage =
+          data.error || data.message || `Upload failed: ${response.status} ${response.statusText}`
+        toast.error('Image Upload Failed', {
+          description: errorMessage,
+        })
+        return data
+      }
+
       if (data.success) {
         // Call the callback with the uploaded image data
         handleImageUploaded(data.data)
         // Reset form on success
         clearImageUpload()
+        toast.success('Image Uploaded Successfully', {
+          description: data.message || 'Your image has been uploaded and added to the post.',
+        })
+      } else {
+        // Handle case where success is false
+        const errorMessage = data.error || data.message || 'Image upload failed'
+        toast.error('Image Upload Failed', {
+          description: errorMessage,
+        })
       }
       return data
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred'
       setImageUploadData((prev) => ({
         ...prev,
         result: {
           success: false,
-          error: 'Network error occurred',
+          error: errorMessage,
         },
       }))
+      toast.error('Image Upload Failed', {
+        description: errorMessage,
+      })
       throw error
     } finally {
       isUploadingRef.current = false
@@ -569,12 +608,19 @@ export default function EditBlogPage({
                 <Input
                   id="metaTitle"
                   name="metaTitle"
-                  value={blog.metaTitle || ''}
+                  value={blog.metaTitle || blog.title || ''}
                   onChange={handleInputChange}
-                  placeholder="Enter meta title (defaults to post title if empty)"
+                  onBlur={(e) => {
+                    // If empty on blur, fill with title
+                    if (!e.target.value) {
+                      setBlog({ ...blog, metaTitle: blog.title || '' })
+                    }
+                  }}
+                  placeholder="SEO title (auto-filled from title)"
                 />
                 <p className="text-sm text-muted-foreground">
-                  {(blog.metaTitle || blog.title || '').length}/60 characters
+                  {(blog.metaTitle || blog.title || '').length}/60 characters. Defaults to blog
+                  title if empty.
                 </p>
               </div>
               <div className="space-y-2">
@@ -582,13 +628,20 @@ export default function EditBlogPage({
                 <Textarea
                   id="metaDescription"
                   name="metaDescription"
-                  value={blog.metaDescription || ''}
+                  value={blog.metaDescription || blog.excerpt || ''}
                   onChange={handleInputChange}
-                  placeholder="Enter meta description (defaults to excerpt if empty)"
+                  onBlur={(e) => {
+                    // If empty on blur, fill with excerpt
+                    if (!e.target.value) {
+                      setBlog({ ...blog, metaDescription: blog.excerpt || '' })
+                    }
+                  }}
+                  placeholder="SEO description (auto-filled from excerpt)"
                   rows={3}
                 />
                 <p className="text-sm text-muted-foreground">
-                  {(blog.metaDescription || blog.excerpt || '').length}/160 characters
+                  {(blog.metaDescription || blog.excerpt || '').length}/160 characters. Defaults to
+                  excerpt if empty.
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-muted/50">

@@ -21,10 +21,12 @@ export function popoverEllipsis({
   value,
   isDetailPage,
   setCategories,
+  onCategoryUpdated,
 }: {
   value: Record<string, any>
   isDetailPage: boolean
-  setCategories: any
+  setCategories?: any
+  onCategoryUpdated?: () => void
 }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editCategoryData, setEditCategoryData] = useState<{ name: string; slug: string }>({
@@ -44,14 +46,19 @@ export function popoverEllipsis({
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to update category')
     }
-    setCategories((prev: any[]) =>
-      prev.map((category) => {
-        if (category.id === id) {
-          return { ...category, name: name, slug: slug }
-        }
-        return category
-      }),
-    )
+    // Get updated category from response instead of refetching
+    const updatedCategory = await rawRes.json()
+    if (setCategories && updatedCategory) {
+      setCategories((prev: any[]) =>
+        prev.map((category) => {
+          if (category.id === id) {
+            return { ...category, name: updatedCategory.name, slug: updatedCategory.slug }
+          }
+          return category
+        }),
+      )
+    }
+    // onCategoryUpdated is no longer needed since we update state directly
     setIsSheetOpen(false)
   }
 
@@ -63,7 +70,14 @@ export function popoverEllipsis({
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to delete category')
     }
-    setCategories((prev: any[]) => prev.filter((category) => category.id !== id))
+    // Remove from state instead of refetching
+    if (setCategories) {
+      setCategories((prev: any[]) => prev.filter((category) => category.id !== id))
+    }
+    // Update total count
+    if (onCategoryUpdated) {
+      onCategoryUpdated()
+    }
   }
 
   return (

@@ -6,11 +6,12 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get('slug')
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
-    let data
+    let data: any
     if (slug) {
-      data = await payload.find({
+      const blogResult = await payload.find({
         collection: 'posts',
         select: {
+          id: true,
           title: true,
           slug: true,
           media: true,
@@ -20,6 +21,8 @@ export async function GET(req: NextRequest) {
           publishDate: true,
           content: true,
           commentsEnabled: true,
+          metaTitle: true,
+          metaDescription: true,
         },
         where: {
           slug: {
@@ -34,14 +37,53 @@ export async function GET(req: NextRequest) {
         },
         depth: 2,
       })
-      data = data.docs[0]
+      data = blogResult.docs[0]
+
+      // Increment impressions counter (async, don't block response)
+      if (data && (data as any).id) {
+        const postId = (data as any).id
+        // Don't await - let it run in background to not block the response
+        ;(async () => {
+          try {
+            const post: any = await payload.findByID({
+              collection: 'posts',
+              id: postId,
+            })
+            const currentImpressions = post?.impressions || 0
+            await payload.update({
+              collection: 'posts',
+              id: postId,
+              data: {
+                impressions: currentImpressions + 1,
+              } as any,
+            })
+          } catch (error) {
+            console.error('Error incrementing impressions:', error)
+            // Silently fail
+          }
+        })().catch(() => {
+          // Silently fail
+        })
+      }
     } else {
-      const limitNum = limit ? Number(limit) : undefined
+      const limitNum = limit ? Number(limit) : 12 // Default to 12 if not provided
       const offsetNum = offset ? Number(offset) : 0
       const page = limitNum ? Math.floor(offsetNum / limitNum) + 1 : 1
 
       data = await payload.find({
         collection: 'posts',
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          media: true,
+          author: true,
+          categories: true,
+          publishDate: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         depth: 2,
         where: {
           deleted_at: {
@@ -52,8 +94,9 @@ export async function GET(req: NextRequest) {
           },
         },
         pagination: true,
-        ...(limitNum && { limit: limitNum }),
+        limit: limitNum,
         page: page,
+        sort: '-publishDate',
       })
     }
     return NextResponse.json(data, { status: 200 })

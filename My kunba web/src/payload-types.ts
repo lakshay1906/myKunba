@@ -259,6 +259,10 @@ export interface Post {
   author: number | User;
   categories?: (number | Category)[] | null;
   deleted_at?: string | null;
+  /**
+   * Number of times this blog has been viewed
+   */
+  impressions?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -270,6 +274,7 @@ export interface Like {
   id: number;
   post: number | Post;
   user: number | User;
+  type: 'like' | 'dislike';
   updatedAt: string;
   createdAt: string;
 }
@@ -520,6 +525,7 @@ export interface CommentsSelect<T extends boolean = true> {
 export interface LikesSelect<T extends boolean = true> {
   post?: T;
   user?: T;
+  type?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -554,6 +560,7 @@ export interface PostsSelect<T extends boolean = true> {
   author?: T;
   categories?: T;
   deleted_at?: T;
+  impressions?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -3,8 +3,10 @@ import { ChartAreaInteractive } from '@/components/sidebar/chart-area-interactiv
 import { SectionCards } from '@/components/sidebar/section-cards'
 import React from 'react'
 import data from '@/lib/data.json'
+import { redirect } from 'next/navigation'
 
 export default function page() {
+  redirect('/dashboard/blog') // remove when dashboard is created
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">

@@ -20,63 +20,117 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the URL points to an image
+    // First, check if URL has image extension (quick validation)
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico']
+    const urlLower = imageUrl.toLowerCase()
+    const hasImageExtension = imageExtensions.some((ext) => urlLower.includes(ext))
+
+    // Try to validate by fetching (with timeout)
+    let validationError: string | null = null
     try {
-      const imageResponse = await fetch(imageUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
-        },
-        method: 'HEAD', // Only fetch headers to validate
-      })
+      // Create AbortController for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-      if (!imageResponse.ok) {
-        return NextResponse.json(
-          {
-            error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`,
-          },
-          { status: 400 },
-        )
-      }
-
-      const contentType = imageResponse.headers.get('content-type')
-      if (!contentType || !contentType.startsWith('image/')) {
-        return NextResponse.json(
-          {
-            error: 'URL does not point to a valid image',
-          },
-          { status: 400 },
-        )
-      }
-    } catch (error) {
-      // If HEAD request fails, try GET request as fallback
       try {
+        // Try HEAD request first (lighter)
         const imageResponse = await fetch(imageUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            Accept: 'image/*,*/*',
           },
+          method: 'HEAD',
+          signal: controller.signal,
         })
 
-        if (!imageResponse.ok) {
-          return NextResponse.json(
-            {
-              error: `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`,
-            },
-            { status: 400 },
-          )
-        }
+        clearTimeout(timeoutId)
 
-        const contentType = imageResponse.headers.get('content-type')
-        if (!contentType || !contentType.startsWith('image/')) {
-          return NextResponse.json(
-            {
-              error: 'URL does not point to a valid image',
-            },
-            { status: 400 },
-          )
+        if (!imageResponse.ok) {
+          validationError = `Server returned ${imageResponse.status}: ${imageResponse.statusText}`
+        } else {
+          const contentType = imageResponse.headers.get('content-type')
+          if (!contentType || !contentType.startsWith('image/')) {
+            // If no content-type but has image extension, allow it
+            if (!hasImageExtension) {
+              validationError = `URL does not appear to be an image (Content-Type: ${
+                contentType || 'unknown'
+              })`
+            }
+          }
         }
-      } catch (fetchError) {
+      } catch (headError: any) {
+        clearTimeout(timeoutId)
+
+        // If HEAD fails, try GET request as fallback
+        if (headError.name === 'AbortError') {
+          validationError = 'Request timed out. The server may be slow or unreachable.'
+        } else {
+          try {
+            const getController = new AbortController()
+            const getTimeoutId = setTimeout(() => getController.abort(), 10000)
+
+            const imageResponse = await fetch(imageUrl, {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                Accept: 'image/*,*/*',
+              },
+              signal: getController.signal,
+            })
+
+            clearTimeout(getTimeoutId)
+
+            if (!imageResponse.ok) {
+              validationError = `Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`
+            } else {
+              const contentType = imageResponse.headers.get('content-type')
+              if (!contentType || !contentType.startsWith('image/')) {
+                // If no content-type but has image extension, allow it
+                if (!hasImageExtension) {
+                  validationError = `URL does not appear to be an image (Content-Type: ${
+                    contentType || 'unknown'
+                  })`
+                }
+              }
+            }
+          } catch (getError: any) {
+            if (getError.name === 'AbortError') {
+              validationError = 'Request timed out. The server may be slow or unreachable.'
+            } else if (getError.message) {
+              validationError = `Network error: ${getError.message}`
+            } else {
+              validationError =
+                'Failed to validate image URL. The server may be blocking requests or the URL may be inaccessible.'
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        validationError = 'Request timed out. The server may be slow or unreachable.'
+      } else if (error.message) {
+        validationError = `Validation error: ${error.message}`
+      } else {
+        validationError = 'Failed to validate image URL. Please check if the URL is accessible.'
+      }
+    }
+
+    // If validation failed, return error
+    if (validationError) {
+      // If URL has image extension, be more lenient and just warn
+      if (hasImageExtension) {
+        console.warn(
+          'Image validation warning:',
+          validationError,
+          '- Allowing due to image extension',
+        )
+        // Continue anyway if it has image extension
+      } else {
         return NextResponse.json(
           {
-            error: 'Failed to validate image URL',
+            error: validationError,
+            message: validationError,
           },
           { status: 400 },
         )

@@ -6,5 +6,5 @@
 
 add loading in login process
 
-Pagination
-Likes and dislikes
+Meta title and description
+Scheduled blogs

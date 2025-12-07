@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import DataTable from '../DataTable'
 import Link from 'next/link'
 import { Button } from '../ui/button'
@@ -18,9 +18,27 @@ import { EllipsisVertical } from 'lucide-react'
 import Toast from '../Toast'
 import { useAppStore } from '@/lib/context/store'
 
-export default function BlogMain() {
-  const [loading, setLoading] = useState(true)
-  const [blogs, setBlogs] = useState<Record<string, any>[]>([])
+interface BlogMainProps {
+  initialBlogs?: Record<string, any>[]
+  initialTotal?: number
+  initialCurrentPage?: number
+  initialTotalPages?: number
+  initialLimit?: number
+}
+
+export default function BlogMain({
+  initialBlogs = [],
+  initialTotal = 0,
+  initialCurrentPage = 1,
+  initialTotalPages = 1,
+  initialLimit = 10,
+}: BlogMainProps) {
+  const [loading, setLoading] = useState(false)
+  const [blogs, setBlogs] = useState<Record<string, any>[]>(initialBlogs)
+  const [total, setTotal] = useState(initialTotal)
+  const [currentPage, setCurrentPage] = useState(initialCurrentPage)
+  const [limit] = useState(initialLimit)
+  const [totalPages, setTotalPages] = useState(initialTotalPages)
   const { loginDetail } = useAppStore()
 
   async function deleteBlog(id: string) {
@@ -31,33 +49,68 @@ export default function BlogMain() {
       const error = await rawRes.json()
       throw new Error(error.message || 'Failed to delete blog')
     }
+    // Remove from state instead of refetching
     setBlogs((prev) => prev.filter((blog) => blog.id !== id))
+    // Update total count
+    setTotal((prev) => Math.max(0, prev - 1))
+    // Update total pages if needed
+    setTotalPages((prev) => {
+      const newTotal = total - 1
+      if (newTotal <= 0) return 1
+      return Math.ceil(newTotal / limit)
+    })
+    // If current page becomes empty and not page 1, go to previous page
+    if (blogs.length === 1 && currentPage > 1) {
+      const newPage = currentPage - 1
+      const offset = (newPage - 1) * limit
+      fetchBlogs(limit, offset, false, newPage)
+    }
   }
 
-  useEffect(() => {
-    ;(async () => {
-      if (!loginDetail) {
-        setLoading(false)
-        return (
-          <Toast
-            isSuccess={false}
-            message={'Error'}
-            description={'You are not authorized to perform this action'}
-          />
-        )
-      }
-      const response = await fetch(`/api/dashboard/blog`, {
+  // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
+  const fetchBlogs = async (
+    limitParam: number,
+    offset: number,
+    _skipScroll: boolean,
+    page: number,
+  ) => {
+    if (!loginDetail) {
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/dashboard/blog?page=${page}&limit=${limitParam}`, {
         method: 'GET',
         headers: {
           Authorization: `bearer ${loginDetail.token}`,
         },
       })
       const res = await response.json()
-      if (response.ok) setBlogs(res.data)
-      else <Toast isSuccess={false} description={res.message} message={'Error'} />
+      if (response.ok) {
+        setBlogs(res.data || [])
+        setTotal(res.total || 0)
+        setCurrentPage(res.currentPage || page)
+        setTotalPages(res.totalPages || 1)
+      } else {
+        Toast({
+          isSuccess: false,
+          description: res.message,
+          message: 'Error',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error)
+      Toast({
+        isSuccess: false,
+        description: 'Failed to fetch blogs',
+        message: 'Error',
+      })
+    } finally {
       setLoading(false)
-    })()
-  }, [loginDetail])
+    }
+  }
 
   return (
     <DataTable
@@ -70,17 +123,18 @@ export default function BlogMain() {
       }
       detailPageLink={'/dashboard/blog'}
       slug={true}
-      selectedProductsState={{}}
-      total={0}
-      currentPage={0}
-      limit={0}
-      totalPages={0}
+      selectedProductsState={{ selectedProducts: [], setSelectedProducts: () => {} }}
+      total={total}
+      currentPage={currentPage}
+      limit={limit}
+      totalPages={totalPages}
       data={blogs.map((blog) => ({
         id: blog.id,
         Title: blog.title,
         Slug: `/${blog.slug}`,
         Status: blog.status,
       }))}
+      fetchDataFunction={fetchBlogs}
       EllipsisComponent={({ value }: { value: Record<string, any> }) => (
         <Popover>
           <PopoverTrigger>
@@ -95,9 +149,9 @@ export default function BlogMain() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Delete Category</DialogTitle>
+                  <DialogTitle>Delete Blog</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to delete this category? This action cannot be undone.
+                    Are you sure you want to delete this blog? This action cannot be undone.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -117,7 +171,6 @@ export default function BlogMain() {
       )}
       isCheckBoxRequired={false}
       isEllipsisRequired={true}
-      fetchDataFunction={undefined}
       loading={loading}
     />
   )

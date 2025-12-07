@@ -12,11 +12,15 @@ export default function CurrentPageComponent({
   const endResult = Math.min(currentPage * limit, total)
 
   async function handlePrevClick() {
-    await getAsyncData(limit, limit * (currentPage - 2), false, Math.max(currentPage - 1, 1))
+    const newPage = Math.max(currentPage - 1, 1)
+    const offset = (newPage - 1) * limit
+    await getAsyncData(limit, offset, false, newPage)
   }
 
   async function handleNextClick() {
-    await getAsyncData(limit, limit * currentPage, false, Math.min(currentPage + 1, totalPages))
+    const newPage = Math.min(currentPage + 1, totalPages)
+    const offset = (newPage - 1) * limit
+    await getAsyncData(limit, offset, false, newPage)
   }
 
   return (

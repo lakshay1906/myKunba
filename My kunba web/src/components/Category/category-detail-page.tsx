@@ -24,41 +24,66 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
   const [loading, setLoading] = useState(false)
   const [posts, setPosts] = useState<Record<string, any>[]>([])
   const [postsCount, setPostsCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [limit] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
   const { loginDetail, loading: contextLoading } = useAppStore()
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      // Wait for context to finish loading
-      if (contextLoading) {
-        return
-      }
-
-      // If context finished loading and user is not logged in
-      if (!contextLoading && !loginDetail) {
-        return
-      }
-
-      // If user is logged in, fetch posts
-      if (loginDetail) {
-        try {
-          const res = await fetch(`/api/dashboard/category/posts?categoryId=${id}`, {
-            method: 'GET',
-            headers: {
-              Authorization: `bearer ${loginDetail.token}`,
-            },
-          })
-          if (res.ok) {
-            const result = await res.json()
-            setPosts(result.posts || [])
-            setPostsCount(result.count || 0)
-          }
-        } catch (error) {
-          console.error('Error fetching posts:', error)
-        }
-      }
+  // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
+  const fetchPosts = async (
+    limitParam: number,
+    offset: number,
+    _skipScroll: boolean,
+    page: number,
+  ) => {
+    if (!loginDetail) {
+      setLoading(false)
+      return
     }
 
-    fetchPosts()
+    setLoading(true)
+    try {
+      const res = await fetch(
+        `/api/dashboard/category/posts?categoryId=${id}&page=${page}&limit=${limitParam}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `bearer ${loginDetail.token}`,
+          },
+        },
+      )
+      if (res.ok) {
+        const result = await res.json()
+        setPosts(result.posts || [])
+        setPostsCount(result.total || result.count || 0)
+        setCurrentPage(result.currentPage || page)
+        setTotalPages(
+          result.totalPages || Math.ceil((result.total || result.count || 0) / limitParam),
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    // Wait for context to finish loading
+    if (contextLoading) {
+      return
+    }
+
+    // If context finished loading and user is not logged in
+    if (!contextLoading && !loginDetail) {
+      return
+    }
+
+    // If user is logged in, fetch posts
+    if (loginDetail) {
+      const offset = (1 - 1) * limit // offset for page 1
+      fetchPosts(limit, offset, false, 1)
+    }
   }, [id, contextLoading, loginDetail])
 
   return !loading ? (
@@ -82,11 +107,11 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
         tableTitle="Posts"
         tableSubTitle={`Explore ${String(data[0].name).toLowerCase()} blogs`}
         detailPageLink={''}
-        selectedProductsState={{ undefined }}
+        selectedProductsState={{ selectedProducts: [], setSelectedProducts: () => {} }}
         total={postsCount}
-        currentPage={1}
-        limit={10}
-        totalPages={Math.ceil(postsCount / 10)}
+        currentPage={currentPage}
+        limit={limit}
+        totalPages={totalPages}
         data={posts.map((post: Record<string, any>) => ({
           id: post.id,
           Title: post.title,
@@ -96,7 +121,7 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
         EllipsisComponent={undefined}
         isCheckBoxRequired={false}
         isEllipsisRequired={false}
-        fetchDataFunction={fetchCategoryData}
+        fetchDataFunction={fetchPosts}
         loading={loading}
         AddProductButton={
           <Link href={`/dashboard/category/${id}/add-posts`}>

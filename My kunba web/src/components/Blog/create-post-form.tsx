@@ -136,21 +136,44 @@ export function CreatePostForm() {
         result: data,
       }))
 
+      // Check if response was not ok
+      if (!response.ok) {
+        const errorMessage =
+          data.error || data.message || `Upload failed: ${response.status} ${response.statusText}`
+        toast.error('Image Upload Failed', {
+          description: errorMessage,
+        })
+        return data
+      }
+
       if (data.success) {
         // Call the callback with the uploaded image data
         handleImageUploaded(data.data)
         // Reset form on success
         clearAll()
+        toast.success('Image Uploaded Successfully', {
+          description: data.message || 'Your image has been uploaded and added to the post.',
+        })
+      } else {
+        // Handle case where success is false
+        const errorMessage = data.error || data.message || 'Image upload failed'
+        toast.error('Image Upload Failed', {
+          description: errorMessage,
+        })
       }
       return data
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred'
       setImageUploadData((prev) => ({
         ...prev,
         result: {
           success: false,
-          error: 'Network error occurred',
+          error: errorMessage,
         },
       }))
+      toast.error('Image Upload Failed', {
+        description: errorMessage,
+      })
     } finally {
       setImageUploadData((prev) => ({
         ...prev,
@@ -294,7 +317,7 @@ export function CreatePostForm() {
       .replace(/\s+/g, '-')
   }
 
-  // Handle title change to auto-generate slug
+  // Handle title change to auto-generate slug and metaTitle
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value
     form.setValue('title', title)
@@ -302,6 +325,26 @@ export function CreatePostForm() {
     // Only auto-generate slug if it hasn't been manually edited
     if (!form.getValues('slug')) {
       form.setValue('slug', generateSlug(title))
+    }
+
+    // Auto-fill metaTitle if it's empty or matches the previous title
+    const currentMetaTitle = form.getValues('metaTitle')
+    const previousTitle = form.getValues('title')
+    if (!currentMetaTitle || currentMetaTitle === previousTitle) {
+      form.setValue('metaTitle', title)
+    }
+  }
+
+  // Handle excerpt change to auto-fill metaDescription
+  const handleExcerptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const excerpt = e.target.value
+    form.setValue('excerpt', excerpt)
+
+    // Auto-fill metaDescription if it's empty or matches the previous excerpt
+    const currentMetaDescription = form.getValues('metaDescription')
+    const previousExcerpt = form.getValues('excerpt')
+    if (!currentMetaDescription || currentMetaDescription === previousExcerpt) {
+      form.setValue('metaDescription', excerpt)
     }
   }
 
@@ -369,11 +412,16 @@ export function CreatePostForm() {
                       <Textarea
                         placeholder="Brief summary of the post"
                         {...field}
+                        onChange={(e) => {
+                          field.onChange(e)
+                          handleExcerptChange(e)
+                        }}
                         disabled={isLoading}
                       />
                     </FormControl>
                     <FormDescription>
-                      A short summary that appears in post listings.
+                      A short summary that appears in post listings. This will also be used as the
+                      default meta description.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

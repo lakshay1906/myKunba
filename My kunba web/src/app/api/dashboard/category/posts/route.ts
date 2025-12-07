@@ -45,9 +45,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch posts that belong to this category
+    // Get pagination parameters
+    const page = req.nextUrl.searchParams.get('page')
+    const limit = req.nextUrl.searchParams.get('limit')
+    const pageNum = page ? Number(page) : 1
+    const limitNum = limit ? Number(limit) : 10
+
+    // Fetch posts that belong to this category - only necessary fields
     const posts = await payload.find({
       collection: 'posts',
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+      },
       where: {
         categories: {
           contains: Number(categoryId),
@@ -56,12 +68,19 @@ export async function GET(req: NextRequest) {
           equals: null,
         },
       },
-      depth: 1,
+      pagination: true,
+      limit: limitNum,
+      page: pageNum,
+      sort: '-createdAt',
     })
     return NextResponse.json(
       {
         posts: posts.docs,
         count: posts.totalDocs,
+        total: posts.totalDocs,
+        totalPages: posts.totalPages,
+        currentPage: pageNum,
+        limit: limitNum,
       },
       { status: 200 },
     )

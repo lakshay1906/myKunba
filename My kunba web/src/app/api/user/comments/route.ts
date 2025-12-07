@@ -299,10 +299,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fetch the created comment with relations
+    // Fetch the created comment with relations - only necessary fields
     const commentWithRelations = await payload.findByID({
       collection: 'comments',
       id: comment.id,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        user: true,
+        parent: true,
+      },
       depth: 2,
     })
 
@@ -394,10 +401,17 @@ export async function PUT(req: NextRequest) {
       },
     })
 
-    // Fetch the updated comment with relations
+    // Fetch the updated comment with relations - only necessary fields
     const commentWithRelations = await payload.findByID({
       collection: 'comments',
       id: updatedComment.id,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        user: true,
+        parent: true,
+      },
       depth: 2,
     })
 

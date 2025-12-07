@@ -63,6 +63,7 @@ export default function RichTextEditor({
   const [currentFontFamily, setCurrentFontFamily] = useState('unset')
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         bulletList: {

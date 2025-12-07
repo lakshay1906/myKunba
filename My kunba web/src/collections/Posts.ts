@@ -101,6 +101,14 @@ export const Posts: CollectionConfig = {
       name: 'deleted_at',
       type: 'date',
     },
+    {
+      name: 'impressions',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        description: 'Number of times this blog has been viewed',
+      },
+    },
   ],
   hooks: {
     afterChange: [

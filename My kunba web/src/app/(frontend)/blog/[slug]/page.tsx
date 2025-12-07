@@ -8,16 +8,11 @@ type Blog = {
   slug: string
   excerpt: string
   content: string
-  media: {
-    id: number
-    url: string
-    alt: string | null
-    caption: string | null
-  } | null
+  media: string | null
   status: string
   publishDate: string
-  metaTitle: string
-  metaDescription: string
+  metaTitle: string | null
+  metaDescription: string | null
   author: {
     id: number
     displayName: string
@@ -45,6 +40,57 @@ async function fetchBlogById(slug: string) {
   }
 
   return await res.json()
+}
+
+// Generate metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const blog = await fetchBlogById(slug)
+
+  const title = blog.metaTitle || blog.title
+  const description = blog.metaDescription || blog.excerpt
+  const imageUrl = blog.media || ''
+  const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
+  const siteUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const blogUrl = `${siteUrl}/user/blog/${blog.slug}`
+
+  return {
+    title,
+    description,
+    authors: [{ name: authorName }],
+    openGraph: {
+      title,
+      description,
+      url: blogUrl,
+      siteName: 'My Kunba',
+      images: imageUrl
+        ? [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: blog.title,
+            },
+          ]
+        : [],
+      locale: 'en_US',
+      type: 'article',
+      publishedTime: blog.publishDate,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : [],
+    },
+    alternates: {
+      canonical: blogUrl,
+    },
+  }
 }
 
 export default async function BlogPage({ params }: { params: Promise<{ slug: string }> }) {

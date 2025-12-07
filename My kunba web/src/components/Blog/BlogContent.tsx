@@ -27,8 +27,8 @@ type Blog = {
   media: string | null
   status: string
   publishDate: string
-  metaTitle: string
-  metaDescription: string
+  metaTitle: string | null
+  metaDescription: string | null
   author: {
     id: number
     displayName: string
@@ -154,19 +154,17 @@ export default function BlogContent({
       </div>
 
       {/* Blog Content */}
-      <Card className="mb-8 border-none">
-        <CardContent className="border-none p-0">
-          {isClient ? (
-            <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
-          ) : (
-            <div className="animate-pulse">
-              <div className="h-4 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-muted rounded w-full mb-4"></div>
-              <div className="h-4 bg-muted rounded w-5/6 mb-4"></div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mb-10">
+        {isClient ? (
+          <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
+        ) : (
+          <div className="animate-pulse">
+            <div className="h-4 bg-muted rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-muted rounded w-full mb-4"></div>
+            <div className="h-4 bg-muted rounded w-5/6 mb-4"></div>
+          </div>
+        )}
+      </div>
       <div id="comments" />
       {/* Comments Section */}
       <Comments

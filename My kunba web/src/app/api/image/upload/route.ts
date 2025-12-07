@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         size: file.size,
         mimetype: file.type,
       },
-      message: 'Image uploaded successfully to Cloudflare R2',
+      message: 'Image uploaded successfully',
     })
   } catch (error) {
     console.error('Upload error:', error)

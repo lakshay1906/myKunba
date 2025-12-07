@@ -178,109 +178,116 @@ export default function DataTable({
               <TableBody>
                 {data.map((col: any, index: number) => {
                   return (
-                    <motion.div
+                    // <motion.div
+                    // initial={{ x: -50, opacity: 0 }}
+                    // whileInView={{ x: 0, opacity: 1 }}
+                    // transition={{ duration: 0.5, delay: index * 0.1 }}
+                    // viewport={{ once: false, amount: 0.3 }}
+                    // key={col.id}
+                    //   onClick={() => {
+                    //     if (detailPageLink && detailPageLink !== '')
+                    //       route.push(`${detailPageLink}/${slug ? col.Slug || col.slug : col.id}`)
+                    //   }}
+                    //   className="cursor-pointer"
+                    //   >
+                    <TableRow
                       key={col.id}
-                      initial={{ x: -50, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      viewport={{ once: false, amount: 0.3 }}
                       onClick={() => {
                         if (detailPageLink && detailPageLink !== '')
                           route.push(`${detailPageLink}/${slug ? col.Slug || col.slug : col.id}`)
                       }}
                       className="cursor-pointer"
                     >
-                      <TableRow>
-                        {isCheckBoxRequired && (
-                          <TableCell
-                            className="font-medium flex items-center"
+                      {isCheckBoxRequired && (
+                        <TableCell
+                          className="font-medium flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={
+                              selectedProducts.find((ele: { id: any }) => ele.id === col.id)
+                                ? true
+                                : false
+                            }
+                            onCheckedChange={(value) => handleChildCheckboxChange(value, col)}
                             onClick={(e) => e.stopPropagation()}
-                          >
-                            <Checkbox
-                              checked={
-                                selectedProducts.find((ele: { id: any }) => ele.id === col.id)
-                                  ? true
-                                  : false
-                              }
-                              onCheckedChange={(value) => handleChildCheckboxChange(value, col)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </TableCell>
-                        )}
-                        {headers.map((header, idx) => {
-                          if (header !== 'Status') {
-                            return (
-                              <TableCell key={idx} className="text-nowrap">
-                                {(String(col[header]).trim().length > 15
-                                  ? `${String(col[header]).substring(0, 15)}...`
-                                  : col[header]) || '-'}
-                              </TableCell>
-                            )
-                          } else {
-                            return (
-                              <TableCell key={idx} className="capitalize">
-                                <StatusTag
-                                  product={{
-                                    product_status: col.Status,
-                                    indicator:
-                                      col.Status.toLowerCase() === 'published' ||
-                                      'active' ||
-                                      'enabled' ||
-                                      'enable'
-                                        ? 'green'
-                                        : col.Status.toLowerCase() === 'draft'
-                                        ? 'gray'
-                                        : col.Status.toLowerCase() === 'proposed'
-                                        ? 'orange'
-                                        : col.Status.toLowerCase() === 'rejected' ||
-                                          'Inactive' ||
-                                          'disabled' ||
-                                          'disable'
-                                        ? 'red'
-                                        : 'black',
-                                  }}
-                                  styles="border-none"
-                                />
-                              </TableCell>
-                            )
-                          }
-                        })}
-                        {isEllipsisRequired && (
-                          <TableCell
-                            className="text-right flex justify-end pr-5 h-full"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <EllipsisComponent value={col} />
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    </motion.div>
+                          />
+                        </TableCell>
+                      )}
+                      {headers.map((header, idx) => {
+                        if (header !== 'Status') {
+                          return (
+                            <TableCell key={idx} className="text-nowrap">
+                              {(String(col[header]).trim().length > 15
+                                ? `${String(col[header]).substring(0, 15)}...`
+                                : col[header]) || '-'}
+                            </TableCell>
+                          )
+                        } else {
+                          return (
+                            <TableCell key={idx} className="capitalize">
+                              <StatusTag
+                                product={{
+                                  product_status: col.Status,
+                                  indicator:
+                                    col.Status.toLowerCase() === 'published' ||
+                                    'active' ||
+                                    'enabled' ||
+                                    'enable'
+                                      ? 'green'
+                                      : col.Status.toLowerCase() === 'draft'
+                                      ? 'gray'
+                                      : col.Status.toLowerCase() === 'proposed'
+                                      ? 'orange'
+                                      : col.Status.toLowerCase() === 'rejected' ||
+                                        'Inactive' ||
+                                        'disabled' ||
+                                        'disable'
+                                      ? 'red'
+                                      : 'black',
+                                }}
+                                styles="border-none"
+                              />
+                            </TableCell>
+                          )
+                        }
+                      })}
+                      {isEllipsisRequired && (
+                        <TableCell
+                          className="text-right flex justify-end pr-5 h-full"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EllipsisComponent value={col} />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    // </motion.div>
                   )
                 })}
-                {totalPages > 1 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={
-                        (isCheckBoxRequired
-                          ? isEllipsisRequired
-                            ? Object.keys(data[0]).length + 2
-                            : Object.keys(data[0]).length + 1
-                          : isEllipsisRequired
-                          ? Object.keys(data[0]).length + 1
-                          : Object.keys(data[0]).length) ?? 0
-                      }
-                      className="p-0"
-                    >
-                      <CurrentPageComponent
-                        total={total}
-                        currentPage={currentPage}
-                        limit={limit}
-                        getAsyncData={fetchDataFunction}
-                        totalPages={totalPages}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
+                {/* {totalPages > 1 && ( */}
+                <TableRow>
+                  <TableCell
+                    colSpan={
+                      (isCheckBoxRequired
+                        ? isEllipsisRequired
+                          ? Object.keys(data[0]).length + 2
+                          : Object.keys(data[0]).length + 1
+                        : isEllipsisRequired
+                        ? Object.keys(data[0]).length + 1
+                        : Object.keys(data[0]).length) ?? 0
+                    }
+                    className="p-0"
+                  >
+                    <CurrentPageComponent
+                      total={total}
+                      currentPage={currentPage}
+                      limit={limit}
+                      getAsyncData={fetchDataFunction}
+                      totalPages={totalPages}
+                    />
+                  </TableCell>
+                </TableRow>
+                {/* )} */}
               </TableBody>
             </Table>
           </>

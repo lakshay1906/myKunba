@@ -284,6 +284,78 @@ export default function Comments({
   const [loadingMore, setLoadingMore] = useState(false)
   const [totalComments, setTotalComments] = useState(initialTotalComments)
   const [loadedCount, setLoadedCount] = useState(initialComments.length)
+  const [postLikes, setPostLikes] = useState(0)
+  const [postDislikes, setPostDislikes] = useState(0)
+  const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(null)
+  const [updatingReaction, setUpdatingReaction] = useState(false)
+
+  // Helper function to add a comment to the nested structure
+  const addCommentToState = (newComment: Comment, parentId?: number | null) => {
+    if (!parentId) {
+      // Add as top-level comment
+      setComments((prev) => [newComment, ...prev])
+      setTotalComments((prev) => prev + 1)
+    } else {
+      // Add as reply to a parent comment
+      const addReplyRecursively = (commentList: Comment[]): Comment[] => {
+        return commentList.map((comment) => {
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), newComment],
+            }
+          }
+          if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: addReplyRecursively(comment.replies),
+            }
+          }
+          return comment
+        })
+      }
+      setComments(addReplyRecursively)
+      setTotalComments((prev) => prev + 1)
+    }
+  }
+
+  // Helper function to update a comment in the nested structure
+  const updateCommentInState = (commentId: number, updatedContent: string) => {
+    const updateRecursively = (commentList: Comment[]): Comment[] => {
+      return commentList.map((comment) => {
+        if (comment.id === commentId) {
+          return { ...comment, content: updatedContent }
+        }
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: updateRecursively(comment.replies),
+          }
+        }
+        return comment
+      })
+    }
+    setComments(updateRecursively)
+  }
+
+  // Helper function to delete a comment from the nested structure
+  const deleteCommentFromState = (commentId: number) => {
+    const deleteRecursively = (commentList: Comment[]): Comment[] => {
+      return commentList
+        .filter((comment) => comment.id !== commentId)
+        .map((comment) => {
+          if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: deleteRecursively(comment.replies),
+            }
+          }
+          return comment
+        })
+    }
+    setComments(deleteRecursively)
+    setTotalComments((prev) => Math.max(0, prev - 1))
+  }
 
   // Fetch comments (only needed for refresh after mutations or load more)
   const fetchComments = async (append = false) => {
@@ -324,6 +396,24 @@ export default function Comments({
   const handleLoadMore = async () => {
     await fetchComments(true)
   }
+
+  // Fetch like/dislike data for the blog post
+  useEffect(() => {
+    const fetchPostReactions = async () => {
+      try {
+        const res = await fetch(`/api/user/posts/like?postId=${postId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setPostLikes(data.likes || 0)
+          setPostDislikes(data.dislikes || 0)
+          setUserReaction(data.userReaction || null)
+        }
+      } catch (error) {
+        console.error('Error fetching post reactions:', error)
+      }
+    }
+    fetchPostReactions()
+  }, [postId])
 
   // Fetch current user ID if not provided initially (for client-side updates)
   useEffect(() => {
@@ -444,6 +534,58 @@ export default function Comments({
     return canEditComment(comment) || canDeleteComment(comment)
   }
 
+  // Handle like/dislike for blog post
+  const handlePostLikeDislike = async (type: 'like' | 'dislike') => {
+    if (!loginDetail) {
+      Toast({
+        message: 'Please login',
+        description: 'You need to be logged in to like/dislike posts',
+        isSuccess: false,
+      })
+      return
+    }
+
+    setUpdatingReaction(true)
+
+    try {
+      const token = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('access_token='))
+        ?.split('=')[1]
+
+      const res = await fetch('/api/user/posts/like', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          postId,
+          type,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to like/dislike post')
+      }
+
+      // Update state with new counts and user reaction
+      setPostLikes(data.likes || 0)
+      setPostDislikes(data.dislikes || 0)
+      setUserReaction(data.userReaction || null)
+    } catch (error: any) {
+      Toast({
+        message: 'Error',
+        description: error.message || 'Failed to like/dislike post',
+        isSuccess: false,
+      })
+    } finally {
+      setUpdatingReaction(false)
+    }
+  }
+
   // Submit comment
   const handleSubmitComment = async () => {
     if (!loginDetail) {
@@ -499,13 +641,17 @@ export default function Comments({
         throw new Error(data.message || 'Failed to post comment')
       }
 
+      // Add comment to state instead of refetching
+      if (data.comment) {
+        addCommentToState(data.comment)
+      }
+
       setCommentContent('')
       Toast({
         message: 'Success',
         description: 'Comment posted successfully',
         isSuccess: true,
       })
-      fetchComments()
     } catch (error: any) {
       Toast({
         message: 'Error',
@@ -574,6 +720,11 @@ export default function Comments({
         throw new Error(data.message || 'Failed to post reply')
       }
 
+      // Add reply to state instead of refetching
+      if (data.comment) {
+        addCommentToState(data.comment, parentId)
+      }
+
       // Clear the reply content for this specific parent
       if (replyContents[parentId]) {
         setReplyContents((prev) => {
@@ -590,7 +741,6 @@ export default function Comments({
         description: 'Reply posted successfully',
         isSuccess: true,
       })
-      fetchComments()
     } catch (error: any) {
       Toast({
         message: 'Error',
@@ -651,6 +801,11 @@ export default function Comments({
         throw new Error(data.message || 'Failed to update comment')
       }
 
+      // Update comment in state instead of refetching
+      if (data.comment) {
+        updateCommentInState(commentId, data.comment.content)
+      }
+
       setEditingCommentId(null)
       setEditContent('')
       Toast({
@@ -658,7 +813,6 @@ export default function Comments({
         description: 'Comment updated successfully',
         isSuccess: true,
       })
-      fetchComments()
     } catch (error: any) {
       Toast({
         message: 'Error',
@@ -693,12 +847,14 @@ export default function Comments({
         throw new Error(data.message || 'Failed to delete comment')
       }
 
+      // Remove comment from state instead of refetching
+      deleteCommentFromState(commentId)
+
       Toast({
         message: 'Success',
         description: 'Comment deleted successfully',
         isSuccess: true,
       })
-      fetchComments()
     } catch (error: any) {
       Toast({
         message: 'Error',
@@ -736,9 +892,44 @@ export default function Comments({
             {totalComments > 0 ? totalComments : comments.length}{' '}
             {(totalComments > 0 ? totalComments : comments.length) === 1 ? 'Comment' : 'Comments'}
           </h2>
-          <div className="flex items-center gap-2">
-            <ThumbsUp className="size-5 cursor-pointer" />
-            <ThumbsDown className="size-5 cursor-pointer" />
+          <div className="flex items-center gap-3">
+            {loginDetail ? (
+              <>
+                <button
+                  onClick={() => handlePostLikeDislike('like')}
+                  disabled={updatingReaction}
+                  className={`flex items-center gap-1 text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    userReaction === 'like' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  <ThumbsUp className={`size-5 ${userReaction === 'like' ? 'fill-current' : ''}`} />
+                  <span>{postLikes}</span>
+                </button>
+                <button
+                  onClick={() => handlePostLikeDislike('dislike')}
+                  disabled={updatingReaction}
+                  className={`flex items-center gap-1 text-sm hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    userReaction === 'dislike' ? 'text-destructive' : 'text-muted-foreground'
+                  }`}
+                >
+                  <ThumbsDown
+                    className={`size-5 ${userReaction === 'dislike' ? 'fill-current' : ''}`}
+                  />
+                  <span>{postDislikes}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <ThumbsUp className="size-5" />
+                  <span>{postLikes}</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <ThumbsDown className="size-5" />
+                  <span>{postDislikes}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <Separator />
@@ -785,42 +976,42 @@ export default function Comments({
 
       {/* Comments List */}
       <div className="space-y-6">
-        {comments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No comments yet. Be the first to comment!</p>
-          </div>
-        ) : (
-          comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              depth={0}
-              postId={postId}
-              postAuthorId={postAuthorId}
-              loginDetail={loginDetail}
-              currentUserId={currentUserId}
-              submitting={submitting}
-              editingCommentId={editingCommentId}
-              editContent={editContent}
-              replyingTo={replyingTo}
-              replyContents={replyContents}
-              canSeeMenu={canSeeMenu}
-              canEditComment={canEditComment}
-              canDeleteComment={canDeleteComment}
-              getInitials={getInitials}
-              formatDate={formatDate}
-              handleStartEdit={handleStartEdit}
-              handleCancelEdit={handleCancelEdit}
-              handleUpdateComment={handleUpdateComment}
-              handleDeleteComment={handleDeleteComment}
-              handleSubmitReply={handleSubmitReply}
-              setReplyingTo={setReplyingTo}
-              setReplyContents={setReplyContents}
-              setEditContent={setEditContent}
-              fetchComments={fetchComments}
-            />
-          ))
-        )}
+        {comments.length === 0
+          ? loginDetail && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No comments yet. Be the first to comment!</p>
+              </div>
+            )
+          : comments.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                depth={0}
+                postId={postId}
+                postAuthorId={postAuthorId}
+                loginDetail={loginDetail}
+                currentUserId={currentUserId}
+                submitting={submitting}
+                editingCommentId={editingCommentId}
+                editContent={editContent}
+                replyingTo={replyingTo}
+                replyContents={replyContents}
+                canSeeMenu={canSeeMenu}
+                canEditComment={canEditComment}
+                canDeleteComment={canDeleteComment}
+                getInitials={getInitials}
+                formatDate={formatDate}
+                handleStartEdit={handleStartEdit}
+                handleCancelEdit={handleCancelEdit}
+                handleUpdateComment={handleUpdateComment}
+                handleDeleteComment={handleDeleteComment}
+                handleSubmitReply={handleSubmitReply}
+                setReplyingTo={setReplyingTo}
+                setReplyContents={setReplyContents}
+                setEditContent={setEditContent}
+                fetchComments={fetchComments}
+              />
+            ))}
       </div>
 
       {/* Load More Button */}

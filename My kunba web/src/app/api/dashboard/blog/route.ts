@@ -48,10 +48,35 @@ export async function GET(req: NextRequest) {
               equals: null,
             },
           },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            excerpt: true,
+            content: true,
+            media: true,
+            status: true,
+            publishDate: true,
+            metaTitle: true,
+            metaDescription: true,
+            commentsEnabled: true,
+            isFeatured: true,
+            author: true,
+            categories: true,
+            createdAt: true,
+            updatedAt: true,
+            impressions: true,
+          },
           depth: 2, // Include relationships (author, media, categories)
         })
         return NextResponse.json({ data: blog.docs }, { status: 200 })
       } else {
+        // Get pagination parameters
+        const page = req.nextUrl.searchParams.get('page')
+        const limit = req.nextUrl.searchParams.get('limit')
+        const pageNum = page ? Number(page) : 1
+        const limitNum = limit ? Number(limit) : 10
+
         const blog = await payload.find({
           collection: 'posts',
           where: {
@@ -62,8 +87,30 @@ export async function GET(req: NextRequest) {
               equals: null,
             },
           },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            status: true,
+            publishDate: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          limit: limitNum,
+          page: pageNum,
+          pagination: true,
+          sort: '-createdAt',
         })
-        return NextResponse.json({ data: blog.docs }, { status: 200 })
+        return NextResponse.json(
+          {
+            data: blog.docs,
+            total: blog.totalDocs,
+            totalPages: blog.totalPages,
+            currentPage: pageNum,
+            limit: limitNum,
+          },
+          { status: 200 },
+        )
       }
     }
 
@@ -155,9 +202,9 @@ export async function POST(req: NextRequest) {
         .filter((cat): cat is number => cat !== null)
     }
 
-    // Log categories for debugging
-    console.log('Categories received:', categories)
-    console.log('Categories processed:', categoriesData)
+    // Auto-fill metaTitle and metaDescription if not provided
+    const finalMetaTitle = metaTitle || title
+    const finalMetaDescription = metaDescription || excerpt
 
     // Build the data object
     const postData: any = {
@@ -168,25 +215,30 @@ export async function POST(req: NextRequest) {
       content: lexicalContent,
       media: coverImage, // NEW: URL string from Cloudflare R2
       excerpt,
-      metaDescription,
-      metaTitle,
+      metaDescription: finalMetaDescription,
+      metaTitle: finalMetaTitle,
       publishDate: publishDate ? publishDate : Date.now(),
+      impressions: 0, // Initialize impressions counter
     }
 
     // Add categories - Payload accepts array of numbers for hasMany relationships
     // Include empty array if no categories to ensure field is set
     postData.categories = categoriesData
 
-    console.log('Post data being created:', {
-      ...postData,
-      content: '[Lexical content]', // Don't log full content
-    })
-
-    await payload.create({
+    const createdPost = await payload.create({
       collection: 'posts',
       data: postData,
     })
-    return NextResponse.json({}, { status: 201 })
+    // Return only necessary fields to reduce bandwidth
+    return NextResponse.json(
+      {
+        id: createdPost.id,
+        title: createdPost.title,
+        slug: createdPost.slug,
+        status: createdPost.status,
+      },
+      { status: 201 },
+    )
   } catch (error: any) {
     console.error('Error creating blog post:', error)
     console.error('Error stack:', error?.stack)
@@ -299,6 +351,10 @@ export async function PUT(req: NextRequest) {
     const lexicalContent =
       typeof content === 'string' ? convertHtmlToLexicalWithParser(content) : content
 
+    // Auto-fill metaTitle and metaDescription if not provided
+    const finalMetaTitle = metaTitle || title
+    const finalMetaDescription = metaDescription || excerpt
+
     // Prepare update data
     const updateData: any = {
       title,
@@ -306,8 +362,8 @@ export async function PUT(req: NextRequest) {
       excerpt,
       content: lexicalContent,
       status,
-      metaDescription,
-      metaTitle,
+      metaDescription: finalMetaDescription,
+      metaTitle: finalMetaTitle,
       commentsEnabled: commentsEnabled !== undefined ? commentsEnabled : blogPost.commentsEnabled,
       isFeatured: isFeatured !== undefined ? isFeatured : blogPost.isFeatured,
     }
@@ -373,13 +429,22 @@ export async function PUT(req: NextRequest) {
     }
 
     // Update the blog post
-    await payload.update({
+    const updatedPost = await payload.update({
       collection: 'posts',
       id: Number(id),
       data: updateData,
     })
 
-    return NextResponse.json({ message: 'Blog post updated successfully' }, { status: 200 })
+    // Return only necessary fields to reduce bandwidth
+    return NextResponse.json(
+      {
+        id: updatedPost.id,
+        title: updatedPost.title,
+        slug: updatedPost.slug,
+        status: updatedPost.status,
+      },
+      { status: 200 },
+    )
   } catch (error: any) {
     console.error('Error updating blog:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
