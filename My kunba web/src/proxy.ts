@@ -1,10 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   if (path === '/') {
-    return NextResponse.redirect(new URL('/user', request.url))
+    return NextResponse.redirect(new URL('/blog', request.url))
   } else if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
     // Always verify token, whether from cookies or headers
     let token: string | undefined | null = (await cookies()).get('access_token')?.value
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set('x-user', JSON.stringify(user))
       return NextResponse.next({ request: { headers: requestHeaders } })
     } catch (error) {
-      console.error('Middleware auth error:', error)
+      console.error('Proxy auth error:', error)
       return NextResponse.redirect(new URL('/unauthorised', request.url))
     }
   } else if (path === '/user/profile') {
@@ -67,3 +67,4 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/:path*'],
 }
+
