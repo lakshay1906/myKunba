@@ -10,25 +10,21 @@ const __dirname = path.dirname(__filename)
 // Returns paths normalized for cross-platform compatibility
 function findPayloadUIScssPaths() {
   const paths = []
-  
+
   // Add symlinked path - use absolute path for sassOptions
   const symlinkedPath = path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')
   if (existsSync(symlinkedPath)) {
     paths.push(symlinkedPath)
   }
-  
+
   // Add pnpm paths
   const pnpmDir = path.join(__dirname, 'node_modules/.pnpm')
   if (existsSync(pnpmDir)) {
     try {
       const entries = readdirSync(pnpmDir, { withFileTypes: true })
       for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('@payloadcms+ui@3.69.0')) {
-          const scssPath = path.join(
-            pnpmDir,
-            entry.name,
-            'node_modules/@payloadcms/ui/dist/scss'
-          )
+        if (entry.isDirectory() && entry.name.startsWith('@payloadcms+ui@')) {
+          const scssPath = path.join(pnpmDir, entry.name, 'node_modules/@payloadcms/ui/dist/scss')
           if (existsSync(scssPath)) {
             paths.push(scssPath)
           }
@@ -38,7 +34,7 @@ function findPayloadUIScssPaths() {
       // Ignore errors
     }
   }
-  
+
   return paths.length > 0 ? paths : [path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')]
 }
 
@@ -49,6 +45,7 @@ const nextConfig = {
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
+  output: 'standalone',
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
@@ -74,11 +71,11 @@ const nextConfig = {
     // Configure sass-loader to include PayloadCMS UI scss paths
     // This ensures SCSS can resolve @import 'vars' from PayloadCMS UI
     config.module.rules = config.module.rules || []
-    
+
     // Find and update all SCSS/SASS rules
     const updateSassLoader = (rule) => {
       if (!rule.use) return
-      
+
       const uses = Array.isArray(rule.use) ? rule.use : [rule.use]
       uses.forEach((use) => {
         if (use && (use.loader?.includes('sass-loader') || use === 'sass-loader')) {
@@ -91,10 +88,13 @@ const nextConfig = {
         }
       })
     }
-    
+
     // Update existing rules
     config.module.rules.forEach((rule) => {
-      if (rule.test && (rule.test.toString().includes('scss') || rule.test.toString().includes('sass'))) {
+      if (
+        rule.test &&
+        (rule.test.toString().includes('scss') || rule.test.toString().includes('sass'))
+      ) {
         updateSassLoader(rule)
         // Also check oneOf if it exists
         if (rule.oneOf) {
@@ -105,20 +105,37 @@ const nextConfig = {
 
     return config
   },
+  // Temporarily ignore TypeScript errors due to PayloadCMS 3.33.0 + Next.js 16 compatibility issue
+  // The GraphQL route handler has incorrect types (expects slug params but route has none)
+  // This is a known issue with auto-generated PayloadCMS routes
+  // TODO: Remove this once PayloadCMS releases a fix for Next.js 16 compatibility
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
-      },
-    ],
+    // Tighten remote patterns for production security
+    // Add specific domains as needed instead of allowing all
+    remotePatterns:
+      process.env.NODE_ENV === 'production'
+        ? [
+            // Add your specific image domains here for production
+            // Example:
+            // {
+            //   protocol: 'https',
+            //   hostname: 'your-cdn-domain.com',
+            // },
+          ]
+        : [
+            // Allow all in development for easier testing
+            {
+              protocol: 'https',
+              hostname: '**',
+            },
+            {
+              protocol: 'http',
+              hostname: '**',
+            },
+          ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
