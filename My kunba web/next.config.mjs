@@ -1,7 +1,54 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { readdirSync, existsSync } from 'fs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Find all PayloadCMS UI scss directories (handles pnpm structure)
+// Returns paths normalized for cross-platform compatibility
+function findPayloadUIScssPaths() {
+  const paths = []
+  
+  // Add symlinked path - use absolute path for sassOptions
+  const symlinkedPath = path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')
+  if (existsSync(symlinkedPath)) {
+    paths.push(symlinkedPath)
+  }
+  
+  // Add pnpm paths
+  const pnpmDir = path.join(__dirname, 'node_modules/.pnpm')
+  if (existsSync(pnpmDir)) {
+    try {
+      const entries = readdirSync(pnpmDir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name.startsWith('@payloadcms+ui@3.69.0')) {
+          const scssPath = path.join(
+            pnpmDir,
+            entry.name,
+            'node_modules/@payloadcms/ui/dist/scss'
+          )
+          if (existsSync(scssPath)) {
+            paths.push(scssPath)
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+  
+  return paths.length > 0 ? paths : [path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')]
+}
+
+const payloadUIScssPaths = findPayloadUIScssPaths()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  sassOptions: {
+    includePaths: payloadUIScssPaths,
+  },
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
@@ -23,6 +70,38 @@ const nextConfig = {
         message: /Critical dependency: the request of a dependency is an expression/,
       },
     ]
+
+    // Configure sass-loader to include PayloadCMS UI scss paths
+    // This ensures SCSS can resolve @import 'vars' from PayloadCMS UI
+    config.module.rules = config.module.rules || []
+    
+    // Find and update all SCSS/SASS rules
+    const updateSassLoader = (rule) => {
+      if (!rule.use) return
+      
+      const uses = Array.isArray(rule.use) ? rule.use : [rule.use]
+      uses.forEach((use) => {
+        if (use && (use.loader?.includes('sass-loader') || use === 'sass-loader')) {
+          use.options = use.options || {}
+          use.options.sassOptions = use.options.sassOptions || {}
+          use.options.sassOptions.includePaths = [
+            ...(use.options.sassOptions.includePaths || []),
+            ...payloadUIScssPaths,
+          ]
+        }
+      })
+    }
+    
+    // Update existing rules
+    config.module.rules.forEach((rule) => {
+      if (rule.test && (rule.test.toString().includes('scss') || rule.test.toString().includes('sass'))) {
+        updateSassLoader(rule)
+        // Also check oneOf if it exists
+        if (rule.oneOf) {
+          rule.oneOf.forEach(updateSassLoader)
+        }
+      }
+    })
 
     return config
   },
@@ -46,6 +125,9 @@ const nextConfig = {
     unoptimized: true,
   },
   // Turbopack configuration (migrated from experimental.turbo)
+  // Note: Turbopack has limited support for sassOptions and Windows paths
+  // If SCSS issues persist, use: pnpm run dev:webpack (runs without Turbopack)
+  // Turbopack resolveAlias doesn't work well with Windows paths for SCSS
   turbopack: {},
 }
 
