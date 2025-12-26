@@ -9,26 +9,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Build Docker image from subfolder
       - name: Build Docker image
-        working-directory: "My kunba web"
-        run: docker build -t mykunba:latest .
+        run: docker build -t mykunba:latest "./My kunba web"
 
+      # 3️⃣ Save Docker image as tar at repo root
       - name: Save Docker image
-        working-directory: "My kunba web"
         run: docker save mykunba:latest > mykunba.tar
 
+      # 4️⃣ Copy image tar to EC2
       - name: Copy image to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "My kunba web/mykunba.tar"
-          target: "/home/ec2-user"
+          source: mykunba.tar
+          target: /home/ec2-user
 
+      # 5️⃣ Load image & run container on EC2
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -36,13 +39,19 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker load < mykunba.tar
+            set -e
 
+            echo "Loading Docker image..."
+            docker load < /home/ec2-user/mykunba.tar
+
+            echo "Stopping old container (if any)..."
             docker stop mykunba || true
             docker rm mykunba || true
 
+            echo "Cleaning unused images..."
             docker image prune -f
 
+            echo "Starting new container..."
             docker run -d \
               --name mykunba \
               --restart unless-stopped \
@@ -50,4 +59,7 @@ jobs:
               -p 3000:3000 \
               mykunba:latest
 
-            rm -f mykunba.tar
+            echo "Cleaning up tar file..."
+            rm -f /home/ec2-user/mykunba.tar
+
+            echo "Deployment completed successfully."
