@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { payload } from '@/payload-client'
 import { NextResponse } from 'next/server.js'
 
