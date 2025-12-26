@@ -6,6 +6,7 @@ import { AppProvider } from '@/lib/context/store'
 import { ThemeProvider } from 'next-themes'
 import ThemeInitializer from '@/components/ThemeInitializer'
 import { getTokenFromCookie } from './actions/jwt-actions'
+import Script from 'next/script'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,6 +36,30 @@ export default async function RootLayout({
         cz-shortcut-listen="false"
         suppressHydrationWarning={true}
       >
+        <Script
+          id="vercel-url-decoder"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function (l) {
+                if (l.search[1] === "/") {
+                  var decoded = l.search
+                    .slice(1)
+                    .split("&")
+                    .map(function (s) {
+                      return s.replace(/~and~/g, "&");
+                    })
+                    .join("?");
+                  window.history.replaceState(
+                    null,
+                    null,
+                    l.pathname.slice(0, -1) + decoded + l.hash
+                  );
+                }
+              })(window.location);
+            `,
+          }}
+        />
         <AppProvider token={token}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <ThemeInitializer />
