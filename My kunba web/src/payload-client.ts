@@ -45,3 +45,20 @@ export async function getPayloadClient(): Promise<Payload> {
   cachedPayload = await initializing
   return cachedPayload
 }
+
+/**
+ * Synchronous-looking payload export that proxies to getPayloadClient()
+ * This allows existing code to use `payload` directly while still using async initialization
+ */
+export const payload = new Proxy({} as Payload, {
+  get(_target, prop: keyof Payload) {
+    return async (...args: any[]) => {
+      const client = await getPayloadClient()
+      const value = (client as any)[prop]
+      if (typeof value === 'function') {
+        return value.apply(client, args)
+      }
+      return value
+    }
+  },
+}) as Payload
