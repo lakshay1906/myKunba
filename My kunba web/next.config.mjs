@@ -139,7 +139,7 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    unoptimized: true,
+    unoptimized: false,
   },
   // Turbopack configuration (migrated from experimental.turbo)
   // Note: Turbopack has limited support for sassOptions and Windows paths

@@ -1,0 +1,51 @@
+name: Deploy Next.js to Amazon Linux EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t mykunba:latest .
+
+      - name: Save Docker image
+        run: docker save mykunba:latest > mykunba.tar
+
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'mykunba.tar'
+          target: '/home/ec2-user'
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker load < mykunba.tar
+
+            docker stop mykunba || true
+            docker rm mykunba || true
+
+            docker image prune -f
+
+            docker run -d \
+              --name mykunba \
+              --restart unless-stopped \
+              --env-file /home/ec2-user/.env \
+              -p 3000:3000 \
+              mykunba:latest
+
+            rm -f /home/ec2-user/mykunba.tar
