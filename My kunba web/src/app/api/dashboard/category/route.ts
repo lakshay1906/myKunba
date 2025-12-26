@@ -1,4 +1,5 @@
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server.js'
