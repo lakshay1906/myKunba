@@ -39,10 +39,6 @@ RUN \
 # =========================
 FROM base AS builder
 
-# 🔐 Payload requires secret at BUILD time
-ARG PAYLOAD_SECRET
-ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
-
 WORKDIR /app
 
 # Reuse dependencies
