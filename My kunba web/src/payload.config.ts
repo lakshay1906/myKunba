@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
-import { buildConfig } from 'payload'
+import { buildConfig, SharpDependency } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
@@ -63,7 +63,7 @@ export default buildConfig({
       connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
     },
   }),
-  sharp,
+  sharp: sharp as unknown as SharpDependency,
   plugins: [
     payloadCloudPlugin(),
     // storage-adapter-placeholder

@@ -19,19 +19,19 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy only lock files for better caching
+# Copy lock files only (better cache)
 COPY package.json pnpm-lock.yaml* yarn.lock* package-lock.json* ./
 
 # Install dependencies
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
+  corepack enable pnpm && pnpm install --frozen-lockfile; \
   elif [ -f yarn.lock ]; then \
-    yarn install --frozen-lockfile; \
+  yarn install --frozen-lockfile; \
   elif [ -f package-lock.json ]; then \
-    npm ci; \
+  npm ci; \
   else \
-    echo "❌ No lockfile found" && exit 1; \
+  echo "❌ No lockfile found" && exit 1; \
   fi
 
 # =========================
@@ -39,28 +39,32 @@ RUN \
 # =========================
 FROM base AS builder
 
+# 🔐 Payload requires secret at BUILD time
+ARG PAYLOAD_SECRET
+ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
+
 WORKDIR /app
 
-# Reuse node_modules
+# Reuse dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
 COPY . .
 
-# Build Next.js (standalone)
+# Build Next.js (standalone output)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm run build; \
+  corepack enable pnpm && pnpm run build; \
   elif [ -f yarn.lock ]; then \
-    yarn run build; \
+  yarn run build; \
   elif [ -f package-lock.json ]; then \
-    npm run build; \
+  npm run build; \
   else \
-    echo "❌ No lockfile found" && exit 1; \
+  echo "❌ No lockfile found" && exit 1; \
   fi
 
 # =========================
-# Runtime stage (small & secure)
+# Runtime stage (minimal & secure)
 # =========================
 FROM node:20-alpine AS runner
 
@@ -74,7 +78,7 @@ RUN apk add --no-cache vips
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 nextjs
+  && adduser  --system --uid 1001 nextjs
 
 # Copy public assets
 COPY --from=builder /app/public ./public
@@ -83,12 +87,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Ensure correct permissions
+# Ensure permissions
 RUN mkdir -p .next && chown -R nextjs:nodejs .next
 
 USER nextjs
 
 EXPOSE 3000
 
-# Run standalone server
+# Run standalone Next.js server
 CMD ["node", "server.js"]
