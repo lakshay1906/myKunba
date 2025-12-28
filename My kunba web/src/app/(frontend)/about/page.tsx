@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function About() {
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
+    <div className="max-w-5xl mx-auto space-y-12 mt-8">
       <section>
         <h1 className="text-3xl font-bold mb-6">About Our Blog</h1>
         <div className="prose dark:prose-invert max-w-none">

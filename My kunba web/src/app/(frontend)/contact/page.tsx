@@ -70,7 +70,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto mt-8">
       <h1 className="text-3xl font-bold mb-8">Contact Us</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -100,7 +100,7 @@ export default function Contact() {
                 </div>
               </div>
 
-              <div className="flex items-start">
+              {/* <div className="flex items-start">
                 <MapPin className="w-5 h-5 text-blue-500 mt-1 mr-3" />
                 <div>
                   <h3 className="font-medium">Address</h3>
@@ -110,7 +110,7 @@ export default function Contact() {
                     San Francisco, CA 94103
                   </p>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -275,10 +275,10 @@ export default function Contact() {
         </div>
       </div>
 
-      <div className="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 h-80">
+      {/* Replace with an actual map component if needed */}
+      {/* <div className="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 h-80">
         <h2 className="text-2xl font-semibold mb-4">Find Us</h2>
         <div className="h-64 w-full bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-          {/* Replace with an actual map component if needed */}
           <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
             <p className="text-center">
               Interactive Map
@@ -289,7 +289,7 @@ export default function Contact() {
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }
