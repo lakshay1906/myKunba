@@ -1,4 +1,3 @@
-// Route group layout - no HTML/body tags (handled by root layout)
 import { Toaster } from '@/components/ui/sonner'
 import { AppProvider } from '@/lib/context/store'
 import { ThemeProvider } from 'next-themes'
