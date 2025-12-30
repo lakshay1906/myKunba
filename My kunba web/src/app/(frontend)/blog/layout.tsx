@@ -10,5 +10,5 @@ export default function BlogLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return <div className="container mx-auto">{children}</div>
+  return <div className="container mx-auto px-4 sm:px-0">{children}</div>
 }
