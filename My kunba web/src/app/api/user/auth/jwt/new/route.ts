@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
       name: 'access_token',
       value: token,
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production', // Only secure in production (HTTPS required)
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for better production compatibility
+      path: '/', // Explicitly set path
     })
     return NextResponse.json({ token }, { status: 200 })
   } catch (error) {

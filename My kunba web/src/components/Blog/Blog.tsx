@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
@@ -9,16 +9,14 @@ import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 import { motion } from 'framer-motion'
-import CurrentPageComponent from '../CurrentPageComponent'
 
 type BlogProps = {
   posts: Record<string, any>
   initialCategories?: Record<string, any>[]
   initialSelectedCategory?: number
   total?: number
-  currentPage?: number
-  totalPages?: number
   limit?: number
+  hasMore?: boolean
 }
 
 export default function Blog({
@@ -26,12 +24,12 @@ export default function Blog({
   initialCategories = [],
   initialSelectedCategory,
   total: initialTotal = 0,
-  currentPage: initialCurrentPage = 1,
-  totalPages: initialTotalPages = 1,
-  limit: initialLimit = 10,
+  limit: initialLimit = 24,
+  hasMore: initialHasMore = false,
 }: BlogProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const observerRef = useRef<HTMLDivElement>(null)
   const [data, setData] = useState<
     {
       id: number
@@ -46,45 +44,42 @@ export default function Blog({
       updatedAt: string
     }[]
   >(posts?.docs || [])
-  const [loading, setLoading] = useState(false) // Start with false since we have initial data
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [categories, setCategories] = useState<Record<string, any>[]>([
     { id: 0, name: 'All' },
     ...initialCategories,
   ])
   const [selectedCat, setSelectedCat] = useState<number>(initialSelectedCategory || 0)
   const [total, setTotal] = useState(initialTotal)
-  const [currentPage, setCurrentPage] = useState(initialCurrentPage)
-  const [totalPages, setTotalPages] = useState(initialTotalPages)
+  const [hasMore, setHasMore] = useState(initialHasMore)
   const [limit] = useState(initialLimit)
+  const [offset, setOffset] = useState(initialLimit)
 
   // Update state when props change (from SSR)
   useEffect(() => {
     if (posts?.docs) {
       setData(posts.docs)
     }
-    // Always update these values, even if 0, to ensure they're set correctly
     const newTotal = initialTotal || posts?.totalDocs || 0
-    const newCurrentPage = initialCurrentPage || 1
-    const newTotalPages = initialTotalPages || posts?.totalPages || 1
+    const newHasMore = initialHasMore || posts?.hasNextPage || false
 
     setTotal(newTotal)
-    setCurrentPage(newCurrentPage)
-    setTotalPages(newTotalPages)
+    setHasMore(newHasMore)
+    setOffset(initialLimit)
 
     // Debug log (remove in production)
     if (process.env.NODE_ENV === 'development') {
-      console.log('Blog Pagination Debug:', {
+      console.log('Blog Infinite Scroll Debug:', {
         total: newTotal,
-        currentPage: newCurrentPage,
-        totalPages: newTotalPages,
+        hasMore: newHasMore,
         limit,
-        shouldShowPagination: newTotalPages > 1,
         postsData: posts
-          ? { hasDocs: !!posts.docs, totalDocs: posts.totalDocs, totalPages: posts.totalPages }
+          ? { hasDocs: !!posts.docs, totalDocs: posts.totalDocs, hasNextPage: posts.hasNextPage }
           : null,
       })
     }
-  }, [posts, initialTotal, initialCurrentPage, initialTotalPages, limit])
+  }, [posts, initialTotal, initialHasMore, initialLimit, limit])
 
   // Update selected category when initialSelectedCategory changes
   useEffect(() => {
@@ -100,42 +95,17 @@ export default function Blog({
     }
   }, [initialSelectedCategory])
 
-  // Sync with URL page parameter
-  useEffect(() => {
-    const pageParam = searchParams.get('page')
-    if (pageParam) {
-      const pageNum = Number(pageParam)
-      if (!isNaN(pageNum) && pageNum > 0 && pageNum !== currentPage) {
-        const offset = (pageNum - 1) * limit
-        fetchBlogs(limit, offset, false, pageNum)
-      }
-    }
-  }, [searchParams])
+  // Load more blogs for infinite scroll
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
 
-  // Fetch blogs with pagination
-  // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
-  const fetchBlogs = async (
-    limitParam: number,
-    offset: number,
-    _skipScroll: boolean,
-    page: number,
-  ) => {
-    setLoading(true)
+    setLoadingMore(true)
     try {
       const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-
-      // Update URL with page parameter
-      const params = new URLSearchParams(searchParams.toString())
-      if (page > 1) {
-        params.set('page', page.toString())
-      } else {
-        params.delete('page')
-      }
-      const newUrl = params.toString() ? `/blog?${params.toString()}` : '/blog'
-      router.push(newUrl, { scroll: false })
+      const categoryParam = selectedCat === 0 ? '' : `&category=${selectedCat}`
 
       const response = await fetch(
-        `${baseUrl}/api/user/blog?limit=${limitParam}&offset=${offset}`,
+        `${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}`,
         {
           cache: 'no-store',
         },
@@ -143,29 +113,49 @@ export default function Blog({
       const result = await response.json()
 
       if (response.ok) {
-        setData(result.docs || [])
+        setData(prevData => [...prevData, ...(result.docs || [])])
+        setHasMore(result.hasNextPage || false)
+        setOffset(prevOffset => prevOffset + limit)
         setTotal(result.totalDocs || 0)
-        setCurrentPage(page)
-        setTotalPages(result.totalPages || 1)
-
-        // Scroll to blog section after pagination
-        setTimeout(() => {
-          const blogSection = document.getElementById('blog')
-          if (blogSection) {
-            blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-        }, 100)
       }
     } catch (error) {
-      console.error('Error fetching blogs:', error)
+      console.error('Error loading more blogs:', error)
     } finally {
-      setLoading(false)
+      setLoadingMore(false)
     }
-  }
+  }, [loadingMore, hasMore, limit, offset, selectedCat])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0]
+        if (target.isIntersecting && hasMore && !loadingMore) {
+          loadMore()
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px',
+      }
+    )
+
+    const currentObserverRef = observerRef.current
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef)
+    }
+
+    return () => {
+      if (currentObserverRef) {
+        observer.unobserve(currentObserverRef)
+      }
+    }
+  }, [hasMore, loadingMore, loadMore])
 
   // Handle category selection and update URL
-  const handleCategoryClick = (categoryId: number) => {
+  const handleCategoryClick = async (categoryId: number) => {
     setSelectedCat(categoryId)
+    setLoading(true)
 
     // Update URL query parameter
     const params = new URLSearchParams(searchParams.toString())
@@ -176,13 +166,34 @@ export default function Blog({
       // Set category parameter
       params.set('category', categoryId.toString())
     }
-    // Reset to page 1 when category changes
-    params.delete('page')
-    setCurrentPage(1)
 
     // Update URL without page reload
     const newUrl = params.toString() ? `/blog?${params.toString()}` : '/blog'
     router.push(newUrl, { scroll: false })
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+      const categoryParam = categoryId === 0 ? '' : `&category=${categoryId}`
+
+      const response = await fetch(
+        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}`,
+        {
+          cache: 'no-store',
+        },
+      )
+      const result = await response.json()
+
+      if (response.ok) {
+        setData(result.docs || [])
+        setTotal(result.totalDocs || 0)
+        setHasMore(result.hasNextPage || false)
+        setOffset(limit)
+      }
+    } catch (error) {
+      console.error('Error fetching blogs by category:', error)
+    } finally {
+      setLoading(false)
+    }
 
     // Scroll to blog section
     setTimeout(() => {
@@ -249,18 +260,19 @@ export default function Blog({
           ) : (
             <EmptyBlogState />
           )}
-          {/* Pagination - Show if there are multiple pages */}
-          {/* {totalPages > 1 && ( */}
-          <div className="mt-8 border-t pt-6">
-            <CurrentPageComponent
-              total={total}
-              currentPage={currentPage}
-              limit={limit}
-              totalPages={totalPages}
-              getAsyncData={fetchBlogs}
-            />
-          </div>
-          {/* )} */}
+          {/* Infinite Scroll Observer */}
+          {hasMore && (
+            <div
+              ref={observerRef}
+              className="flex justify-center items-center py-8"
+            >
+              {loadingMore ? (
+                <Spinner />
+              ) : (
+                <div className="h-4" /> // Empty element to observe
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

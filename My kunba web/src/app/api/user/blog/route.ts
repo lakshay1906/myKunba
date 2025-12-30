@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get('slug')
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
+    const category = req.nextUrl.searchParams.get('category')
     let data: any
     if (slug) {
       const blogResult = await payload.find({
@@ -72,6 +73,23 @@ export async function GET(req: NextRequest) {
       const offsetNum = offset ? Number(offset) : 0
       const page = limitNum ? Math.floor(offsetNum / limitNum) + 1 : 1
 
+      // Build where clause
+      const whereClause: any = {
+        deleted_at: {
+          equals: null,
+        },
+        status: {
+          equals: 'published',
+        },
+      }
+
+      // Add category filter if provided
+      if (category && category !== '0') {
+        whereClause.categories = {
+          in: [Number(category)],
+        }
+      }
+
       data = await payload.find({
         collection: 'posts',
         select: {
@@ -87,14 +105,7 @@ export async function GET(req: NextRequest) {
           updatedAt: true,
         },
         depth: 2,
-        where: {
-          deleted_at: {
-            equals: null,
-          },
-          status: {
-            equals: 'published',
-          },
-        },
+        where: whereClause,
         pagination: true,
         limit: limitNum,
         page: page,

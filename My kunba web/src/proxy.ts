@@ -14,20 +14,34 @@ export async function proxy(request: NextRequest) {
 
     // If no token found, redirect to unauthorized
     if (!token || token === '') {
+      console.error('Dashboard access denied: No token found', { 
+        path,
+        hasCookie: !!(await cookies()).get('access_token'),
+        origin: request.nextUrl.origin 
+      })
       return NextResponse.redirect(new URL('/unauthorised', request.url))
     }
 
     // Always verify the token and check user role
     try {
-      const res = await fetch(`${request.nextUrl.origin}/api/user/auth/jwt/verify`, {
+      const verifyUrl = `${request.nextUrl.origin}/api/user/auth/jwt/verify`
+      const res = await fetch(verifyUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `bearer ${token}`,
         },
+        // Ensure cookies are included if needed (though we're using Authorization header)
+        credentials: 'include',
       })
 
       if (!res.ok) {
+        console.error('Dashboard access denied: Token verification failed', { 
+          path, 
+          status: res.status,
+          statusText: res.statusText,
+          origin: request.nextUrl.origin
+        })
         return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
 
@@ -35,6 +49,12 @@ export async function proxy(request: NextRequest) {
 
       // Check if response is an array and has valid user data
       if (!Array.isArray(val) || val.length === 0 || !val[0]) {
+        console.error('Dashboard access denied: Invalid user data', { 
+          path, 
+          responseType: Array.isArray(val) ? 'array' : typeof val,
+          responseLength: Array.isArray(val) ? val.length : 'N/A',
+          origin: request.nextUrl.origin
+        })
         return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
 
@@ -42,6 +62,11 @@ export async function proxy(request: NextRequest) {
 
       // Verify user has admin or author role
       if (user.role !== 'author' && user.role !== 'admin') {
+        console.error('Dashboard access denied: Insufficient role', { 
+          path, 
+          role: user.role,
+          origin: request.nextUrl.origin
+        })
         return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
 
@@ -50,7 +75,11 @@ export async function proxy(request: NextRequest) {
       requestHeaders.set('x-user', JSON.stringify(user))
       return NextResponse.next({ request: { headers: requestHeaders } })
     } catch (error) {
-      console.error('Proxy auth error:', error)
+      console.error('Proxy auth error:', error, { 
+        path,
+        origin: request.nextUrl.origin,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      })
       return NextResponse.redirect(new URL('/unauthorised', request.url))
     }
   } else if (path === '/user/profile') {

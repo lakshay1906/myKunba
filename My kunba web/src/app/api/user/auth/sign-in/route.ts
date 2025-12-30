@@ -63,8 +63,9 @@ export async function POST(req: NextRequest) {
       name: 'access_token',
       value: accessToken,
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production', // Only secure in production (HTTPS required)
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for better production compatibility
+      path: '/', // Explicitly set path
       expires: new Date('2099-12-31T23:59:59Z'),
     })
 

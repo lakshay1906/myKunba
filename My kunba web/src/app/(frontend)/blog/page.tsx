@@ -6,15 +6,14 @@ import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; page?: string }>
+  searchParams: Promise<{ category?: string }>
 }) {
   const params = await searchParams
   const categoryId = params.category ? Number(params.category) : undefined
 
   const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-  const page = params.page ? Number(params.page) : 1
-  const limit = 12
-  const offset = (page - 1) * limit
+  const limit = 24 // Load more posts initially for infinite scroll
+  const offset = 0
 
   const [postsRes, categoriesRes, featuredBlogs] = await Promise.all([
     fetch(`${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}`, {
@@ -45,9 +44,8 @@ export default async function Home({
         initialCategories={categories}
         initialSelectedCategory={validCategoryId}
         total={posts.totalDocs || 0}
-        currentPage={page}
-        totalPages={posts.totalPages || 1}
         limit={limit}
+        hasMore={posts.hasNextPage || false}
       />
     </>
   )
