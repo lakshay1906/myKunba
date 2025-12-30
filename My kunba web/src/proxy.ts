@@ -1,5 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
+import jwt from 'jsonwebtoken'
+import { payload } from '@/payload-client'
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
@@ -41,56 +43,67 @@ export async function proxy(request: NextRequest) {
 
     // Always verify the token and check user role
     try {
-      const verifyUrl = `${request.nextUrl.origin}/api/user/auth/jwt/verify`
-      console.log('🔍 [PROXY] Verifying JWT at URL:', verifyUrl)
+      console.log('🔍 [PROXY] Verifying JWT directly (no external fetch)')
       console.log('🔍 [PROXY] Token preview:', token ? `${token.substring(0, 20)}...` : 'null')
 
-      const res = await fetch(verifyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `bearer ${token}`,
-        },
-        // Ensure cookies are included if needed (though we're using Authorization header)
-        credentials: 'include',
+      // Get ACCESS_SECRET from environment
+      const accessSecret = process.env.ACCESS_SECRET
+      console.log('🔐 [PROXY] ACCESS_SECRET exists:', !!accessSecret)
+
+      if (!accessSecret) {
+        console.error('❌ [PROXY] ACCESS_SECRET not configured', {
+          timestamp: new Date().toISOString(),
+        })
+        return NextResponse.redirect(new URL('/unauthorised', request.url))
+      }
+
+      console.log('🔍 [PROXY] Decoding JWT token...')
+      const jwtData: any = jwt.verify(token, accessSecret)
+      console.log('✅ [PROXY] JWT verified successfully')
+      console.log('👤 [PROXY] JWT payload:', {
+        email: jwtData.email,
+        uid: jwtData.uid,
+        iat: jwtData.iat,
+        exp: jwtData.exp,
       })
 
-      console.log('📡 [PROXY] JWT verification response status:', res.status)
-      console.log('📡 [PROXY] JWT verification response ok:', res.ok)
+      console.log('🗄️ [PROXY] Querying database for user...')
+      const userQuery = await payload.find({
+        collection: 'users',
+        where: {
+          email: {
+            equals: jwtData.email,
+          },
+          uid: {
+            equals: jwtData.uid,
+          },
+          deleted_at: {
+            equals: null,
+          },
+        },
+      })
 
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.error('❌ [PROXY] Dashboard access denied: Token verification failed', {
-          path,
-          status: res.status,
-          statusText: res.statusText,
-          errorText: errorText,
-          origin: request.nextUrl.origin,
+      console.log('📋 [PROXY] Database query result:', {
+        totalDocs: userQuery.totalDocs,
+        docsFound: userQuery.docs.length,
+      })
+
+      if (userQuery.docs.length === 0) {
+        console.error('❌ [PROXY] User not found in database', {
+          email: jwtData.email,
+          uid: jwtData.uid,
           timestamp: new Date().toISOString(),
         })
         return NextResponse.redirect(new URL('/unauthorised', request.url))
       }
 
-      const val = await res.json()
-      console.log('📋 [PROXY] JWT verification response received')
-      console.log('📋 [PROXY] Response type:', typeof val)
-      console.log('📋 [PROXY] Is array:', Array.isArray(val))
-      console.log('📋 [PROXY] Array length:', Array.isArray(val) ? val.length : 'N/A')
-
-      // Check if response is an array and has valid user data
-      if (!Array.isArray(val) || val.length === 0 || !val[0]) {
-        console.error('❌ [PROXY] Dashboard access denied: Invalid user data', {
-          path,
-          responseType: Array.isArray(val) ? 'array' : typeof val,
-          responseLength: Array.isArray(val) ? val.length : 'N/A',
-          responseData: val,
-          origin: request.nextUrl.origin,
-          timestamp: new Date().toISOString(),
-        })
-        return NextResponse.redirect(new URL('/unauthorised', request.url))
-      }
-
-      const user = val[0]
+      const user = userQuery.docs[0]
+      console.log('👤 [PROXY] User found:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        uid: user.uid,
+      })
       console.log('👤 [PROXY] User found:', {
         id: user.id,
         email: user.email,
@@ -127,6 +140,7 @@ export async function proxy(request: NextRequest) {
     } catch (error) {
       console.error('💥 [PROXY] Auth error occurred:', {
         error: error instanceof Error ? error.message : 'Unknown error',
+        errorName: error instanceof Error ? error.name : 'Unknown',
         errorStack: error instanceof Error ? error.stack : 'No stack',
         path,
         origin: request.nextUrl.origin,
