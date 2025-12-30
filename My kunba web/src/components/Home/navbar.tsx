@@ -51,10 +51,6 @@ interface NavbarProps {
     title: string
   }
   menu?: MenuItem[]
-  mobileExtraLinks?: {
-    name: string
-    url: string
-  }[]
   auth?: {
     login: {
       text: string
@@ -140,12 +136,6 @@ export default function Navbar({
       ],
     },
   ],
-  mobileExtraLinks = [
-    { name: 'Press', url: '#' },
-    { name: 'Contact', url: '#' },
-    { name: 'Imprint', url: '#' },
-    { name: 'Sitemap', url: '#' },
-  ],
 }: NavbarProps) {
   const { loginDetail, logout } = useAppStore()
   return (
@@ -222,47 +212,64 @@ export default function Navbar({
             <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
             <span className="text-lg font-semibold">{logo.title}</span>
           </a>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="size-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>
-                  <a href={logo.url} className="flex items-center gap-2">
-                    <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
-                    <span className="text-lg font-semibold">{logo.title}</span>
-                  </a>
-                </SheetTitle>
-              </SheetHeader>
-              <div className="my-6 flex flex-col gap-6">
-                <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
-                  {menu.map((item) => renderMobileMenuItem(item))}
-                </Accordion>
-                <div className="border-t py-4">
-                  <div className="grid grid-cols-2 justify-start">
-                    {mobileExtraLinks.map((link, idx) => (
-                      <a
-                        key={idx}
-                        className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
-                        href={link.url}
-                      >
-                        {link.name}
-                      </a>
-                    ))}
+          <div className="flex items-center gap-6">
+            <ThemeToggle />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="size-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>
+                    <a href={logo.url} className="flex items-center gap-2">
+                      <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
+                      <span className="text-lg font-semibold">{logo.title}</span>
+                    </a>
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="my-6 flex flex-col gap-6">
+                  <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
+                    {menu.map((item) => renderMobileMenuItem(item))}
+                  </Accordion>
+                  <div className="flex flex-col gap-3">
+                    {loginDetail ? (
+                      <div className="flex flex-col gap-2">
+                        {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
+                          <Link href={'/dashboard'}>
+                            <Button size="sm" className="w-full">
+                              Dashboard
+                            </Button>
+                          </Link>
+                        )}
+                        <Link href={'/profile'}>
+                          <Button variant="outline" size="sm" className="w-full">
+                            Profile
+                          </Button>
+                        </Link>
+                        <Button
+                          onClick={async () => {
+                            await logout()
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          Sign Out
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3.5 mt-3">
+                        <SignInButton btnText="Login" size="sm" className="w-full" />
+                        <SignInButton btnText="Sign In" size="sm" className="w-full" />
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-3">
-                  {/* <AuthenticationSheet /> */}
-                  <Button asChild size="sm">
-                    <p>Sign Up</p>
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </section>
