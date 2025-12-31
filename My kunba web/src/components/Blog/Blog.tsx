@@ -67,18 +67,6 @@ export default function Blog({
     setTotal(newTotal)
     setHasMore(newHasMore)
     setOffset(initialLimit)
-
-    // Debug log (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Blog Infinite Scroll Debug:', {
-        total: newTotal,
-        hasMore: newHasMore,
-        limit,
-        postsData: posts
-          ? { hasDocs: !!posts.docs, totalDocs: posts.totalDocs, hasNextPage: posts.hasNextPage }
-          : null,
-      })
-    }
   }, [posts, initialTotal, initialHasMore, initialLimit, limit])
 
   // Update selected category when initialSelectedCategory changes
@@ -113,9 +101,9 @@ export default function Blog({
       const result = await response.json()
 
       if (response.ok) {
-        setData(prevData => [...prevData, ...(result.docs || [])])
+        setData((prevData) => [...prevData, ...(result.docs || [])])
         setHasMore(result.hasNextPage || false)
-        setOffset(prevOffset => prevOffset + limit)
+        setOffset((prevOffset) => prevOffset + limit)
         setTotal(result.totalDocs || 0)
       }
     } catch (error) {
@@ -137,7 +125,7 @@ export default function Blog({
       {
         threshold: 0.1,
         rootMargin: '100px',
-      }
+      },
     )
 
     const currentObserverRef = observerRef.current
@@ -262,10 +250,7 @@ export default function Blog({
           )}
           {/* Infinite Scroll Observer */}
           {hasMore && (
-            <div
-              ref={observerRef}
-              className="flex justify-center items-center py-8"
-            >
+            <div ref={observerRef} className="flex justify-center items-center py-8">
               {loadingMore ? (
                 <Spinner />
               ) : (

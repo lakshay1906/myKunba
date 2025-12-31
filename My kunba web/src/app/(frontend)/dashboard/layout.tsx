@@ -20,21 +20,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  console.log('🏗️ [DASHBOARD LAYOUT] Starting server-side authorization check')
-  console.log('🌍 [DASHBOARD LAYOUT] Environment:', process.env.NODE_ENV)
-  console.log('🔑 [DASHBOARD LAYOUT] ACCESS_SECRET exists:', !!process.env.ACCESS_SECRET)
-
   // Server-side authorization check
   try {
-    console.log('🍪 [DASHBOARD LAYOUT] Checking for access_token cookie...')
     const token = (await cookies()).get('access_token')?.value
-    console.log('🍪 [DASHBOARD LAYOUT] Token exists:', !!token)
-    console.log('🍪 [DASHBOARD LAYOUT] Token length:', token ? token.length : 0)
 
     if (!token) {
-      console.error('❌ [DASHBOARD LAYOUT] No token found, redirecting to unauthorized', {
-        timestamp: new Date().toISOString(),
-      })
       redirect('/unauthorised')
     }
 
@@ -46,18 +36,9 @@ export default async function RootLayout({
       redirect('/unauthorised')
     }
 
-    console.log('🔍 [DASHBOARD LAYOUT] Verifying JWT token...')
     // Verify JWT token
     const jwtData: any = jwt.verify(token, accessSecret)
-    console.log('✅ [DASHBOARD LAYOUT] JWT verified successfully')
-    console.log('👤 [DASHBOARD LAYOUT] JWT data:', {
-      email: jwtData.email,
-      uid: jwtData.uid,
-      iat: jwtData.iat,
-      exp: jwtData.exp,
-    })
 
-    console.log('🗄️ [DASHBOARD LAYOUT] Querying database for user...')
     // Verify user exists and has proper role
     const user = await payload.find({
       collection: 'users',
@@ -77,53 +58,19 @@ export default async function RootLayout({
       },
     })
 
-    console.log('📋 [DASHBOARD LAYOUT] Database query result:', {
-      totalDocs: user.totalDocs,
-      docsLength: user.docs.length,
-    })
-
     if (user.docs.length === 0) {
-      console.error('❌ [DASHBOARD LAYOUT] User not found in database', {
-        email: jwtData.email,
-        uid: jwtData.uid,
-        timestamp: new Date().toISOString(),
-      })
       redirect('/unauthorised')
     }
 
     const currentUser = user.docs[0]
-    console.log('👤 [DASHBOARD LAYOUT] User found:', {
-      id: currentUser.id,
-      email: currentUser.email,
-      role: currentUser.role,
-      uid: currentUser.uid,
-    })
 
     const allowedRoles = ['admin', 'author']
     const hasValidRole = allowedRoles.includes(currentUser.role)
-    console.log('🔐 [DASHBOARD LAYOUT] Role validation:', {
-      userRole: currentUser.role,
-      allowedRoles: allowedRoles,
-      hasValidRole: hasValidRole,
-    })
 
     if (!hasValidRole) {
-      console.error('❌ [DASHBOARD LAYOUT] Insufficient role permissions', {
-        role: currentUser.role,
-        allowedRoles: allowedRoles,
-        timestamp: new Date().toISOString(),
-      })
       redirect('/unauthorised')
     }
-
-    console.log('✅ [DASHBOARD LAYOUT] Authorization successful, rendering dashboard')
   } catch (error) {
-    console.error('💥 [DASHBOARD LAYOUT] Authorization error occurred:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      errorStack: error instanceof Error ? error.stack : 'No stack',
-      errorName: error instanceof Error ? error.name : 'Unknown',
-      timestamp: new Date().toISOString(),
-    })
     redirect('/unauthorised')
   }
 

@@ -13,6 +13,7 @@ export default async function page({ searchParams }: { searchParams: Promise<{ p
     const limit = 10
 
     const blogData = await fetchDashboardBlogs(page, limit)
+    console.log(`blogData: ${blogData}`)
 
     return (
       <BlogMain
