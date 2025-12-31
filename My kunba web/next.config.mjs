@@ -45,9 +45,11 @@ const nextConfig = {
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
-  output: 'standalone',
-  removeConsole: {
-    exclude: ['error', 'warn'],
+  output: 'standalone', // Disabled for Windows compatibility
+  compiler: {
+    removeConsole: {
+      exclude: ['error', 'warn'],
+    },
   },
   webpack: (config, { webpack }) => {
     config.plugins.push(
@@ -118,27 +120,12 @@ const nextConfig = {
   images: {
     // Tighten remote patterns for production security
     // Add specific domains as needed instead of allowing all
-    remotePatterns:
-      process.env.NODE_ENV === 'production'
-        ? [
-            // Add your specific image domains here for production
-            // Example:
-            // {
-            //   protocol: 'https',
-            //   hostname: 'your-cdn-domain.com',
-            // },
-          ]
-        : [
-            // Allow all in development for easier testing
-            {
-              protocol: 'https',
-              hostname: '**',
-            },
-            {
-              protocol: 'http',
-              hostname: '**',
-            },
-          ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pub-7c609686c4f44beaabae4f01c8b08f9c.r2.dev',
+      },
+    ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
