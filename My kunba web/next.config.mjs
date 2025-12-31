@@ -46,6 +46,9 @@ const nextConfig = {
     includePaths: payloadUIScssPaths,
   },
   output: 'standalone',
+  removeConsole: {
+    exclude: ['error', 'warn'],
+  },
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({

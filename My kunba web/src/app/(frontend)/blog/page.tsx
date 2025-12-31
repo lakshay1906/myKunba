@@ -24,6 +24,7 @@ export default async function Home({
   ])
 
   const posts = await postsRes.json()
+  console.log(posts)
   const categories = categoriesRes?.docs || []
 
   // Validate category ID exists in categories
