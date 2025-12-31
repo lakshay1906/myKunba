@@ -1,5 +1,4 @@
 import BlogMain from '@/components/Blog/BlogMain'
-import React from 'react'
 import { fetchDashboardBlogs } from '@/app/actions/dashboard-actions'
 import { redirect } from 'next/navigation'
 

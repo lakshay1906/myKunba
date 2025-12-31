@@ -87,6 +87,8 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
       sort: '-createdAt',
     })
 
+    console.log(`blog from server: ${blog}`)
+
     return {
       data: blog.docs,
       total: blog.totalDocs,
@@ -144,7 +146,7 @@ export async function fetchDashboardBlogBySlug(slug: string) {
     }
 
     const blogPost = blog.docs[0]
-    
+
     // Check authorization: admin can view any, author can only view their own
     const isAdmin = user.role === 'admin'
     if (!isAdmin && blogPost.author !== user.id) {
@@ -237,4 +239,3 @@ export async function fetchCategoryPosts(categoryId: number, page: number = 1, l
     throw new Error(error.message || 'Failed to fetch category posts')
   }
 }
-
