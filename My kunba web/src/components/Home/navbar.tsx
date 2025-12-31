@@ -168,7 +168,7 @@ export default function Navbar({
           <ThemeToggle />
           {loginDetail ? (
             <div className="flex gap-2 justify-center items-center">
-              {(loginDetail.role === 'admin' || loginDetail.role === 'author' || loginDetail.role === 'user') && (
+              {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
                 <Link href={'/dashboard'}>
                   <Button>Dashboard</Button>
                 </Link>
@@ -236,7 +236,7 @@ export default function Navbar({
                   <div className="flex flex-col gap-3">
                     {loginDetail ? (
                       <div className="flex flex-col gap-2">
-                        {(loginDetail.role === 'admin' || loginDetail.role === 'author' || loginDetail.role === 'user') && (
+                        {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
                           <Link href={'/dashboard'}>
                             <Button size="sm" className="w-full">
                               Dashboard

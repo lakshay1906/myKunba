@@ -72,7 +72,7 @@ export default async function RootLayout({
           equals: null,
         },
         role: {
-          in: ['admin', 'author', 'user'], // Temporarily allow user role for testing
+          in: ['admin', 'author'],
         },
       },
     })
@@ -99,7 +99,7 @@ export default async function RootLayout({
       uid: currentUser.uid,
     })
 
-    const allowedRoles = ['admin', 'author', 'user']
+    const allowedRoles = ['admin', 'author']
     const hasValidRole = allowedRoles.includes(currentUser.role)
     console.log('🔐 [DASHBOARD LAYOUT] Role validation:', {
       userRole: currentUser.role,
@@ -117,7 +117,6 @@ export default async function RootLayout({
     }
 
     console.log('✅ [DASHBOARD LAYOUT] Authorization successful, rendering dashboard')
-
   } catch (error) {
     console.error('💥 [DASHBOARD LAYOUT] Authorization error occurred:', {
       error: error instanceof Error ? error.message : 'Unknown error',
