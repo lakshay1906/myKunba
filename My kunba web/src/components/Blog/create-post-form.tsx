@@ -39,6 +39,7 @@ import { fetchAllCategories } from '@/app/actions/category-actions'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
+import Toast from '../Toast'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -203,11 +204,13 @@ export function CreatePostForm() {
     setIsLoading(true)
     try {
       if (!loginDetail) {
-        ;<Toast
-          description="You're not authorized to perform this action"
-          isSuccess={false}
-          message="Error"
-        />
+        return (
+          <Toast
+            description="You're not authorized to perform this action"
+            isSuccess={false}
+            message="Error"
+          />
+        )
         return
       }
 
@@ -362,151 +365,149 @@ export function CreatePostForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-6">
-              {/* Title Field */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
+        <div className="grid gap-6">
+          {/* Title Field */}
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter post title"
+                    {...field}
+                    onChange={handleTitleChange}
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Slug Field */}
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input placeholder="enter-post-slug" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormDescription>The URL-friendly version of the title.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Excerpt Field */}
+          <FormField
+            control={form.control}
+            name="excerpt"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Excerpt</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Brief summary of the post"
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e)
+                      handleExcerptChange(e)
+                    }}
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormDescription>
+                  A short summary that appears in post listings. This will also be used as the
+                  default meta description.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Cover Image Field */}
+          <div>
+            <FormLabel>Cover Image</FormLabel>
+            <ImageUploadDialog
+              imageUploadData={imageUploadData}
+              setImageUploadData={setImageUploadData}
+              clearAll={clearAll}
+              placeholder="Upload cover image"
+            />
+          </div>
+
+          {/* Status Field */}
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoading}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select post status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Publish Date Field */}
+          <FormField
+            control={form.control}
+            name="publishDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Publish Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <FormControl>
-                      <Input
-                        placeholder="Enter post title"
-                        {...field}
-                        onChange={handleTitleChange}
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'w-full pl-3 text-left font-normal',
+                          !field.value && 'text-muted-foreground',
+                        )}
                         disabled={isLoading}
-                      />
+                      >
+                        {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>When the post should be published.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              {/* Slug Field */}
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <FormControl>
-                      <Input placeholder="enter-post-slug" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormDescription>The URL-friendly version of the title.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Excerpt Field */}
-              <FormField
-                control={form.control}
-                name="excerpt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Excerpt</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Brief summary of the post"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e)
-                          handleExcerptChange(e)
-                        }}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      A short summary that appears in post listings. This will also be used as the
-                      default meta description.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Cover Image Field */}
-              <div>
-                <FormLabel>Cover Image</FormLabel>
-                <ImageUploadDialog
-                  imageUploadData={imageUploadData}
-                  setImageUploadData={setImageUploadData}
-                  clearAll={clearAll}
-                  placeholder="Upload cover image"
-                />
-              </div>
-
-              {/* Status Field */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={isLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select post status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Publish Date Field */}
-              <FormField
-                control={form.control}
-                name="publishDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Publish Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground',
-                            )}
-                            disabled={isLoading}
-                          >
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormDescription>When the post should be published.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Template Field */}
-              {/* <FormField
+          {/* Template Field */}
+          {/* <FormField
                 control={form.control}
                 name="template"
                 render={({ field }) => (
@@ -533,31 +534,31 @@ export function CreatePostForm() {
                 )}
               /> */}
 
-              {/* Categories Field */}
-              <FormField
-                control={form.control}
-                name="categories"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categories</FormLabel>
-                    <FormControl>
-                      <MultiSelect
-                        options={categories.map((item) => ({
-                          label: item.name,
-                          value: String(item.id),
-                        }))}
-                        selected={field.value || []}
-                        onChange={field.onChange}
-                        placeholder="Select categories"
-                        disabled={catLoading || isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Categories Field */}
+          <FormField
+            control={form.control}
+            name="categories"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categories</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={categories.map((item) => ({
+                      label: item.name,
+                      value: String(item.id),
+                    }))}
+                    selected={field.value || []}
+                    onChange={field.onChange}
+                    placeholder="Select categories"
+                    disabled={catLoading || isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              {/* Tags Field
+          {/* Tags Field
               <FormField
                 control={form.control}
                 name="tags"
@@ -578,72 +579,68 @@ export function CreatePostForm() {
                 )}
               /> */}
 
-              {/* Meta Title Field */}
-              <FormField
-                control={form.control}
-                name="metaTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Meta Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="SEO title (optional)" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormDescription>
-                      Title used for SEO purposes. Defaults to post title if left empty.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Meta Title Field */}
+          <FormField
+            control={form.control}
+            name="metaTitle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meta Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="SEO title (optional)" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormDescription>
+                  Title used for SEO purposes. Defaults to post title if left empty.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              {/* Meta Description Field */}
-              <FormField
-                control={form.control}
-                name="metaDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Meta Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="SEO description (optional)"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Description used for SEO purposes. Defaults to excerpt if left empty.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Meta Description Field */}
+          <FormField
+            control={form.control}
+            name="metaDescription"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meta Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="SEO description (optional)"
+                    {...field}
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Description used for SEO purposes. Defaults to excerpt if left empty.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Content Field with Rich Text Editor */}
-        <Card>
-          <CardContent className="pt-6">
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content</FormLabel>
-                  <FormControl>
-                    <RichTextEditor
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Enter content here..."
-                      height="500px"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Content</FormLabel>
+                <FormControl>
+                  <RichTextEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Enter content here..."
+                    height="500px"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-4">
           <Button

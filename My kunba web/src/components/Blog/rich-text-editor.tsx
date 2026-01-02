@@ -230,9 +230,9 @@ export default function RichTextEditor({
   }
 
   return (
-    <Card className="w-full overflow-hidden">
+    <Card className="w-full">
       {/* Fixed Toolbar */}
-      <div className="sticky top-4 z-50 border-b p-2 flex flex-wrap gap-1 bg-white dark:bg-gray-900 shadow-sm">
+      <div className="sticky top-4 z-50 border-b p-2 flex flex-wrap gap-1 bg-white dark:bg-background shadow-sm">
         {/* Undo/Redo */}
         <Button
           variant="ghost"
@@ -255,7 +255,7 @@ export default function RichTextEditor({
 
         {/* Headers */}
         <select
-          className="px-2 py-1 border rounded text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
           value={currentHeading}
           onChange={(e) => handleHeadingChange(e.target.value)}
         >
@@ -270,7 +270,7 @@ export default function RichTextEditor({
 
         {/* Font Family */}
         <select
-          className="px-2 py-1 border rounded text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
           value={currentFontFamily}
           onChange={(e) => handleFontFamilyChange(e.target.value)}
         >
@@ -322,7 +322,7 @@ export default function RichTextEditor({
             <Type className="h-4 w-4" />
           </Button>
           {showColorPicker && (
-            <div className="absolute top-10 left-0 z-10 bg-white dark:bg-gray-800 border rounded-lg p-2 shadow-lg">
+            <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {colors.map((color) => (
                   <button
@@ -359,7 +359,7 @@ export default function RichTextEditor({
             <Palette className="h-4 w-4" />
           </Button>
           {showHighlightPicker && (
-            <div className="absolute top-10 left-0 z-10 bg-white dark:bg-gray-800 border rounded-lg p-2 shadow-lg">
+            <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {colors.map((color) => (
                   <button
@@ -488,10 +488,10 @@ export default function RichTextEditor({
       </div>
 
       {/* Editor */}
-      <div className="relative bg-white dark:bg-gray-900">
+      <div className="relative bg-white dark:bg-background">
         <EditorContent
           editor={editor}
-          className="min-h-[400px] focus-within:outline-none bg-white dark:bg-gray-900"
+          className="min-h-[400px] focus-within:outline-none bg-white dark:bg-background!"
         />
         {editor.isEmpty && (
           <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-500 pointer-events-none">

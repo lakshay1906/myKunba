@@ -473,12 +473,14 @@ export default function EditBlogPage({
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="content" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Blog Content</CardTitle>
-              <CardDescription>Edit the main content of your blog post.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div>
+            <div className="">
+              <h2 className="text-lg font-bold">Blog Content</h2>
+              <p className="text-sm text-muted-foreground">
+                Edit the main content of your blog post.
+              </p>
+            </div>
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -554,55 +556,18 @@ export default function EditBlogPage({
                 <Label htmlFor="content">Content</Label>
                 <RichTextEditor value={contentHtml} onChange={handleContentChange} />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Categories & Tags</CardTitle>
-              <CardDescription>Organize your blog post with categories and tags.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Categories</Label>
-                <CategorySelector
-                  allCategories={allCategories}
-                  selectedCategories={selectedCategories}
-                  onChange={setSelectedCategories}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Add a tag and press Enter"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleAddTag}
-                />
-                <p className="text-sm text-muted-foreground mt-1">Press Enter to add a tag</p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="seo" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>SEO Settings</CardTitle>
-              <CardDescription>Optimize your blog post for search engines.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div>
+            <div className="">
+              <h2 className="text-lg font-bold">SEO Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Optimize your blog post for search engines.
+              </p>
+            </div>
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="metaTitle">Meta Title</Label>
                 <Input
@@ -656,18 +621,18 @@ export default function EditBlogPage({
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Publication Settings</CardTitle>
-              <CardDescription>
+          <div>
+            <div className="">
+              <h2 className="text-lg font-bold">Publication Settings</h2>
+              <p className="text-sm text-muted-foreground">
                 Manage the publication status and template of your blog post.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              </p>
+            </div>
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -758,8 +723,50 @@ export default function EditBlogPage({
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          <div>
+            <div className="">
+              <h2 className="text-lg font-bold">Categories & Tags</h2>
+              <p className="text-sm text-muted-foreground">
+                Organize your blog post with categories and tags.
+              </p>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label>Categories</Label>
+                <CategorySelector
+                  allCategories={allCategories}
+                  selectedCategories={selectedCategories}
+                  onChange={setSelectedCategories}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Add a tag and press Enter"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={handleAddTag}
+                />
+                <p className="text-sm text-muted-foreground mt-1">Press Enter to add a tag</p>
+              </div>
+            </div>
+          </div>
 
           <Card>
             <CardHeader>
