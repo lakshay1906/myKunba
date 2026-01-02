@@ -140,6 +140,22 @@ export default function RichTextEditor({
     }
   }, [editor, updateToolbarState])
 
+  // Update editor content when value prop changes
+  useEffect(() => {
+    if (editor && value !== undefined) {
+      // Only set content if it's different from current content
+      const currentContent = editor.getHTML()
+      if (currentContent !== value) {
+        console.log('Setting editor content from value prop:', {
+          value: value?.substring(0, 100) + '...',
+          currentContent: currentContent?.substring(0, 100) + '...',
+          isDifferent: currentContent !== value
+        })
+        editor.commands.setContent(value)
+      }
+    }
+  }, [editor, value])
+
   const colors = [
     '#000000',
     '#e60000',

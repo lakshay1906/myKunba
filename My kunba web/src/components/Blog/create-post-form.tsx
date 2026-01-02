@@ -2,7 +2,7 @@
 
 import type React from 'react'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -44,6 +44,12 @@ import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
 import Toast from '../Toast'
+import {
+  saveDraftToCookie,
+  loadDraftFromCookie,
+  clearDraftCookie,
+  type BlogDraftData,
+} from '@/lib/utils/cookies'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -78,6 +84,12 @@ export function CreatePostForm() {
     coverImage: null,
   })
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false)
+  const [draftImageLoaded, setDraftImageLoaded] = useState(false)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasShownLeaveToastRef = useRef(false)
+  const isSubmittingRef = useRef(false)
+  const saveDraftRef = useRef<((immediate?: boolean) => void) | null>(null)
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -94,14 +106,272 @@ export function CreatePostForm() {
     },
   })
 
+  // Wrapper for setImageUploadData that triggers save when coverImage changes
+  const handleImageUploadDataChange = useCallback(
+    (updater: React.SetStateAction<ImageUploadData>) => {
+      setImageUploadData((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        console.log('handleImageUploadDataChange called:', {
+          prevCoverImage: prev.coverImage?.substring(0, 30) || 'none',
+          nextCoverImage: next.coverImage?.substring(0, 30) || 'none',
+          isDraftLoaded,
+          hasSaveDraftRef: !!saveDraftRef.current,
+        })
+
+        // If coverImage changed, trigger save
+        if (next.coverImage !== prev.coverImage && isDraftLoaded && saveDraftRef.current) {
+          console.log('Cover image changed, triggering save')
+          // Reset the draft loaded flag since user selected a new image
+          setDraftImageLoaded(false)
+          // Use setTimeout to ensure state is updated first
+          setTimeout(() => {
+            saveDraftRef.current?.(false)
+          }, 100)
+        }
+        return next
+      })
+    },
+    [isDraftLoaded],
+  )
+
+  // Load draft data from storage on mount
+  useEffect(() => {
+    const loadDraftData = async () => {
+      const draftData = await loadDraftFromCookie()
+      console.log('Draft loaded from storage:', draftData)
+
+      if (draftData) {
+        // Temporarily disable draft saving while loading
+        setIsDraftLoaded(false)
+
+        // Reset form with draft data (this won't trigger watch during reset)
+        form.reset(
+          {
+            title: draftData.title || '',
+            slug: draftData.slug || '',
+            excerpt: draftData.excerpt || '',
+            content: draftData.content || '',
+            publishDate: draftData.publishDate ? new Date(draftData.publishDate) : new Date(),
+            metaTitle: draftData.metaTitle || '',
+            metaDescription: draftData.metaDescription || '',
+            status: draftData.status || 'draft',
+          },
+          { keepDefaultValues: false },
+        )
+
+        // Populate categories if they exist
+        if (draftData.categories && draftData.categories.length > 0) {
+          setSelectedCategories(draftData.categories)
+        }
+
+        // Populate cover image if it exists
+        if (draftData.coverImage) {
+          console.log(
+            'Loading cover image from draft:',
+            draftData.coverImage.substring(0, 50) + '...',
+          )
+
+          // Check if it's a data URL (local file) or a regular URL
+          const isDataUrl = draftData.coverImage.startsWith('data:')
+          const isBlobUrl = draftData.coverImage.startsWith('blob:')
+
+          if (isDataUrl) {
+            console.log('Data URL image loaded from draft - using IndexedDB for persistence')
+          } else if (isBlobUrl) {
+            console.log(
+              'Blob URL image loaded from draft - may not persist across browser sessions',
+            )
+          }
+
+          handleImageUploadDataChange((prev) => {
+            const newState = {
+              ...prev,
+              coverImage: draftData.coverImage || null,
+            }
+            console.log('Cover image set in imageUploadData:', {
+              coverImage: newState.coverImage?.substring(0, 50) || 'null',
+            })
+            setDraftImageLoaded(true)
+            return newState
+          })
+        }
+
+        console.log('Form reset with draft data, content:', draftData.content)
+
+        // Re-enable draft saving after a short delay to let everything settle
+        setTimeout(() => {
+          setIsDraftLoaded(true)
+        }, 500)
+      } else {
+        // No draft data, just mark as loaded
+        setIsDraftLoaded(true)
+      }
+    }
+
+    loadDraftData()
+  }, [form, handleImageUploadDataChange])
+
+  // Auto-save draft to cookies (debounced)
+  const saveDraft = useCallback(
+    (immediate: boolean = false) => {
+      if (!isDraftLoaded) return // Don't save while loading draft
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+
+      const performSave = async () => {
+        const formValues = form.getValues()
+        const draftData: BlogDraftData = {
+          title: formValues.title?.trim() || undefined,
+          slug: formValues.slug?.trim() || undefined,
+          excerpt: formValues.excerpt?.trim() || undefined,
+          content: formValues.content || undefined, // Don't trim HTML content
+          metaTitle: formValues.metaTitle?.trim() || undefined,
+          metaDescription: formValues.metaDescription?.trim() || undefined,
+          status: formValues.status,
+          publishDate: formValues.publishDate ? formValues.publishDate.toISOString() : undefined,
+          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          coverImage: imageUploadData.coverImage || undefined,
+        }
+
+        // Debug logging
+        console.log('Attempting to save draft:', {
+          hasContent: !!draftData.content,
+          contentLength: draftData.content?.length || 0,
+          hasCoverImage: !!draftData.coverImage,
+          coverImageType: draftData.coverImage?.substring(0, 20) || 'none',
+          hasTitle: !!draftData.title,
+        })
+
+        // Only save if there's at least some content
+        if (
+          draftData.title ||
+          draftData.content ||
+          draftData.excerpt ||
+          draftData.coverImage ||
+          (draftData.categories && draftData.categories.length > 0)
+        ) {
+          await saveDraftToCookie(draftData)
+          console.log('Draft saved successfully')
+        } else {
+          // Clear draft if no content
+          await clearDraftCookie()
+          console.log('No content to save, cleared draft')
+        }
+      }
+
+      if (immediate) {
+        performSave().catch(console.error)
+      } else {
+        saveTimeoutRef.current = setTimeout(() => {
+          performSave().catch(console.error)
+        }, 1000) // Debounce for 1 second
+      }
+    },
+    [form, selectedCategories, imageUploadData.coverImage, isDraftLoaded],
+  )
+
+  // Store saveDraft in ref for use in handleImageUploadDataChange
+  saveDraftRef.current = saveDraft
+
+  // Watch form changes and auto-save using form state subscription
+  useEffect(() => {
+    if (!isDraftLoaded) return // Don't save while loading draft
+
+    const subscription = form.watch(() => {
+      // Trigger save on any form change
+      saveDraft()
+    })
+
+    return () => subscription.unsubscribe()
+  }, [form, saveDraft, isDraftLoaded])
+
+  // Watch for category and image changes
+  useEffect(() => {
+    if (!isDraftLoaded) return
+    console.log('Image or categories changed - triggering save:', {
+      hasImage: !!imageUploadData.coverImage,
+      imagePreview: imageUploadData.coverImage?.substring(0, 50) || 'none',
+      categoriesCount: selectedCategories.length,
+    })
+    // Save immediately when image or categories change
+    saveDraft()
+  }, [selectedCategories, imageUploadData.coverImage, saveDraft, isDraftLoaded])
+
+  // Watch content field specifically (RichTextEditor might not trigger form.watch properly)
+  const contentValue = form.watch('content')
+  useEffect(() => {
+    if (!isDraftLoaded) return
+    console.log('Content value changed:', {
+      hasValue: !!contentValue,
+      length: contentValue?.length || 0,
+      preview: contentValue?.substring(0, 50) || 'empty',
+    })
+    // Save whenever content changes (even if empty, to clear it)
+    saveDraft()
+  }, [contentValue, saveDraft, isDraftLoaded])
+
+  // Handle page visibility change and beforeunload
+  useEffect(() => {
+    const checkAndSaveDraft = (showToast: boolean = false) => {
+      const formValues = form.getValues()
+      const hasContent =
+        formValues.title ||
+        formValues.content ||
+        formValues.excerpt ||
+        imageUploadData.coverImage ||
+        selectedCategories.length > 0
+
+      if (hasContent && !hasShownLeaveToastRef.current) {
+        // Save immediately (not debounced) when leaving
+        saveDraft(true)
+        hasShownLeaveToastRef.current = true
+
+        if (showToast) {
+          toast.success('Draft Saved', {
+            description: 'Your blog has been successfully saved as draft.',
+          })
+        }
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      checkAndSaveDraft(false)
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Save when page becomes hidden
+        checkAndSaveDraft(false)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Cleanup on unmount (when navigating away)
+    return () => {
+      // Only show toast if not submitting (i.e., user is leaving without creating)
+      if (!isSubmittingRef.current) {
+        checkAndSaveDraft(true) // Show toast when component unmounts (navigating away)
+      }
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [form, imageUploadData.coverImage, selectedCategories, saveDraft])
+
   function handleImageUploaded(imageData: any) {
     // Assuming the uploaded image returns a URL or path
     const imageUrl = imageData.url || imageData.filename || imageData.src
-    setImageUploadData((prev) => ({ ...prev, coverImage: imageUrl, isOpen: false }))
+    handleImageUploadDataChange((prev) => ({ ...prev, coverImage: imageUrl, isOpen: false }))
   }
 
   async function handleUpload() {
-    setImageUploadData((prev) => ({ ...prev, result: null }))
+    handleImageUploadDataChange((prev) => ({ ...prev, result: null }))
 
     try {
       let response: Response
@@ -133,7 +403,7 @@ export function CreatePostForm() {
       }
 
       const data: UploadResponse = await response.json()
-      setImageUploadData((prev) => ({
+      handleImageUploadDataChange((prev) => ({
         ...prev,
         result: data,
       }))
@@ -166,7 +436,7 @@ export function CreatePostForm() {
       return data
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Network error occurred'
-      setImageUploadData((prev) => ({
+      handleImageUploadDataChange((prev) => ({
         ...prev,
         result: {
           success: false,
@@ -177,7 +447,7 @@ export function CreatePostForm() {
         description: errorMessage,
       })
     } finally {
-      setImageUploadData((prev) => ({
+      handleImageUploadDataChange((prev) => ({
         ...prev,
         uploading: false,
       }))
@@ -203,6 +473,7 @@ export function CreatePostForm() {
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
+    isSubmittingRef.current = true
     try {
       if (!loginDetail) {
         return (
@@ -291,12 +562,27 @@ export function CreatePostForm() {
         return
       }
 
+      // Blog created successfully - clear draft data
+      try {
+        console.log('Blog created successfully, clearing draft data...')
+        await clearDraftCookie()
+        console.log('✅ Draft data cleared from IndexedDB and cookies')
+      } catch (clearError) {
+        // Even if clearing fails, log it but don't block the success flow
+        console.error('Warning: Failed to clear draft data:', clearError)
+      }
+
+      hasShownLeaveToastRef.current = false
+      isSubmittingRef.current = false
+      setDraftImageLoaded(false)
+
       toast.success('Success', {
         description: 'Post created successfully',
       })
       router.push('/dashboard/blog')
     } catch (error: any) {
       console.error('Error creating post:', error)
+      isSubmittingRef.current = false
       toast.error('Error', {
         description: error?.message || 'Error creating post',
       })
@@ -316,31 +602,41 @@ export function CreatePostForm() {
   // Handle title change to auto-generate slug and metaTitle
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value
-    form.setValue('title', title)
+    form.setValue('title', title, { shouldDirty: true, shouldValidate: false })
 
     // Only auto-generate slug if it hasn't been manually edited
     if (!form.getValues('slug')) {
-      form.setValue('slug', generateSlug(title))
+      form.setValue('slug', generateSlug(title), { shouldDirty: true, shouldValidate: false })
     }
 
     // Auto-fill metaTitle if it's empty or matches the previous title
     const currentMetaTitle = form.getValues('metaTitle')
     const previousTitle = form.getValues('title')
     if (!currentMetaTitle || currentMetaTitle === previousTitle) {
-      form.setValue('metaTitle', title)
+      form.setValue('metaTitle', title, { shouldDirty: true, shouldValidate: false })
+    }
+
+    // Trigger save after a short delay
+    if (isDraftLoaded) {
+      saveDraft()
     }
   }
 
   // Handle excerpt change to auto-fill metaDescription
   const handleExcerptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const excerpt = e.target.value
-    form.setValue('excerpt', excerpt)
+    form.setValue('excerpt', excerpt, { shouldDirty: true, shouldValidate: false })
 
     // Auto-fill metaDescription if it's empty or matches the previous excerpt
     const currentMetaDescription = form.getValues('metaDescription')
     const previousExcerpt = form.getValues('excerpt')
     if (!currentMetaDescription || currentMetaDescription === previousExcerpt) {
-      form.setValue('metaDescription', excerpt)
+      form.setValue('metaDescription', excerpt, { shouldDirty: true, shouldValidate: false })
+    }
+
+    // Trigger save after a short delay
+    if (isDraftLoaded) {
+      saveDraft()
     }
   }
 
@@ -430,8 +726,8 @@ export function CreatePostForm() {
                           />
                         </FormControl>
                         <FormDescription>
-                          A short summary that appears in post listings. This will also be used as the
-                          default meta description.
+                          A short summary that appears in post listings. This will also be used as
+                          the default meta description.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -449,14 +745,29 @@ export function CreatePostForm() {
                               src={imageUploadData.coverImage}
                               alt="Cover image"
                               className="object-cover w-full h-full"
+                              onError={(e) =>
+                                console.error('Image failed to load:', imageUploadData.coverImage)
+                              }
+                              onLoad={() =>
+                                console.log(
+                                  'Image loaded successfully:',
+                                  imageUploadData.coverImage?.substring(0, 50),
+                                )
+                              }
                             />
+                            <div className="text-xs text-muted-foreground mt-2">
+                              Image loaded from draft:{' '}
+                              {imageUploadData.coverImage?.substring(0, 50)}...
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground break-all">
-                            Image URL: {imageUploadData.coverImage}
-                          </div>
+                          {draftImageLoaded && (
+                            <div className="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                              ✓ Image restored from draft
+                            </div>
+                          )}
                           <ImageUploadDialog
                             imageUploadData={imageUploadData}
-                            setImageUploadData={setImageUploadData}
+                            setImageUploadData={handleImageUploadDataChange}
                             clearAll={clearAll}
                             placeholder="Change Image"
                           />
@@ -464,7 +775,7 @@ export function CreatePostForm() {
                       ) : (
                         <ImageUploadDialog
                           imageUploadData={imageUploadData}
-                          setImageUploadData={setImageUploadData}
+                          setImageUploadData={handleImageUploadDataChange}
                           clearAll={clearAll}
                           placeholder="Upload Image"
                         />
@@ -482,7 +793,13 @@ export function CreatePostForm() {
                         <FormControl>
                           <RichTextEditor
                             value={field.value}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              field.onChange(value)
+                              // Trigger save immediately for content changes
+                              if (isDraftLoaded) {
+                                saveDraft()
+                              }
+                            }}
                             placeholder="Enter content here..."
                             height="500px"
                           />
@@ -554,9 +871,13 @@ export function CreatePostForm() {
                       <p className="text-blue-600 text-lg truncate">
                         {form.watch('metaTitle') || form.watch('title') || 'Blog Title'}
                       </p>
-                      <p className="text-green-700 text-sm">mykunba.org/{form.watch('slug') || 'blog-slug'}</p>
+                      <p className="text-green-700 text-sm">
+                        mykunba.org/{form.watch('slug') || 'blog-slug'}
+                      </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {form.watch('metaDescription') || form.watch('excerpt') || 'Blog description will appear here.'}
+                        {form.watch('metaDescription') ||
+                          form.watch('excerpt') ||
+                          'Blog description will appear here.'}
                       </p>
                     </div>
                   </div>
@@ -618,7 +939,11 @@ export function CreatePostForm() {
                                 )}
                                 disabled={isLoading}
                               >
-                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                {field.value ? (
+                                  format(field.value, 'PPP')
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
@@ -657,7 +982,27 @@ export function CreatePostForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.back()}
+              onClick={() => {
+                // Save draft and show toast before navigating away
+                const formValues = form.getValues()
+                const hasContent =
+                  formValues.title ||
+                  formValues.content ||
+                  formValues.excerpt ||
+                  imageUploadData.coverImage ||
+                  selectedCategories.length > 0
+
+                if (hasContent) {
+                  if (saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current)
+                  }
+                  saveDraft()
+                  toast.success('Draft Saved', {
+                    description: 'Your blog has been successfully saved as draft.',
+                  })
+                }
+                router.back()
+              }}
               disabled={isLoading}
             >
               Cancel
