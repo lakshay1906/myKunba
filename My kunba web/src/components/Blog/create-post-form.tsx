@@ -640,16 +640,38 @@ export function CreatePostForm() {
     }
   }
 
-  // Fetch categories and tags (mock data for now)
-  // In a real app, you would fetch these from your API
-  useEffect(() => {
-    ;(async () => {
-      setCatLoading(true)
+  // Function to refresh categories list
+  const refreshCategories = useCallback(async () => {
+    setCatLoading(true)
+    try {
       const categories = await fetchAllCategories()
       setCategories(categories.docs)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Error', {
+        description: 'Failed to refresh categories',
+      })
+    } finally {
       setCatLoading(false)
-    })()
+    }
   }, [])
+
+  // Fetch categories on mount
+  useEffect(() => {
+    refreshCategories()
+  }, [refreshCategories])
+
+  // Handle category creation - refresh list and trigger draft save
+  const handleCategoryCreated = useCallback(
+    (newCategory: { id: number; name: string; slug: string }) => {
+      console.log('New category created:', newCategory)
+      // Refresh categories list to include the new one
+      refreshCategories()
+      // The category is already selected via CategorySelector's onChange
+      // This will trigger the useEffect watching selectedCategories, which will save the draft
+    },
+    [refreshCategories],
+  )
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
@@ -971,6 +993,8 @@ export function CreatePostForm() {
                       allCategories={categories}
                       selectedCategories={selectedCategories}
                       onChange={setSelectedCategories}
+                      onCategoryCreated={handleCategoryCreated}
+                      authToken={loginDetail?.token}
                     />
                   </div>
                 </div>

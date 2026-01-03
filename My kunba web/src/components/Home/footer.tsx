@@ -33,9 +33,9 @@ export default function Footer() {
           <div className="flex flex-col justify-start gap-3">
             <div className="flex justify-start gap-3 items-center">
               <div className="overflow-hidden rounded-xl">
-                <Image src="/logo.png" width={40} height={40} alt="logo" className="h-10 w-10" />
+                <Image src="/full_logo.png" width={250} height={200} alt="logo" className="" />
               </div>
-              <p className="text-xl font-bold">myKunba.org</p>
+              {/* <p className="text-xl font-bold">myKunba.org</p> */}
             </div>
             <p className="text-base font-medium text-muted-foreground w-[80%]">
               Where Stories Come to Life is an innovative and engaging blogging platform designed

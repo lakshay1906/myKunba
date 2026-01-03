@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface Category {
   id: number
@@ -36,16 +37,21 @@ interface CategorySelectorProps {
   allCategories: Record<string, any>[]
   selectedCategories: number[]
   onChange: (selectedIds: number[]) => void
+  onCategoryCreated?: (category: Category) => void
+  authToken?: string | null
 }
 
 export default function CategorySelector({
   allCategories,
   selectedCategories,
   onChange,
+  onCategoryCreated,
+  authToken,
 }: CategorySelectorProps) {
   const [open, setOpen] = useState(false)
   const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
   const selectedItems = allCategories.filter((category) => selectedCategories.includes(category.id))
 
   const handleSelect = (id: number) => {
@@ -56,27 +62,64 @@ export default function CategorySelector({
     }
   }
 
-  const handleCreateCategory = () => {
-    if (!newCategoryName.trim()) return
-
-    // In a real app, you would make an API call to create the category
-    // For this example, we'll simulate it
-    const newId = Math.max(...allCategories.map((c) => c.id), 0) + 1
-    const newSlug = newCategoryName.toLowerCase().replace(/\s+/g, '-')
-
-    const newCategory = {
-      id: newId,
-      name: newCategoryName,
-      slug: newSlug,
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Error', {
+        description: 'Category name cannot be empty',
+      })
+      return
     }
 
-    // Add the new category to the list and select it
-    allCategories.push(newCategory)
-    onChange([...selectedCategories, newId])
+    setIsCreating(true)
 
-    // Reset form
-    setNewCategoryName('')
-    setNewCategoryOpen(false)
+    try {
+      // Generate slug from name
+      const slug = newCategoryName.toLowerCase().replace(/\s+/g, '-')
+
+      // Make API call to create the category
+      const response = await fetch('/api/dashboard/category', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { Authorization: `bearer ${authToken}` }),
+        },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          slug: slug,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create category' }))
+        throw new Error(errorData.message || 'Failed to create category')
+      }
+
+      const newCategory = await response.json()
+
+      // Notify parent component to refresh categories list
+      if (onCategoryCreated) {
+        onCategoryCreated(newCategory)
+      }
+
+      // Automatically select the newly created category
+      onChange([...selectedCategories, newCategory.id])
+
+      // Reset form and close dialog
+      setNewCategoryName('')
+      setNewCategoryOpen(false)
+      setOpen(false)
+
+      toast.success('Success', {
+        description: `Category "${newCategory.name}" created successfully`,
+      })
+    } catch (error: any) {
+      console.error('Error creating category:', error)
+      toast.error('Error', {
+        description: error?.message || 'Failed to create category. Please try again.',
+      })
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -162,10 +205,16 @@ export default function CategorySelector({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewCategoryOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setNewCategoryOpen(false)}
+              disabled={isCreating}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateCategory}>Create Category</Button>
+            <Button onClick={handleCreateCategory} disabled={isCreating || !newCategoryName.trim()}>
+              {isCreating ? 'Creating...' : 'Create Category'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

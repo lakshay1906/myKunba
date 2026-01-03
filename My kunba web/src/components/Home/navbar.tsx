@@ -66,9 +66,9 @@ interface NavbarProps {
 export default function Navbar({
   logo = {
     url: 'https://www.mykunba.org',
-    src: '/logo.png',
+    src: '/logo1.png',
     alt: 'logo',
-    title: 'My Kunba',
+    title: 'myKunba',
   },
   menu = [
     { title: 'Home', url: '/blog' },
@@ -139,15 +139,15 @@ export default function Navbar({
 }: NavbarProps) {
   const { loginDetail, logout } = useAppStore()
   return (
-    <section className="p-4 fixed top-0 z-50 w-full bg-background border-b">
-      <nav className="hidden justify-between lg:flex">
+    <section className="p-4 fixed top-0 z-50 bg-background w-full border-b">
+      <nav className="hidden justify-between lg:flex w-full container mx-auto">
         <div className="flex items-center gap-6">
-          <a href={logo.url} className="flex items-center gap-2 bg-none">
+          <Link href={logo.url} className="flex items-center gap-2 bg-none">
             <div className="overflow-hidden rounded-lg">
               <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
             </div>
             <span className="text-lg font-semibold">{logo.title}</span>
-          </a>
+          </Link>
           <div className="flex items-center">
             <NavigationMenu>
               <NavigationMenuList>
@@ -206,7 +206,7 @@ export default function Navbar({
           )}
         </div>
       </nav>
-      <div className="block lg:hidden">
+      <div className="block lg:hidden w-full container mx-auto">
         <div className="flex items-center justify-between">
           <a href={logo.url} className="flex items-center gap-2">
             <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
