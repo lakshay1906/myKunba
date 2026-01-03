@@ -66,8 +66,8 @@ interface NavbarProps {
 export default function Navbar({
   logo = {
     url: 'https://www.mykunba.org',
-    src: '/logo1.png',
-    alt: 'logo',
+    src: '/logo.svg',
+    alt: 'mykunba.org',
     title: 'myKunba',
   },
   menu = [

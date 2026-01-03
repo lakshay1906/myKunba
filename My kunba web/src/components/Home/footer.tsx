@@ -32,8 +32,8 @@ export default function Footer() {
         <div className="col-span-2 mb-8 lg:mb-0">
           <div className="flex flex-col justify-start gap-3">
             <div className="flex justify-start gap-3 items-center">
-              <div className="overflow-hidden rounded-xl">
-                <Image src="/full_logo.png" width={230} height={200} alt="logo" className="" />
+              <div className="overflow-hidden">
+                <Image src="/full_logo.svg" width={230} height={200} alt="logo" className="" />
               </div>
               {/* <p className="text-xl font-bold">myKunba.org</p> */}
             </div>
