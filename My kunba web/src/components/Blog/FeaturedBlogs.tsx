@@ -146,9 +146,10 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                 <div
                   className="relative h-96 md:h-[500px] w-full overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
                   style={{
-                    backgroundImage: `url(${blog.media})`,
+                    backgroundImage: blog.media ? `url("${blog.media}")` : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    backgroundColor: blog.media ? undefined : '#1a1a1a',
                   }}
                 >
                   <div
