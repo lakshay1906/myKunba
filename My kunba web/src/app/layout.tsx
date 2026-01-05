@@ -13,8 +13,78 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'My Kunba',
-  description: 'A open blogging platform',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'),
+  title: {
+    default: 'My Kunba - Open Blogging Platform',
+    template: '%s | My Kunba',
+  },
+  description:
+    'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
+  keywords: [
+    'blog',
+    'blogging platform',
+    'open source',
+    'technology',
+    'design',
+    'personal development',
+    'articles',
+    'writing',
+  ],
+  authors: [{ name: 'My Kunba Team' }],
+  creator: 'My Kunba',
+  publisher: 'My Kunba',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
+    siteName: 'My Kunba',
+    title: 'My Kunba - Open Blogging Platform',
+    description:
+      'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
+    images: [
+      {
+        url: '/full_logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'My Kunba Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Kunba - Open Blogging Platform',
+    description:
+      'My Kunba is an open blogging platform where writers share knowledge, insights, and stories.',
+    images: ['/full_logo.png'],
+    creator: '@mykunba',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
+  verification: {
+    // Add your verification codes here when available
+    // google: 'your-google-verification-code',
+    // yandex: 'your-yandex-verification-code',
+    // bing: 'your-bing-verification-code',
+  },
 }
 
 export default function RootLayout({
@@ -23,7 +93,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en-US" className="scroll-smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         cz-shortcut-listen="false"

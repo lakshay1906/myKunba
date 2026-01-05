@@ -9,10 +9,14 @@ type Blog = {
   excerpt: string
   content: string
   media: string | null
+  imageAltText: string | null
   status: string
   publishDate: string
   metaTitle: string | null
   metaDescription: string | null
+  focusKeyword: string | null
+  externalLinks: Array<{ url: string; anchorText: string }> | null
+  internalLinks: Array<{ url: string; anchorText: string }> | null
   author: {
     id: number
     displayName: string
@@ -54,13 +58,29 @@ export async function generateMetadata({
   const title = blog.metaTitle || blog.title
   const description = blog.metaDescription || blog.excerpt
   const imageUrl = blog.media || ''
+  const imageAlt = blog.imageAltText || blog.title
+  const focusKeyword = blog.focusKeyword || ''
   const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
-  const siteUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-  const blogUrl = `${siteUrl}/user/blog/${blog.slug}`
+  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const blogUrl = `${siteUrl}/blog/${blog.slug}`
+
+  // Build keywords array including focus keyword
+  const keywords: string[] = []
+  if (focusKeyword) {
+    keywords.push(focusKeyword)
+  }
+  if (blog.categories && Array.isArray(blog.categories)) {
+    blog.categories.forEach((cat: any) => {
+      if (cat.name && !keywords.includes(cat.name)) {
+        keywords.push(cat.name)
+      }
+    })
+  }
 
   return {
     title,
     description,
+    keywords: keywords.length > 0 ? keywords : undefined,
     authors: [{ name: authorName }],
     openGraph: {
       title,
@@ -73,13 +93,14 @@ export async function generateMetadata({
               url: imageUrl,
               width: 1200,
               height: 630,
-              alt: blog.title,
+              alt: imageAlt,
             },
           ]
         : [],
       locale: 'en_US',
       type: 'article',
       publishedTime: blog.publishDate,
+      ...(focusKeyword && { tags: [focusKeyword] }),
     },
     twitter: {
       card: 'summary_large_image',
@@ -103,15 +124,59 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     getCurrentUserId(),
   ])
 
+  // Generate structured data for SEO
+  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const blogUrl = `${siteUrl}/blog/${blog.slug}`
+  const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
+  const imageUrl = blog.media || `${siteUrl}/full_logo.png`
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: blog.metaTitle || blog.title,
+    description: blog.metaDescription || blog.excerpt,
+    image: imageUrl,
+    datePublished: blog.publishDate,
+    dateModified: blog.publishDate,
+    author: {
+      '@type': 'Person',
+      name: authorName,
+      ...(blog.author.profileImage && {
+        image: blog.author.profileImage,
+      }),
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'My Kunba',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteUrl}/full_logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': blogUrl,
+    },
+    ...(blog.categories && blog.categories.length > 0 && {
+      articleSection: blog.categories.map((cat: any) => cat.name).join(', '),
+    }),
+  }
+
   return (
-    <main className="container mx-auto">
-      <BlogContent
-        blog={blog}
-        initialComments={commentsData.comments}
-        totalComments={commentsData.total}
-        hasMore={commentsData.hasMore}
-        currentUserId={currentUserId}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-    </main>
+      <main className="container mx-auto">
+        <BlogContent
+          blog={blog}
+          initialComments={commentsData.comments}
+          totalComments={commentsData.total}
+          hasMore={commentsData.hasMore}
+          currentUserId={currentUserId}
+        />
+      </main>
+    </>
   )
 }

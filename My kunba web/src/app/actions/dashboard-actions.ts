@@ -4,8 +4,6 @@ import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
 
-const url = process.env.NEXT_PUBLIC_NEXT_URL
-
 /**
  * Get authenticated user from token
  */

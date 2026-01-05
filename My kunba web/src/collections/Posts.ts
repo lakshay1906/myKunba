@@ -74,6 +74,58 @@ export const Posts: CollectionConfig = {
       name: 'metaDescription',
       type: 'text',
     },
+    {
+      name: 'focusKeyword',
+      type: 'text',
+      admin: {
+        description: 'Primary keyword for SEO optimization',
+      },
+    },
+    {
+      name: 'imageAltText',
+      type: 'text',
+      admin: {
+        description: 'Alt text for the cover image (important for SEO and accessibility)',
+      },
+    },
+    {
+      name: 'externalLinks',
+      type: 'array',
+      fields: [
+        {
+          name: 'url',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'anchorText',
+          type: 'text',
+          required: true,
+        },
+      ],
+      admin: {
+        description: 'External links to include in the blog post for SEO',
+      },
+    },
+    {
+      name: 'internalLinks',
+      type: 'array',
+      fields: [
+        {
+          name: 'url',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'anchorText',
+          type: 'text',
+          required: true,
+        },
+      ],
+      admin: {
+        description: 'Internal links to other blog posts or pages for SEO',
+      },
+    },
     // {
     //   name: 'template',
     //   type: 'select',

@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
           title: true,
           slug: true,
           media: true,
+          imageAltText: true,
           author: true,
           excerpt: true,
           categories: true,
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
           commentsEnabled: true,
           metaTitle: true,
           metaDescription: true,
+          focusKeyword: true,
+          externalLinks: true,
+          internalLinks: true,
         },
         where: {
           slug: {

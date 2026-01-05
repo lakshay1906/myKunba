@@ -50,6 +50,9 @@ import {
   clearDraftCookie,
   type BlogDraftData,
 } from '@/lib/utils/cookies'
+import { validateSEO } from '@/lib/utils/seo-validation'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -61,6 +64,24 @@ const formSchema = z.object({
   publishDate: z.date().optional(),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
+  focusKeyword: z.string().optional(),
+  imageAltText: z.string().optional(),
+  externalLinks: z
+    .array(
+      z.object({
+        url: z.string().url('Must be a valid URL'),
+        anchorText: z.string().min(1, 'Anchor text is required'),
+      })
+    )
+    .optional(),
+  internalLinks: z
+    .array(
+      z.object({
+        url: z.string().min(1, 'URL is required'),
+        anchorText: z.string().min(1, 'Anchor text is required'),
+      })
+    )
+    .optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -90,6 +111,7 @@ export function CreatePostForm() {
   const hasShownLeaveToastRef = useRef(false)
   const isSubmittingRef = useRef(false)
   const saveDraftRef = useRef<((immediate?: boolean) => void) | null>(null)
+  const [seoValidation, setSeoValidation] = useState<any>(null)
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -102,9 +124,41 @@ export function CreatePostForm() {
       publishDate: new Date(),
       metaTitle: '',
       metaDescription: '',
+      focusKeyword: '',
+      imageAltText: '',
+      externalLinks: [],
+      internalLinks: [],
       status: 'draft',
     },
   })
+
+  // Watch form values for SEO validation
+  const watchedValues = form.watch()
+  
+  // Run SEO validation when relevant fields change (debounced for performance)
+  useEffect(() => {
+    // Debounce validation to avoid running on every keystroke
+    const timeoutId = setTimeout(() => {
+      const validation = validateSEO(
+        watchedValues.metaTitle || watchedValues.title,
+        watchedValues.slug,
+        watchedValues.metaDescription || watchedValues.excerpt,
+        watchedValues.content,
+        watchedValues.focusKeyword || ''
+      )
+      setSeoValidation(validation)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timeoutId)
+  }, [
+    watchedValues.metaTitle,
+    watchedValues.title,
+    watchedValues.slug,
+    watchedValues.metaDescription,
+    watchedValues.excerpt,
+    watchedValues.content,
+    watchedValues.focusKeyword,
+  ])
 
   // Wrapper for setImageUploadData that triggers save when coverImage changes
   const handleImageUploadDataChange = useCallback(
@@ -552,6 +606,11 @@ export function CreatePostForm() {
           coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
           // Add categories from state
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          // SEO fields
+          focusKeyword: data.focusKeyword || undefined,
+          imageAltText: data.imageAltText || undefined,
+          externalLinks: data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
+          internalLinks: data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
         }),
       })
       if (!response.ok) {
@@ -721,9 +780,21 @@ export function CreatePostForm() {
                       <FormItem>
                         <FormLabel>Slug</FormLabel>
                         <FormControl>
-                          <Input placeholder="enter-post-slug" {...field} disabled={isLoading} />
+                          <Input placeholder="enter-post-slug" {...field} disabled={isLoading} maxLength={100} />
                         </FormControl>
-                        <FormDescription>The URL-friendly version of the title.</FormDescription>
+                        <FormDescription>
+                          The URL-friendly version of the title.
+                          {seoValidation && seoValidation.metrics.slugLength > 75 && (
+                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                              ⚠️ {seoValidation.metrics.slugLength}/75 characters (recommended)
+                            </span>
+                          )}
+                          {seoValidation && seoValidation.metrics.slugLength <= 75 && (
+                            <span className="block mt-1 text-green-600 dark:text-green-400">
+                              ✓ {seoValidation.metrics.slugLength}/75 characters
+                            </span>
+                          )}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -855,10 +926,21 @@ export function CreatePostForm() {
                             placeholder="SEO title (optional)"
                             {...field}
                             disabled={isLoading}
+                            maxLength={100}
                           />
                         </FormControl>
                         <FormDescription>
                           Title used for SEO purposes. Defaults to post title if left empty.
+                          {seoValidation && seoValidation.metrics.metaTitleLength > 60 && (
+                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                              ⚠️ {seoValidation.metrics.metaTitleLength}/60 characters (recommended)
+                            </span>
+                          )}
+                          {seoValidation && seoValidation.metrics.metaTitleLength <= 60 && (
+                            <span className="block mt-1 text-green-600 dark:text-green-400">
+                              ✓ {seoValidation.metrics.metaTitleLength}/60 characters
+                            </span>
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -881,11 +963,249 @@ export function CreatePostForm() {
                         </FormControl>
                         <FormDescription>
                           Description used for SEO purposes. Defaults to excerpt if left empty.
+                          {seoValidation && seoValidation.metrics.descriptionLength > 160 && (
+                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                              ⚠️ {seoValidation.metrics.descriptionLength}/160 characters
+                            </span>
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {/* Focus Keyword Field */}
+                  <FormField
+                    control={form.control}
+                    name="focusKeyword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Focus Keyword</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., web development, react tutorial"
+                            {...field}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Primary keyword for SEO optimization. This keyword should appear in your title, content, and meta description.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Image Alt Text Field */}
+                  <FormField
+                    control={form.control}
+                    name="imageAltText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image Alt Text</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Descriptive alt text for the cover image"
+                            {...field}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Alt text for the cover image. Include your focus keyword if relevant. Important for SEO and accessibility.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* External Links */}
+                  <FormField
+                    control={form.control}
+                    name="externalLinks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>External Links</FormLabel>
+                        <FormDescription className="mb-2">
+                          Add external links to authoritative sources. These will be included in your blog post for SEO.
+                        </FormDescription>
+                        {field.value?.map((link, index) => (
+                          <div key={index} className="flex gap-2 mb-2">
+                            <Input
+                              placeholder="URL"
+                              value={link.url}
+                              onChange={(e) => {
+                                const newLinks = [...(field.value || [])]
+                                newLinks[index] = { ...newLinks[index], url: e.target.value }
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            />
+                            <Input
+                              placeholder="Anchor Text"
+                              value={link.anchorText}
+                              onChange={(e) => {
+                                const newLinks = [...(field.value || [])]
+                                newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const newLinks = field.value?.filter((_, i) => i !== index) || []
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            field.onChange([...(field.value || []), { url: '', anchorText: '' }])
+                          }}
+                          disabled={isLoading}
+                        >
+                          Add External Link
+                        </Button>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Internal Links */}
+                  <FormField
+                    control={form.control}
+                    name="internalLinks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Internal Links</FormLabel>
+                        <FormDescription className="mb-2">
+                          Add internal links to other blog posts or pages. These help with SEO and user engagement.
+                        </FormDescription>
+                        {field.value?.map((link, index) => (
+                          <div key={index} className="flex gap-2 mb-2">
+                            <Input
+                              placeholder="/blog/post-slug or /page"
+                              value={link.url}
+                              onChange={(e) => {
+                                const newLinks = [...(field.value || [])]
+                                newLinks[index] = { ...newLinks[index], url: e.target.value }
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            />
+                            <Input
+                              placeholder="Anchor Text"
+                              value={link.anchorText}
+                              onChange={(e) => {
+                                const newLinks = [...(field.value || [])]
+                                newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const newLinks = field.value?.filter((_, i) => i !== index) || []
+                                field.onChange(newLinks)
+                              }}
+                              disabled={isLoading}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            field.onChange([...(field.value || []), { url: '', anchorText: '' }])
+                          }}
+                          disabled={isLoading}
+                        >
+                          Add Internal Link
+                        </Button>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* SEO Validation Warnings */}
+                  {seoValidation && seoValidation.warnings.length > 0 && (
+                    <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertTitle className="text-amber-800 dark:text-amber-200">SEO Recommendations</AlertTitle>
+                      <AlertDescription className="text-amber-700 dark:text-amber-300">
+                        <ul className="list-disc list-inside space-y-1 mt-2">
+                          {seoValidation.warnings.map((warning: string, index: number) => (
+                            <li key={index} className="text-sm">{warning}</li>
+                          ))}
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* SEO Metrics Display */}
+                  {seoValidation && (
+                    <div className="p-4 border rounded-md bg-muted/50">
+                      <h3 className="font-medium text-sm mb-3">SEO Metrics</h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Meta Title:</span>{' '}
+                          <span className={seoValidation.metrics.metaTitleLength > 60 ? 'text-amber-600' : 'text-green-600'}>
+                            {seoValidation.metrics.metaTitleLength}/60
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Slug:</span>{' '}
+                          <span className={seoValidation.metrics.slugLength > 75 ? 'text-amber-600' : 'text-green-600'}>
+                            {seoValidation.metrics.slugLength}/75
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Description:</span>{' '}
+                          <span className={seoValidation.metrics.descriptionLength > 160 ? 'text-amber-600' : 'text-green-600'}>
+                            {seoValidation.metrics.descriptionLength}/160
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Word Count:</span>{' '}
+                          <span className={seoValidation.metrics.wordCount < 600 ? 'text-amber-600' : 'text-green-600'}>
+                            {seoValidation.metrics.wordCount} {seoValidation.metrics.wordCount < 600 ? '(recommended: 600+)' : '✓'}
+                          </span>
+                        </div>
+                        {watchedValues.focusKeyword && (
+                          <>
+                            <div>
+                              <span className="text-muted-foreground">Keyword (First 10%):</span>{' '}
+                              <span className={seoValidation.metrics.keywordDensity.first10Percent > 0 ? 'text-green-600' : 'text-amber-600'}>
+                                {seoValidation.metrics.keywordDensity.first10Percent.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Keyword (Rest 90%):</span>{' '}
+                              <span className={
+                                seoValidation.metrics.keywordDensity.rest90Percent >= 1.5 && 
+                                seoValidation.metrics.keywordDensity.rest90Percent <= 2.5 
+                                  ? 'text-green-600' 
+                                  : 'text-amber-600'
+                              }>
+                                {seoValidation.metrics.keywordDensity.rest90Percent.toFixed(2)}% (target: 1.5-2%)
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-4 border rounded-md bg-muted/50">
                     <h3 className="font-medium text-sm mb-2">Search Preview</h3>

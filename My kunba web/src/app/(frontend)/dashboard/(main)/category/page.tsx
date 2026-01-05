@@ -1,4 +1,6 @@
-export const metadata = {
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
   title: 'Dashboard | Categories',
   // description:
   //   'Unlock business value with our Data & AI services: from data engineering and analytics to AI-driven insights and predictive solutions.',
@@ -26,11 +28,7 @@ import CategoryMain from '@/components/Category/CategoryMain'
 import { fetchDashboardCategories } from '@/app/actions/dashboard-actions'
 import { redirect } from 'next/navigation'
 
-export default async function page({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>
-}) {
+export default async function page({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   try {
     const params = await searchParams
     const page = params.page ? Number(params.page) : 1

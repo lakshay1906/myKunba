@@ -256,6 +256,34 @@ export interface Post {
   publishDate: string;
   metaTitle?: string | null;
   metaDescription?: string | null;
+  /**
+   * Primary keyword for SEO optimization
+   */
+  focusKeyword?: string | null;
+  /**
+   * Alt text for the cover image (important for SEO and accessibility)
+   */
+  imageAltText?: string | null;
+  /**
+   * External links to include in the blog post for SEO
+   */
+  externalLinks?:
+    | {
+        url: string;
+        anchorText: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Internal links to other blog posts or pages for SEO
+   */
+  internalLinks?:
+    | {
+        url: string;
+        anchorText: string;
+        id?: string | null;
+      }[]
+    | null;
   author: number | User;
   categories?: (number | Category)[] | null;
   deleted_at?: string | null;
@@ -557,6 +585,22 @@ export interface PostsSelect<T extends boolean = true> {
   publishDate?: T;
   metaTitle?: T;
   metaDescription?: T;
+  focusKeyword?: T;
+  imageAltText?: T;
+  externalLinks?:
+    | T
+    | {
+        url?: T;
+        anchorText?: T;
+        id?: T;
+      };
+  internalLinks?:
+    | T
+    | {
+        url?: T;
+        anchorText?: T;
+        id?: T;
+      };
   author?: T;
   categories?: T;
   deleted_at?: T;

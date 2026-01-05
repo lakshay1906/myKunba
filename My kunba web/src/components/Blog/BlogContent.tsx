@@ -25,10 +25,12 @@ type Blog = {
   // } | null
   // NEW: Media is now a string URL from Cloudflare R2 - ACTIVE
   media: string | null
+  imageAltText: string | null
   status: string
   publishDate: string
   metaTitle: string | null
   metaDescription: string | null
+  focusKeyword: string | null
   author: {
     id: number
     displayName: string
@@ -96,7 +98,7 @@ export default function BlogContent({
             // alt={blog.media.alt || blog.title} // OLD: Media object with alt property
             // NEW: Cloudflare R2 storage - ACTIVE
             src={blog.media || '/placeholder.svg'} // NEW: Media is now a URL string
-            alt={blog.title} // NEW: Using blog title as alt text
+            alt={blog.imageAltText || blog.title} // NEW: Using imageAltText if available, fallback to title
             fill
             className="object-cover"
             priority

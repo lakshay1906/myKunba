@@ -142,9 +142,15 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       )
 
     case 'link':
-      const linkNode = node as PayloadElementNode & { url?: string }
+      const linkNode = node as PayloadElementNode & { url?: string; newTab?: boolean }
+      const isExternal = linkNode.url?.startsWith('http://') || linkNode.url?.startsWith('https://')
       return (
-        <a href={linkNode.url} className="text-blue-600 hover:text-blue-800 underline">
+        <a
+          href={linkNode.url}
+          className="text-blue-600 hover:text-blue-800 underline"
+          target={linkNode.newTab || isExternal ? '_blank' : undefined}
+          rel={linkNode.newTab || isExternal ? 'noopener noreferrer' : undefined}
+        >
           {linkNode.children?.map((child, index) => (
             <RenderNode key={index} node={child} />
           ))}
@@ -172,6 +178,25 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
           </code>
         </pre>
       )
+
+    case 'upload':
+    case 'image':
+      const imageNode = node as PayloadElementNode & { url?: string; alt?: string; width?: number; height?: number }
+      if (imageNode.url) {
+        return (
+          <div className="my-6">
+            <img
+              src={imageNode.url}
+              alt={imageNode.alt || 'Blog post image'}
+              width={imageNode.width}
+              height={imageNode.height}
+              className="max-w-full h-auto rounded-lg"
+              loading="lazy"
+            />
+          </div>
+        )
+      }
+      return null
 
     default:
       console.warn('Unknown node type:', node.type, node)

@@ -1,0 +1,15 @@
+# robots.txt for My Kunba
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /unauthorised
+Disallow: /upload
+
+# Sitemap location (update with your actual domain in production)
+# Sitemap: https://your-domain.com/sitemap.xml
+
+# Crawl-delay (optional, adjust as needed)
+Crawl-delay: 1
+

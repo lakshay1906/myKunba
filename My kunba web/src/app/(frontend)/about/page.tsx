@@ -1,5 +1,25 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About Us',
+  description: 'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights on technology, design, and personal development.',
+  openGraph: {
+    title: 'About Us - My Kunba',
+    description: 'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights.',
+    url: '/about',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'About Us - My Kunba',
+    description: 'Learn about My Kunba, our mission, values, and team.',
+  },
+  alternates: {
+    canonical: '/about',
+  },
+}
 
 export default function About() {
   return (

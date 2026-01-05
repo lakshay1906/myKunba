@@ -264,6 +264,10 @@ export default function EditBlogPage({
         metaDescription: blog.metaDescription || '',
         commentsEnabled: blog.commentsEnabled !== false,
         isFeatured: blog.isFeatured === true,
+        focusKeyword: blog.focusKeyword || '',
+        imageAltText: blog.imageAltText || '',
+        externalLinks: blog.externalLinks || [],
+        internalLinks: blog.internalLinks || [],
       }
 
       // Add categories if selected
@@ -608,6 +612,132 @@ export default function EditBlogPage({
                   {(blog.metaDescription || blog.excerpt || '').length}/160 characters. Defaults to
                   excerpt if empty.
                 </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="focusKeyword">Focus Keyword</Label>
+                <Input
+                  id="focusKeyword"
+                  name="focusKeyword"
+                  value={blog.focusKeyword || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., web development, react tutorial"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Primary keyword for SEO optimization. Should appear in title, content, and meta description.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="imageAltText">Image Alt Text</Label>
+                <Input
+                  id="imageAltText"
+                  name="imageAltText"
+                  value={blog.imageAltText || ''}
+                  onChange={handleInputChange}
+                  placeholder="Descriptive alt text for the cover image"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Alt text for the cover image. Include your focus keyword if relevant. Important for SEO and accessibility.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>External Links</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add external links to authoritative sources for SEO.
+                </p>
+                {(blog.externalLinks || []).map((link: any, index: number) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="URL"
+                      value={link.url || ''}
+                      onChange={(e) => {
+                        const newLinks = [...(blog.externalLinks || [])]
+                        newLinks[index] = { ...newLinks[index], url: e.target.value }
+                        setBlog({ ...blog, externalLinks: newLinks })
+                      }}
+                    />
+                    <Input
+                      placeholder="Anchor Text"
+                      value={link.anchorText || ''}
+                      onChange={(e) => {
+                        const newLinks = [...(blog.externalLinks || [])]
+                        newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
+                        setBlog({ ...blog, externalLinks: newLinks })
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const newLinks = (blog.externalLinks || []).filter((_: any, i: number) => i !== index)
+                        setBlog({ ...blog, externalLinks: newLinks })
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBlog({
+                      ...blog,
+                      externalLinks: [...(blog.externalLinks || []), { url: '', anchorText: '' }],
+                    })
+                  }}
+                >
+                  Add External Link
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>Internal Links</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add internal links to other blog posts or pages for SEO.
+                </p>
+                {(blog.internalLinks || []).map((link: any, index: number) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="/blog/post-slug or /page"
+                      value={link.url || ''}
+                      onChange={(e) => {
+                        const newLinks = [...(blog.internalLinks || [])]
+                        newLinks[index] = { ...newLinks[index], url: e.target.value }
+                        setBlog({ ...blog, internalLinks: newLinks })
+                      }}
+                    />
+                    <Input
+                      placeholder="Anchor Text"
+                      value={link.anchorText || ''}
+                      onChange={(e) => {
+                        const newLinks = [...(blog.internalLinks || [])]
+                        newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
+                        setBlog({ ...blog, internalLinks: newLinks })
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const newLinks = (blog.internalLinks || []).filter((_: any, i: number) => i !== index)
+                        setBlog({ ...blog, internalLinks: newLinks })
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBlog({
+                      ...blog,
+                      internalLinks: [...(blog.internalLinks || []), { url: '', anchorText: '' }],
+                    })
+                  }}
+                >
+                  Add Internal Link
+                </Button>
               </div>
               <div className="p-4 border rounded-md bg-muted/50">
                 <h3 className="font-medium text-sm mb-2">Search Preview</h3>

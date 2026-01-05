@@ -135,6 +135,10 @@ export async function POST(req: NextRequest) {
       metaTitle,
       metaDescription,
       categories,
+      focusKeyword,
+      imageAltText,
+      externalLinks,
+      internalLinks,
     } = await req.json()
     const accessToken = req.headers.get('Authorization')?.split(' ')[1]
     const accessSecret = process.env.ACCESS_SECRET
@@ -223,6 +227,20 @@ export async function POST(req: NextRequest) {
       impressions: 0, // Initialize impressions counter
     }
 
+    // Add SEO fields if provided
+    if (focusKeyword) {
+      postData.focusKeyword = focusKeyword
+    }
+    if (imageAltText) {
+      postData.imageAltText = imageAltText
+    }
+    if (externalLinks && Array.isArray(externalLinks) && externalLinks.length > 0) {
+      postData.externalLinks = externalLinks
+    }
+    if (internalLinks && Array.isArray(internalLinks) && internalLinks.length > 0) {
+      postData.internalLinks = internalLinks
+    }
+
     // Add categories - Payload accepts array of numbers for hasMany relationships
     // Include empty array if no categories to ensure field is set
     postData.categories = categoriesData
@@ -291,6 +309,10 @@ export async function PUT(req: NextRequest) {
       categories,
       commentsEnabled,
       isFeatured,
+      focusKeyword,
+      imageAltText,
+      externalLinks,
+      internalLinks,
     } = await req.json()
 
     const accessToken = req.headers.get('Authorization')?.split(' ')[1]
@@ -428,6 +450,20 @@ export async function PUT(req: NextRequest) {
         // If categories is provided but empty, set to empty array
         updateData.categories = []
       }
+    }
+
+    // Add SEO fields if provided
+    if (focusKeyword !== undefined) {
+      updateData.focusKeyword = focusKeyword || null
+    }
+    if (imageAltText !== undefined) {
+      updateData.imageAltText = imageAltText || null
+    }
+    if (externalLinks !== undefined) {
+      updateData.externalLinks = Array.isArray(externalLinks) && externalLinks.length > 0 ? externalLinks : []
+    }
+    if (internalLinks !== undefined) {
+      updateData.internalLinks = Array.isArray(internalLinks) && internalLinks.length > 0 ? internalLinks : []
     }
 
     // Update the blog post
