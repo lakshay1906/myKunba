@@ -22,8 +22,48 @@ export const metadata: Metadata = {
 }
 
 export default function About() {
+  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+
+  // Enhanced Organization schema for E-E-A-T
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'My Kunba',
+    url: siteUrl,
+    logo: `${siteUrl}/full_logo.png`,
+    description: 'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
+    foundingDate: '2023',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Customer Service',
+      url: `${siteUrl}/contact`,
+    },
+    sameAs: [
+      'https://x.com/mykunba',
+    ],
+  }
+
+  // AboutPage schema
+  const aboutPageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'About My Kunba',
+    description: 'Learn about My Kunba, our mission, values, and team.',
+    url: `${siteUrl}/about`,
+    mainEntity: organizationSchema,
+  }
+
   return (
-    <div className="max-w-5xl mx-auto space-y-12 mt-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
+      />
+      <div className="max-w-5xl mx-auto space-y-12 mt-8">
       <section>
         <h1 className="text-3xl font-bold mb-6">About Our Blog</h1>
         <div className="prose dark:prose-invert max-w-none">
@@ -38,6 +78,8 @@ export default function About() {
               alt="Our team working together"
               fill
               className="object-cover"
+              loading="lazy"
+              sizes="(max-width: 768px) 100vw, 1200px"
             />
           </div>
 
@@ -85,9 +127,11 @@ export default function About() {
               <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
                 <Image
                   src={member.image || '/placeholder.svg'}
-                  alt={member.name}
+                  alt={`${member.name} - ${member.role}`}
                   fill
                   className="object-cover"
+                  loading="lazy"
+                  sizes="128px"
                 />
               </div>
               <h3 className="text-xl font-semibold">{member.name}</h3>
@@ -143,5 +187,6 @@ export default function About() {
         </Link>
       </section>
     </div>
+    </>
   )
 }

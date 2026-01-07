@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
     const category = req.nextUrl.searchParams.get('category')
+    const search = req.nextUrl.searchParams.get('search')
     let data: any
     if (slug) {
       const blogResult = await payload.find({
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
           excerpt: true,
           categories: true,
           publishDate: true,
+          updatedAt: true,
           content: true,
           commentsEnabled: true,
           metaTitle: true,
@@ -92,6 +94,23 @@ export async function GET(req: NextRequest) {
         whereClause.categories = {
           in: [Number(category)],
         }
+      }
+
+      // Add search filter if provided
+      if (search && search.trim()) {
+        const searchTerm = `%${search.trim()}%`
+        whereClause.or = [
+          {
+            title: {
+              like: searchTerm,
+            },
+          },
+          {
+            excerpt: {
+              like: searchTerm,
+            },
+          },
+        ]
       }
 
       data = await payload.find({

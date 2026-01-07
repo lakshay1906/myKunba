@@ -6,6 +6,7 @@ import {
   Menu,
   MessageCircleQuestion,
   Newspaper,
+  Search,
   Send,
   UserCircle,
   Zap,
@@ -25,8 +26,12 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { JSX } from 'react'
+import { Input } from '@/components/ui/input'
+import { JSX, useState, useEffect, useRef } from 'react'
 import { useAppStore } from '@/lib/context/store'
+import { motion } from 'framer-motion'
+import { RotateCcw } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import ThemeToggle from './ThemeToggle'
 import { Badge } from '../ui/badge'
 import { SignInButton } from './Authentication/sign-in-button'
@@ -137,7 +142,93 @@ export default function Navbar({
     },
   ],
 }: NavbarProps) {
-  const { loginDetail, logout } = useAppStore()
+  const { loginDetail, logout, searchQuery, setSearchQuery, setSearchResults } = useAppStore()
+  const pathname = usePathname()
+  const isBlogPage = pathname === '/blog'
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Check screen size for responsive search layout
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 640)
+    }
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
+  // Debounced search function
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null)
+      return
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+        const response = await fetch(
+          `${baseUrl}/api/user/blog?search=${encodeURIComponent(
+            searchQuery.trim(),
+          )}&limit=100&offset=0`,
+          {
+            cache: 'no-store',
+          },
+        )
+        const result = await response.json()
+        if (response.ok && result.docs) {
+          setSearchResults(result.docs || [])
+        } else {
+          setSearchResults([])
+        }
+      } catch (error) {
+        console.error('Error searching blogs:', error)
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 800) // 800ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, setSearchResults])
+
+  const handleSearchClick = () => {
+    setIsSearchExpanded(true)
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 100)
+  }
+
+  const handleSearchBlur = () => {
+    // Don't collapse if user is clicking on search results or typing
+    setTimeout(() => {
+      if (!searchQuery.trim()) {
+        setIsSearchExpanded(false)
+      }
+    }, 200)
+  }
+
+  const handleReset = () => {
+    setSearchQuery('')
+    setSearchResults(null)
+    setIsSearchExpanded(false)
+    // Scroll to blog section when reset
+    setTimeout(() => {
+      const blogSection = document.getElementById('blog')
+      if (blogSection) {
+        blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
   return (
     <section className="p-4 fixed top-0 z-50 bg-background w-full border-b">
       <nav className="hidden justify-between lg:flex w-full container mx-auto">
@@ -165,6 +256,52 @@ export default function Navbar({
           </div>
         </div>
         <div className="flex gap-5 justify-center items-center">
+          {isBlogPage && (
+            <div className="flex gap-2 items-center">
+              <motion.div
+                initial={false}
+                animate={{
+                  width: isSearchExpanded ? '200px' : '42px',
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 30,
+                }}
+                className="relative"
+              >
+                {!isSearchExpanded ? (
+                  <button
+                    onClick={handleSearchClick}
+                    className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
+                  >
+                    <Search className="h-6 w-6 text-foreground" />
+                  </button>
+                ) : (
+                  <div className="relative h-10 flex items-center">
+                    <Input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onBlur={handleSearchBlur}
+                      placeholder="Search..."
+                      className="w-full h-full pl-12 pr-4 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <Search className="absolute pointer-events-none left-3 h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+              </motion.div>
+              {isSearchExpanded && (
+                <button
+                  className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-between items-center"
+                  onClick={handleReset}
+                >
+                  <RotateCcw className="h-6 w-6 text-foreground" />
+                </button>
+              )}
+            </div>
+          )}
           <ThemeToggle />
           {loginDetail ? (
             <div className="flex gap-2 justify-center items-center">
@@ -206,70 +343,194 @@ export default function Navbar({
           )}
         </div>
       </nav>
+
+      {/* Mobile Navbar */}
       <div className="block lg:hidden w-full container mx-auto">
-        <div className="flex items-center justify-between">
-          <a href={logo.url} className="flex items-center gap-2">
-            <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
-            <span className="text-lg font-semibold">{logo.title}</span>
-          </a>
-          <div className="flex items-center gap-6">
-            <ThemeToggle />
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu className="size-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>
-                    <a href={logo.url} className="flex items-center gap-2">
-                      <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
-                      <span className="text-lg font-semibold">{logo.title}</span>
-                    </a>
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="my-6 flex flex-col gap-6">
-                  <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
-                    {menu.map((item) => renderMobileMenuItem(item))}
-                  </Accordion>
-                  <div className="flex flex-col gap-3">
-                    {loginDetail ? (
-                      <div className="flex flex-col gap-2">
-                        {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
-                          <Link href={'/dashboard'}>
-                            <Button size="sm" className="w-full">
-                              Dashboard
-                            </Button>
-                          </Link>
-                        )}
-                        <Link href={'/profile'}>
-                          <Button variant="outline" size="sm" className="w-full">
-                            Profile
-                          </Button>
-                        </Link>
-                        <Button
-                          onClick={async () => {
-                            await logout()
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          Sign Out
-                        </Button>
-                      </div>
+        <div
+          className={`flex ${
+            isSearchExpanded && isSmallScreen ? 'flex-col gap-3' : 'items-center justify-between'
+          }`}
+        >
+          <div className="flex items-center justify-between flex-1 min-w-0">
+            <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
+              <Image
+                src={logo.src}
+                width={32}
+                height={32}
+                className="w-8 shrink-0"
+                alt={logo.alt}
+              />
+              <span className="text-lg font-semibold truncate">{logo.title}</span>
+            </a>
+            <div className="flex gap-5 justify-center items-center shrink-0">
+              {isBlogPage && isSmallScreen && !isSearchExpanded && (
+                <div className="flex gap-2 items-center">
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      width: '38px',
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                    className="relative h-10"
+                  >
+                    <button
+                      onClick={handleSearchClick}
+                      className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
+                    >
+                      <Search className="h-5 w-5 text-foreground" />
+                    </button>
+                  </motion.div>
+                </div>
+              )}
+              {isBlogPage && !isSmallScreen && (
+                <div className="flex gap-2 items-center">
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      width: isSearchExpanded ? '160px' : '38px',
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                    className="relative h-10"
+                  >
+                    {!isSearchExpanded ? (
+                      <button
+                        onClick={handleSearchClick}
+                        className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
+                      >
+                        <Search className="h-5 w-5 text-foreground" />
+                      </button>
                     ) : (
-                      <div className="flex flex-col gap-3.5 mt-3">
-                        <SignInButton btnText="Login" size="sm" className="w-full" />
-                        <SignInButton btnText="Sign In" size="sm" className="w-full" />
+                      <div className="relative h-10 flex items-center">
+                        <Input
+                          ref={searchInputRef}
+                          type="text"
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          onBlur={handleSearchBlur}
+                          placeholder="Search..."
+                          className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                        />
+                        <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
                       </div>
                     )}
-                  </div>
+                  </motion.div>
+                  {isSearchExpanded && (
+                    <button
+                      className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center shrink-0"
+                      onClick={handleReset}
+                    >
+                      <RotateCcw className="h-5 w-5 text-foreground" />
+                    </button>
+                  )}
                 </div>
-              </SheetContent>
-            </Sheet>
+              )}
+              <ThemeToggle />
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Menu className="size-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>
+                      <a href={logo.url} className="flex items-center gap-2">
+                        <Image
+                          src={logo.src}
+                          width={32}
+                          height={32}
+                          className="w-8"
+                          alt={logo.alt}
+                        />
+                        <span className="text-lg font-semibold">{logo.title}</span>
+                      </a>
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="my-6 flex flex-col gap-6">
+                    <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
+                      {menu.map((item) => renderMobileMenuItem(item))}
+                    </Accordion>
+                    <div className="flex flex-col gap-3">
+                      {loginDetail ? (
+                        <div className="flex flex-col gap-2">
+                          {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
+                            <Link href={'/dashboard'}>
+                              <Button size="sm" className="w-full">
+                                Dashboard
+                              </Button>
+                            </Link>
+                          )}
+                          <Link href={'/profile'}>
+                            <Button variant="outline" size="sm" className="w-full">
+                              Profile
+                            </Button>
+                          </Link>
+                          <Button
+                            onClick={async () => {
+                              await logout()
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                          >
+                            Sign Out
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-3.5 mt-3">
+                          <SignInButton btnText="Login" size="sm" className="w-full" />
+                          <SignInButton btnText="Sign In" size="sm" className="w-full" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
+          {isBlogPage && isSearchExpanded && isSmallScreen && (
+            <div className="flex gap-2 items-center w-full">
+              <motion.div
+                initial={false}
+                animate={{
+                  width: '100%',
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 30,
+                }}
+                className="relative"
+              >
+                <div className="relative h-10 flex items-center">
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onBlur={handleSearchBlur}
+                    placeholder="Search..."
+                    className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  />
+                  <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
+                </div>
+              </motion.div>
+              <button
+                className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center shrink-0"
+                onClick={handleReset}
+              >
+                <RotateCcw className="h-5 w-5 text-foreground" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

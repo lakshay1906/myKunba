@@ -35,6 +35,12 @@ type AppContextType = {
   emailSignUp: ({ email, password }: { email: string; password: string }) => Promise<User>
   loading: boolean
   setLoading: React.Dispatch<SetStateAction<boolean>>
+  searchResults: any[] | null
+  setSearchResults: React.Dispatch<SetStateAction<any[] | null>>
+  searchQuery: string
+  setSearchQuery: React.Dispatch<SetStateAction<string>>
+  originalBlogData: any[] | null
+  setOriginalBlogData: React.Dispatch<SetStateAction<any[] | null>>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -48,6 +54,9 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
     role: string
   }>(null)
   const [loading, setLoading] = useState(!!token) // Initialize as true if token exists
+  const [searchResults, setSearchResults] = useState<any[] | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [originalBlogData, setOriginalBlogData] = useState<any[] | null>(null)
 
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
@@ -124,6 +133,12 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
         emailSignUp,
         loading,
         setLoading,
+        searchResults,
+        setSearchResults,
+        searchQuery,
+        setSearchQuery,
+        originalBlogData,
+        setOriginalBlogData,
       }}
     >
       {children}

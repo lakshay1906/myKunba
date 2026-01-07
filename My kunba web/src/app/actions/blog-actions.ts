@@ -70,3 +70,76 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
     return []
   }
 }
+
+/**
+ * Fetch related articles based on categories and focus keyword
+ * Used for internal linking and topical authority
+ */
+export async function fetchRelatedArticles(
+  currentPostId: number,
+  categoryIds: number[],
+  limit: number = 4
+): Promise<Array<{
+  id: number
+  title: string
+  slug: string
+  excerpt: string
+  media: string | null
+  publishDate: string
+  categories: Array<{ id: number; name: string; slug: string }>
+}>> {
+  try {
+    if (!categoryIds || categoryIds.length === 0) {
+      return []
+    }
+
+    const result = await payload.find({
+      collection: 'posts',
+      where: {
+        id: {
+          not_equals: currentPostId,
+        },
+        categories: {
+          in: categoryIds,
+        },
+        deleted_at: {
+          equals: null,
+        },
+        status: {
+          equals: 'published',
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        media: true,
+        publishDate: true,
+        categories: true,
+      },
+      depth: 1,
+      sort: '-publishDate',
+      limit: limit,
+    })
+
+    return result.docs.map((doc) => ({
+      id: doc.id,
+      title: doc.title,
+      slug: doc.slug,
+      excerpt: doc.excerpt,
+      media: typeof doc.media === 'string' ? doc.media : null,
+      publishDate: doc.publishDate,
+      categories: Array.isArray(doc.categories)
+        ? doc.categories.map((cat: any) => ({
+            id: typeof cat === 'object' ? cat.id : cat,
+            name: typeof cat === 'object' ? cat.name : '',
+            slug: typeof cat === 'object' ? cat.slug : '',
+          }))
+        : [],
+    }))
+  } catch (error) {
+    console.error('Error fetching related articles:', error)
+    return []
+  }
+}

@@ -31,6 +31,8 @@ type Blog = {
   metaTitle: string | null
   metaDescription: string | null
   focusKeyword: string | null
+  externalLinks: Array<{ url: string; anchorText: string }> | null
+  internalLinks: Array<{ url: string; anchorText: string }> | null
   author: {
     id: number
     displayName: string
@@ -52,6 +54,15 @@ type BlogContentProps = {
   totalComments?: number
   hasMore?: boolean
   currentUserId?: number | null
+  relatedArticles?: Array<{
+    id: number
+    title: string
+    slug: string
+    excerpt: string
+    media: string | null
+    publishDate: string
+    categories: Array<{ id: number; name: string; slug: string }>
+  }>
 }
 
 export default function BlogContent({
@@ -60,6 +71,7 @@ export default function BlogContent({
   totalComments = 0,
   hasMore = false,
   currentUserId = null,
+  relatedArticles = [],
 }: BlogContentProps) {
   const [isClient, setIsClient] = useState(false)
 
@@ -106,30 +118,45 @@ export default function BlogContent({
         </div>
       )}
 
-      {/* Categories */}
+      {/* Categories - Internal Linking for Topical Authority */}
       {blog.categories.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <nav className="mb-4 flex flex-wrap gap-2" aria-label="Categories">
           {blog.categories.map((category) => (
-            <Link href={`/user?category=${category.id}`} key={category.id}>
+            <Link
+              href={`/category/${category.slug}`}
+              key={category.id}
+              className="inline-block"
+            >
               <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
                 {category.name}
               </Badge>
             </Link>
           ))}
-        </div>
+        </nav>
       )}
 
       {/* Title */}
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
 
-      {/* Author and Date */}
+      {/* Author and Date - E-E-A-T Signals */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 lg:gap-6 mb-6 text-muted-foreground">
         <div className="flex items-center gap-2">
           <Avatar className="size-8">
             <AvatarImage src={blog.author.profileImage || ''} alt={blog.author.displayName} />
             <AvatarFallback>{getAuthorInitials(blog.author.displayName)}</AvatarFallback>
           </Avatar>
-          <span>{blog.author.displayName}</span>
+          <Link
+            href={`/author/${blog.author.id}`}
+            className="hover:underline font-medium"
+            rel="author"
+          >
+            {blog.author.displayName}
+          </Link>
+          {blog.author.role && (
+            <span className="text-xs bg-muted px-2 py-1 rounded">
+              {blog.author.role === 'admin' ? 'Administrator' : blog.author.role === 'author' ? 'Author' : 'User'}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <div className="flex items-center justify-center size-8">
@@ -167,6 +194,48 @@ export default function BlogContent({
           </div>
         )}
       </div>
+
+      {/* Internal Links Section - Link Graph Optimization */}
+      {blog.internalLinks && blog.internalLinks.length > 0 && (
+        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
+          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
+          <ul className="space-y-2">
+            {blog.internalLinks.map((link, index) => (
+              <li key={index}>
+                <Link
+                  href={link.url}
+                  className="text-primary hover:underline font-medium"
+                  rel="internal"
+                >
+                  {link.anchorText}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* External Links Section - Authority Links */}
+      {blog.externalLinks && blog.externalLinks.length > 0 && (
+        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
+          <h2 className="text-xl font-semibold mb-4">References & Sources</h2>
+          <ul className="space-y-2">
+            {blog.externalLinks.map((link, index) => (
+              <li key={index}>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                >
+                  {link.anchorText}
+                  <span className="ml-1 text-xs">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div id="comments" />
       {/* Comments Section */}
       <Comments
@@ -178,19 +247,55 @@ export default function BlogContent({
         initialCurrentUserId={currentUserId}
       />
 
-      {/* Related Articles Placeholder */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* This would be populated with actual related articles in a real implementation */}
-          <div className="h-48 bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-            Related article would appear here
+      {/* Related Articles - Topical Authority & Internal Linking */}
+      {relatedArticles && relatedArticles.length > 0 && (
+        <section className="mt-12" aria-label="Related Articles">
+          <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {relatedArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={`/blog/${article.slug}`}
+                className="group block"
+                rel="related"
+              >
+                <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                  <CardContent className="p-0">
+                    {article.media && (
+                      <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                        <Image
+                          src={article.media}
+                          alt={article.title}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {article.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {article.excerpt}
+                      </p>
+                      {article.categories && article.categories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {article.categories.slice(0, 2).map((cat) => (
+                            <Badge key={cat.id} variant="secondary" className="text-xs">
+                              {cat.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
-          <div className="h-48 bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-            Related article would appear here
-          </div>
-        </div>
-      </div>
+        </section>
+      )}
     </div>
   )
 }

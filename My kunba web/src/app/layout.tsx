@@ -13,7 +13,11 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_PUBLIC_URL ||
+      process.env.NEXT_PUBLIC_NEXT_URL ||
+      'http://localhost:3000',
+  ),
   title: {
     default: 'My Kunba - Open Blogging Platform',
     template: '%s | My Kunba',
@@ -21,11 +25,15 @@ export const metadata: Metadata = {
   description:
     'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
   keywords: [
+    'my kunba',
+    'mykunba',
+    'mykunba.com',
+    'mykunba.org',
+    'mykunba.io',
+    'mykunba.in',
+    'new mykunba',
     'blog',
     'blogging platform',
-    'open source',
-    'technology',
-    'design',
     'personal development',
     'articles',
     'writing',

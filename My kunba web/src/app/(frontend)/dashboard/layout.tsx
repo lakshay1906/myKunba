@@ -10,6 +10,14 @@ import { payload } from '@/payload-client'
 export const metadata: Metadata = {
   title: 'My Dashboard',
   description: 'Dashboard by my kunba',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 }
 
 // Mark all dashboard routes as dynamic since they use cookies() for authentication

@@ -9,6 +9,7 @@ import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 import { motion } from 'framer-motion'
+import { useAppStore } from '@/lib/context/store'
 
 type BlogProps = {
   posts: Record<string, any>
@@ -29,6 +30,7 @@ export default function Blog({
 }: BlogProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { searchResults, originalBlogData, setOriginalBlogData } = useAppStore()
   const observerRef = useRef<HTMLDivElement>(null)
   const [data, setData] = useState<
     {
@@ -56,10 +58,24 @@ export default function Blog({
   const [limit] = useState(initialLimit)
   const [offset, setOffset] = useState(initialLimit)
 
+  // Store original data when component mounts or when posts change (only if not in search mode)
+  useEffect(() => {
+    if (posts?.docs && searchResults === null) {
+      // Only update original data if we're not currently in search mode
+      // This ensures we preserve the original data even when new posts load
+      if (!originalBlogData || originalBlogData.length === 0) {
+        setOriginalBlogData(posts.docs)
+      }
+    }
+  }, [posts, searchResults, originalBlogData, setOriginalBlogData])
+
   // Update state when props change (from SSR)
   useEffect(() => {
     if (posts?.docs) {
-      setData(posts.docs)
+      // Only update if not in search mode
+      if (!searchResults) {
+        setData(posts.docs)
+      }
     }
     const newTotal = initialTotal || posts?.totalDocs || 0
     const newHasMore = initialHasMore || posts?.hasNextPage || false
@@ -67,7 +83,27 @@ export default function Blog({
     setTotal(newTotal)
     setHasMore(newHasMore)
     setOffset(initialLimit)
-  }, [posts, initialTotal, initialHasMore, initialLimit, limit])
+  }, [posts, initialTotal, initialHasMore, initialLimit, limit, searchResults])
+
+  // Update data when search results change
+  useEffect(() => {
+    if (searchResults !== null) {
+      // We're in search mode
+      setData(searchResults)
+      setHasMore(false) // Disable infinite scroll for search results
+    } else {
+      // Restore original data
+      if (originalBlogData) {
+        setData(originalBlogData)
+        const newTotal = initialTotal || posts?.totalDocs || 0
+        const newHasMore = initialHasMore || posts?.hasNextPage || false
+        setTotal(newTotal)
+        setHasMore(newHasMore)
+      } else if (posts?.docs) {
+        setData(posts.docs)
+      }
+    }
+  }, [searchResults, originalBlogData, initialTotal, initialHasMore, posts])
 
   // Update selected category when initialSelectedCategory changes
   useEffect(() => {

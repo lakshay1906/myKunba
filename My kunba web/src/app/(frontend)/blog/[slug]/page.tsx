@@ -1,6 +1,7 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import type { Metadata } from 'next'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
+import { fetchRelatedArticles } from '@/app/actions/blog-actions'
 
 type Blog = {
   id: number
@@ -12,6 +13,7 @@ type Blog = {
   imageAltText: string | null
   status: string
   publishDate: string
+  updatedAt: string | null
   metaTitle: string | null
   metaDescription: string | null
   focusKeyword: string | null
@@ -100,6 +102,8 @@ export async function generateMetadata({
       locale: 'en_US',
       type: 'article',
       publishedTime: blog.publishDate,
+      modifiedTime: blog.updatedAt || blog.publishDate,
+      authors: [authorName],
       ...(focusKeyword && { tags: [focusKeyword] }),
     },
     twitter: {
@@ -118,10 +122,12 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const blog = await fetchBlogById(slug)
 
-  // Fetch comments and current user ID server-side
-  const [commentsData, currentUserId] = await Promise.all([
+  // Fetch comments, current user ID, and related articles server-side
+  const categoryIds = blog.categories?.map((cat: any) => cat.id) || []
+  const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),
     getCurrentUserId(),
+    fetchRelatedArticles(blog.id, categoryIds, 4),
   ])
 
   // Generate structured data for SEO
@@ -130,19 +136,27 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
   const imageUrl = blog.media || `${siteUrl}/full_logo.png`
 
-  const structuredData = {
+  // Enhanced BlogPosting schema with E-E-A-T signals
+  const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: blog.metaTitle || blog.title,
     description: blog.metaDescription || blog.excerpt,
     image: imageUrl,
     datePublished: blog.publishDate,
-    dateModified: blog.publishDate,
+    dateModified: blog.updatedAt || blog.publishDate,
     author: {
       '@type': 'Person',
       name: authorName,
       ...(blog.author.profileImage && {
         image: blog.author.profileImage,
+      }),
+      ...(blog.author.bio && {
+        description: blog.author.bio,
+      }),
+      // E-E-A-T: Expertise signals
+      ...(blog.author.role && {
+        jobTitle: blog.author.role,
       }),
     },
     publisher: {
@@ -151,6 +165,8 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/full_logo.png`,
+        width: 1200,
+        height: 630,
       },
     },
     mainEntityOfPage: {
@@ -160,13 +176,58 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     ...(blog.categories && blog.categories.length > 0 && {
       articleSection: blog.categories.map((cat: any) => cat.name).join(', '),
     }),
+    ...(blog.focusKeyword && {
+      keywords: [
+        blog.focusKeyword,
+        ...(blog.categories ? blog.categories.map((cat: any) => cat.name) : []),
+      ].join(', '),
+    }),
+  }
+
+  // BreadcrumbList schema for better navigation
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: siteUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: `${siteUrl}/blog`,
+      },
+      ...(blog.categories && blog.categories.length > 0
+        ? blog.categories.map((cat: any, index: number) => ({
+            '@type': 'ListItem',
+            position: 3 + index,
+            name: cat.name,
+            item: `${siteUrl}/blog?category=${cat.id}`,
+          }))
+        : []),
+      {
+        '@type': 'ListItem',
+        position: 3 + (blog.categories?.length || 0) + 1,
+        name: blog.title,
+        item: blogUrl,
+      },
+    ],
   }
 
   return (
     <>
+      {/* Enhanced JSON-LD schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <main className="container mx-auto">
         <BlogContent
@@ -175,6 +236,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
           totalComments={commentsData.total}
           hasMore={commentsData.hasMore}
           currentUserId={currentUserId}
+          relatedArticles={relatedArticles}
         />
       </main>
     </>
