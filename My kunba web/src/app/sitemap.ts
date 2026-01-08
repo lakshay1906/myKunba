@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_NEXT_URL ||
-    'http://localhost:3000'
+    'https://new.mykunba.org'
 
   // Static routes
   const staticRoutes: MetadataRoute.Sitemap = [
