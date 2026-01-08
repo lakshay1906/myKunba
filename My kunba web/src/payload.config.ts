@@ -17,6 +17,7 @@ import { Posts } from './collections/Posts'
 import { Tags } from './collections/Tag'
 import { Admin } from './collections/Admin'
 import { Notifications } from './collections/Notifications'
+import { Subscriptions } from './collections/Subscriptions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,6 +42,7 @@ export default buildConfig({
     Posts,
     Tags,
     Notifications,
+    Subscriptions,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

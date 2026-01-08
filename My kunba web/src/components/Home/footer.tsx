@@ -1,7 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
+import { toast } from 'sonner'
 
 const sections = [
   {
@@ -26,6 +30,51 @@ const sections = [
 ]
 
 export default function Footer() {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // Validate email
+    if (!email || !email.trim()) {
+      toast.error('Please enter your email address')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/user/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message || 'Successfully subscribed! Please check your email for confirmation.')
+        setEmail('') // Clear the input
+      } else {
+        toast.error(data.message || 'Something went wrong. Please try again later.')
+      }
+    } catch (error) {
+      console.error('Error subscribing:', error)
+      toast.error('An error occurred. Please try again later.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <footer className="container mx-auto mt-12">
       <div className="grid grid-cols-2 gap-8 lg:grid-cols-6 px-6">
@@ -57,13 +106,19 @@ export default function Footer() {
         ))}
         <div className="col-span-2 xs:col-span-1">
           <p className="mb-6 text-base font-semibold">Stay up to date</p>
-          <form className="flex xs:flex-row flex-col gap-2">
+          <form onSubmit={handleSubmit} className="flex xs:flex-row flex-col gap-2">
             <Input
               type="email"
               placeholder="Enter your email"
               className="w-full xs:w-[20rem] text-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubmitting}
+              required
             />
-            <Button className="w-fit xs:w-auto px-7 xs:px-4">Subscribe</Button>
+            <Button type="submit" className="w-fit xs:w-auto px-7 xs:px-4" disabled={isSubmitting}>
+              {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+            </Button>
           </form>
         </div>
       </div>

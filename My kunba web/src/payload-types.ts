@@ -77,6 +77,7 @@ export interface Config {
     posts: Post;
     tags: Tag;
     notifications: Notification;
+    subscriptions: Subscription;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -93,6 +94,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -375,6 +377,27 @@ export interface Notification {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions".
+ */
+export interface Subscription {
+  id: number;
+  /**
+   * Subscriber email address
+   */
+  email: string;
+  /**
+   * Whether the subscription is active
+   */
+  subscribed?: boolean | null;
+  /**
+   * Date when the user unsubscribed (if applicable)
+   */
+  unsubscribedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -419,6 +442,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'notifications';
         value: number | Notification;
+      } | null)
+    | ({
+        relationTo: 'subscriptions';
+        value: number | Subscription;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -633,6 +660,17 @@ export interface NotificationsSelect<T extends boolean = true> {
   relatedPost?: T;
   relatedComment?: T;
   fromUser?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions_select".
+ */
+export interface SubscriptionsSelect<T extends boolean = true> {
+  email?: T;
+  subscribed?: T;
+  unsubscribedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
