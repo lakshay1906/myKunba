@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { payload } from '@/payload-client'
+import { getPayloadClient } from '@/payload-client'
 import { sendEmail, getSubscriptionConfirmationEmail } from '@/utils/email'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json({ message: 'Invalid email format' }, { status: 400 })
     }
+
+    // Get payload client
+    const payload = await getPayloadClient()
 
     // Check if email already exists
     const existingSubscription = await payload.find({
@@ -52,19 +55,29 @@ export async function POST(req: NextRequest) {
       })
 
       // Send confirmation email
+      let emailError: any = null
       try {
         await sendEmail({
           to: email,
           subject: 'Welcome Back! You\'re Subscribed to My Kunba',
           html: getSubscriptionConfirmationEmail(email),
         })
-      } catch (emailError) {
-        console.error('Error sending subscription email:', emailError)
-        // Don't fail the request if email fails
+      } catch (err) {
+        emailError = err
+        console.error('Error sending subscription email:', {
+          message: err?.message,
+          code: err?.code,
+        })
+        // Don't fail the request if email fails - subscription is still created
       }
 
       return NextResponse.json(
-        { message: 'Successfully re-subscribed to our newsletter!' },
+        {
+          message: 'Successfully re-subscribed to our newsletter!',
+          ...(emailError && {
+            warning: 'Subscription successful, but confirmation email could not be sent. Please contact support if you don\'t receive updates.',
+          }),
+        },
         { status: 200 },
       )
     }
@@ -79,23 +92,43 @@ export async function POST(req: NextRequest) {
     })
 
     // Send confirmation email
+    let emailError: any = null
     try {
       await sendEmail({
         to: email,
         subject: 'Successfully Subscribed to My Kunba Newsletter',
         html: getSubscriptionConfirmationEmail(email),
       })
-    } catch (emailError) {
-      console.error('Error sending subscription email:', emailError)
+    } catch (err) {
+      emailError = err
+      console.error('Error sending subscription email:', {
+        message: err?.message,
+        code: err?.code,
+      })
       // Don't fail the request if email fails - subscription is still created
     }
 
     return NextResponse.json(
-      { message: 'Successfully subscribed to our newsletter! Please check your email for confirmation.' },
+      {
+        message: 'Successfully subscribed to our newsletter! Please check your email for confirmation.',
+        ...(emailError && {
+          warning: 'Subscription successful, but confirmation email could not be sent. Please contact support if you don\'t receive updates.',
+        }),
+      },
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error in subscription API:', error)
+    // Enhanced error logging for debugging
+    console.error('Error in subscription API:', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      data: error?.data,
+      code: error?.code,
+      status: error?.status,
+      errors: error?.errors,
+      fullError: error,
+    })
 
     // Handle unique constraint violation (email already exists)
     if (error?.data?.name === 'MongoError' && error?.data?.code === 11000) {
@@ -113,8 +146,43 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Handle Payload collection not found error
+    if (
+      error?.message?.includes('collection') ||
+      error?.message?.includes('not found') ||
+      error?.message?.includes('does not exist')
+    ) {
+      console.error(
+        'Subscription collection might not exist. Please ensure the database migration has been run.',
+      )
+      return NextResponse.json(
+        {
+          message: 'Subscription service is not available. Please contact support.',
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        },
+        { status: 503 },
+      )
+    }
+
+    // Handle database connection errors
+    if (
+      error?.message?.includes('connection') ||
+      error?.message?.includes('timeout') ||
+      error?.message?.includes('ECONNREFUSED')
+    ) {
+      console.error('Database connection error:', error.message)
+      return NextResponse.json(
+        { message: 'Database connection failed. Please try again later.' },
+        { status: 503 },
+      )
+    }
+
+    // Generic error response with detailed message in development
     return NextResponse.json(
-      { message: 'An error occurred while processing your subscription. Please try again later.' },
+      {
+        message: 'An error occurred while processing your subscription. Please try again later.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      },
       { status: 500 },
     )
   }

@@ -19,34 +19,128 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
   const portNumber = parseInt(smtpPort, 10)
   const isSecurePort = portNumber === 465
 
-  const transporter = nodemailer.createTransport({
+  // Determine if it's Gmail or Outlook
+  const isGmail = smtpHost.includes('gmail.com')
+  const isOutlook = smtpHost.includes('outlook.com') || smtpHost.includes('live.com') || smtpHost.includes('hotmail.com')
+
+  // Configure transporter based on provider
+  const transporterConfig: any = {
     host: smtpHost,
     port: portNumber,
-    secure: isSecurePort, // true for 465 (SSL), false for 587 (STARTTLS)
+    secure: isSecurePort,
     auth: {
-      user: smtpEmail,
-      pass: smtpPass,
+      user: smtpEmail.trim(),
+      pass: smtpPass.trim(),
     },
-    // For STARTTLS (port 587), ensure TLS is enabled
-    ...(!isSecurePort && {
-      requireTLS: true,
-      tls: {
-        rejectUnauthorized: false, // Set to true in production with valid certificates
-      },
-    }),
-  })
+    // Add debug logging in development
+    debug: process.env.NODE_ENV === 'development',
+    logger: process.env.NODE_ENV === 'development',
+  }
+
+  // Gmail-specific configuration
+  if (isGmail) {
+    if (isSecurePort) {
+      // Port 465 (SSL)
+      transporterConfig.secure = true
+    } else {
+      // Port 587 (STARTTLS)
+      transporterConfig.secure = false
+      transporterConfig.requireTLS = true
+    }
+    transporterConfig.tls = {
+      rejectUnauthorized: false,
+    }
+  }
+
+  // Outlook/Hotmail-specific configuration
+  if (isOutlook) {
+    if (isSecurePort) {
+      transporterConfig.secure = true
+    } else {
+      transporterConfig.secure = false
+      transporterConfig.requireTLS = true
+    }
+    transporterConfig.tls = {
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false,
+    }
+  }
+
+  // Generic configuration for other providers
+  if (!isGmail && !isOutlook) {
+    if (!isSecurePort) {
+      transporterConfig.requireTLS = true
+      transporterConfig.tls = {
+        rejectUnauthorized: false,
+      }
+    }
+  }
+
+  const transporter = nodemailer.createTransport(transporterConfig)
+
+  // Verify connection in development
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      await transporter.verify()
+      console.log('✅ SMTP server is ready to send emails')
+    } catch (verifyError: any) {
+      console.error('❌ SMTP verification failed:', {
+        message: verifyError?.message,
+        code: verifyError?.code,
+        response: verifyError?.response,
+        responseCode: verifyError?.responseCode,
+        command: verifyError?.command,
+      })
+      
+      // Provide helpful error messages
+      if (verifyError?.code === 'EAUTH') {
+        throw new Error(
+          `SMTP Authentication Failed (${verifyError?.responseCode || 'N/A'}): ${verifyError?.response || verifyError?.message}\n\n` +
+          `Common fixes:\n` +
+          `- Check your email and password in .env file\n` +
+          `- For Gmail: Use an App Password instead of your regular password (https://support.google.com/accounts/answer/185833)\n` +
+          `- For Outlook: Check if "Less secure app access" is enabled or use an App Password\n` +
+          `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
+          `- Current config: Host=${smtpHost}, Port=${portNumber}, Email=${smtpEmail}`
+        )
+      }
+      throw verifyError
+    }
+  }
 
   try {
     const info = await transporter.sendMail({
-      from: `"My Kunba" <${smtpEmail}>`,
-      to,
+      from: `"My Kunba" <${smtpEmail.trim()}>`,
+      to: to.trim(),
       subject,
       html,
     })
 
-    console.log('Email sent successfully:', info.messageId)
-  } catch (error) {
-    console.error('Error sending email:', error)
+    console.log('✅ Email sent successfully:', info.messageId)
+  } catch (error: any) {
+    console.error('❌ Error sending email:', {
+      message: error?.message,
+      code: error?.code,
+      response: error?.response,
+      responseCode: error?.responseCode,
+      command: error?.command,
+    })
+
+    // Provide helpful error messages
+    if (error?.code === 'EAUTH') {
+      const authError = new Error(
+        `SMTP Authentication Failed (${error?.responseCode || 'N/A'}): ${error?.response || error?.message}\n\n` +
+        `Common fixes:\n` +
+        `- Check your email and password in .env file\n` +
+        `- For Gmail: Use an App Password instead of your regular password\n` +
+        `  (Enable 2FA, then generate App Password at: https://myaccount.google.com/apppasswords)\n` +
+        `- For Outlook: Use an App Password (https://account.microsoft.com/security/app-passwords)\n` +
+        `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
+        `- Make sure there are no extra spaces in your .env file values`
+      )
+      ;(authError as any).code = 'EAUTH'
+      throw authError
+    }
     throw error
   }
 }
