@@ -2,16 +2,17 @@ import Profile from '@/components/profile/Profile'
 import { cookies } from 'next/headers'
 import { payload } from '@/payload-client'
 import jwt from 'jsonwebtoken'
+import { redirect } from 'next/navigation'
 
 export default async function Page() {
   const token = (await cookies()).get('access_token')?.value
   if (!token || token === '') {
-    return <div>You are not authorized.</div>
+    redirect('/unauthorised')
   }
 
   const accessSecret = process.env.ACCESS_SECRET
   if (!accessSecret) {
-    return <div>Server config error</div>
+    redirect('/unauthorised')
   }
 
   try {
@@ -26,8 +27,12 @@ export default async function Page() {
       },
     })
 
+    if (!data.docs || data.docs.length === 0) {
+      redirect('/unauthorised')
+    }
+
     return <Profile user={data.docs[0]} />
   } catch (error) {
-    return <div>Error fetching profile</div>
+    redirect('/unauthorised')
   }
 }

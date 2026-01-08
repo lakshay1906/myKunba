@@ -2,7 +2,10 @@ import { MetadataRoute } from 'next'
 import { payload } from '@/payload-client'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const baseUrl =
+    process.env.NEXT_PUBLIC_PUBLIC_URL ||
+    process.env.NEXT_PUBLIC_NEXT_URL ||
+    'http://localhost:3000'
 
   // Static routes
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -88,7 +91,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const blogRoutes: MetadataRoute.Sitemap = posts.docs.map((post) => ({
       url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: post.updatedAt ? new Date(post.updatedAt) : post.publishDate ? new Date(post.publishDate) : new Date(),
+      lastModified: post.updatedAt
+        ? new Date(post.updatedAt)
+        : post.publishDate
+        ? new Date(post.publishDate)
+        : new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }))
@@ -116,4 +123,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticRoutes
   }
 }
-
