@@ -16,6 +16,7 @@ import {
 } from '../ui/dialog'
 import { EllipsisVertical } from 'lucide-react'
 import Toast from '../Toast'
+import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
 
 interface BlogMainProps {
@@ -42,28 +43,52 @@ export default function BlogMain({
   const { loginDetail } = useAppStore()
 
   async function deleteBlog(id: string) {
-    const rawRes = await fetch(`/api/dashboard/blog?id=${id}`, {
-      method: 'DELETE',
-    })
-    if (!rawRes.ok) {
-      const error = await rawRes.json()
-      throw new Error(error.message || 'Failed to delete blog')
+    if (!loginDetail || !loginDetail.token) {
+      toast.error('Unauthorized', {
+        description: 'You must be logged in to delete a blog',
+      })
+      return
     }
-    // Remove from state instead of refetching
-    setBlogs((prev) => prev.filter((blog) => blog.id !== id))
-    // Update total count
-    setTotal((prev) => Math.max(0, prev - 1))
-    // Update total pages if needed
-    setTotalPages((prev) => {
-      const newTotal = total - 1
-      if (newTotal <= 0) return 1
-      return Math.ceil(newTotal / limit)
-    })
-    // If current page becomes empty and not page 1, go to previous page
-    if (blogs.length === 1 && currentPage > 1) {
-      const newPage = currentPage - 1
-      const offset = (newPage - 1) * limit
-      fetchBlogs(limit, offset, false, newPage)
+
+    try {
+      const rawRes = await fetch(`/api/dashboard/blog?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `bearer ${loginDetail.token}`,
+        },
+      })
+
+      if (!rawRes.ok) {
+        const error = await rawRes.json()
+        throw new Error(error.message || 'Failed to delete blog')
+      }
+
+      // Remove from state instead of refetching
+      setBlogs((prev) => prev.filter((blog) => blog.id !== id))
+      // Update total count
+      setTotal((prev) => Math.max(0, prev - 1))
+      // Update total pages if needed
+      setTotalPages((prev) => {
+        const newTotal = total - 1
+        if (newTotal <= 0) return 1
+        return Math.ceil(newTotal / limit)
+      })
+
+      toast.success('Success', {
+        description: 'Blog deleted successfully',
+      })
+
+      // If current page becomes empty and not page 1, go to previous page
+      if (blogs.length === 1 && currentPage > 1) {
+        const newPage = currentPage - 1
+        const offset = (newPage - 1) * limit
+        fetchBlogs(limit, offset, false, newPage)
+      }
+    } catch (error: any) {
+      console.error('Error deleting blog:', error)
+      toast.error('Error', {
+        description: error.message || 'Failed to delete blog',
+      })
     }
   }
 

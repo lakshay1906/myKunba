@@ -494,14 +494,28 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
 
-    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ message: 'Unauthorized - No authorization header' }, { status: 401 })
+    }
+
+    const accessToken = authHeader.split(' ')[1]
     const accessSecret = process.env.ACCESS_SECRET
 
-    if (!accessToken) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    if (!accessSecret)
+    if (!accessToken) {
+      return NextResponse.json({ message: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    if (!accessSecret) {
       return NextResponse.json({ message: 'Signing secret not provided' }, { status: 401 })
+    }
 
-    const userData: any = jwt.verify(accessToken, accessSecret)
+    let userData: any
+    try {
+      userData = jwt.verify(accessToken, accessSecret)
+    } catch (jwtError) {
+      console.error('JWT verification error:', jwtError)
+      return NextResponse.json({ message: 'Unauthorized - Invalid token' }, { status: 401 })
+    }
 
     // Verify user exists and has proper role
     const user = await payload.find({
@@ -523,17 +537,23 @@ export async function DELETE(req: NextRequest) {
     })
 
     if (user.docs.length <= 0) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: 'Unauthorized - User not found or insufficient permissions' }, { status: 401 })
     }
 
     const currentUser = user.docs[0]
     const isAdmin = currentUser.role === 'admin'
 
     // Fetch the blog post to check ownership
-    const blogPost = await payload.findByID({
-      collection: 'posts',
-      id: Number(id),
-    })
+    let blogPost
+    try {
+      blogPost = await payload.findByID({
+        collection: 'posts',
+        id: Number(id),
+      })
+    } catch (findError) {
+      console.error('Error finding blog post:', findError)
+      return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
+    }
 
     if (!blogPost || blogPost.deleted_at) {
       return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
@@ -554,8 +574,12 @@ export async function DELETE(req: NextRequest) {
         deleted_at: new Date().toISOString(),
       },
     })
-    return NextResponse.json({}, { status: 200 })
-  } catch (error) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ message: 'Blog post deleted successfully' }, { status: 200 })
+  } catch (error: any) {
+    console.error('Error in DELETE /api/dashboard/blog:', error)
+    return NextResponse.json(
+      { message: error.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
