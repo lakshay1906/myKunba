@@ -46,6 +46,7 @@ import {
   saveDraftToCookie,
   loadDraftFromCookie,
   clearDraftCookie,
+  hasDraftDataAsync,
   type BlogDraftData,
 } from '@/lib/utils/cookies'
 import { validateSEO } from '@/lib/utils/seo-validation'
@@ -105,6 +106,7 @@ export function CreatePostForm() {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
   const [isDraftLoaded, setIsDraftLoaded] = useState(false)
   const [draftImageLoaded, setDraftImageLoaded] = useState(false)
+  const [hasDraftData, setHasDraftData] = useState(false)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasShownLeaveToastRef = useRef(false)
   const isSubmittingRef = useRef(false)
@@ -189,6 +191,10 @@ export function CreatePostForm() {
   // Load draft data from storage on mount
   useEffect(() => {
     const loadDraftData = async () => {
+      // Check if draft exists first
+      const draftExists = await hasDraftDataAsync()
+      setHasDraftData(draftExists)
+
       const draftData = await loadDraftFromCookie()
       console.log('Draft loaded from storage:', draftData)
 
@@ -257,6 +263,7 @@ export function CreatePostForm() {
       } else {
         // No draft data, just mark as loaded
         setIsDraftLoaded(true)
+        setHasDraftData(false)
       }
     }
 
@@ -305,10 +312,12 @@ export function CreatePostForm() {
           (draftData.categories && draftData.categories.length > 0)
         ) {
           await saveDraftToCookie(draftData)
+          setHasDraftData(true)
           console.log('Draft saved successfully')
         } else {
           // Clear draft if no content
           await clearDraftCookie()
+          setHasDraftData(false)
           console.log('No content to save, cleared draft')
         }
       }
@@ -522,6 +531,75 @@ export function CreatePostForm() {
     if (fileInput) fileInput.value = ''
   }
 
+  // Function to clear draft and reset form
+  const handleClearDraft = async () => {
+    try {
+      // Temporarily disable draft saving while clearing
+      setIsDraftLoaded(false)
+
+      // Clear draft from storage
+      await clearDraftCookie()
+      setHasDraftData(false)
+
+      // Reset form to default values
+      form.reset(
+        {
+          title: '',
+          slug: '',
+          excerpt: '',
+          content: '',
+          publishDate: new Date(),
+          metaTitle: '',
+          metaDescription: '',
+          focusKeyword: '',
+          imageAltText: '',
+          externalLinks: [],
+          internalLinks: [],
+          status: 'draft',
+        },
+        { keepDefaultValues: false },
+      )
+
+      // Clear categories
+      setSelectedCategories([])
+
+      // Clear image upload data
+      handleImageUploadDataChange((prev) => ({
+        ...prev,
+        coverImage: null,
+        file: null,
+        imageUrl: '',
+        alt: '',
+        preview: null,
+        dimensions: null,
+        result: null,
+        uploadMethod: null,
+      }))
+
+      // Reset image loaded flag
+      setDraftImageLoaded(false)
+
+      // Reset file input
+      const fileInput = document.getElementById('file-input') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+
+      // Re-enable draft saving after clearing
+      setTimeout(() => {
+        setIsDraftLoaded(true)
+      }, 100)
+
+      toast.success('Draft Cleared', {
+        description: 'All draft data has been cleared. You can start fresh.',
+      })
+    } catch (error) {
+      console.error('Error clearing draft:', error)
+      setIsDraftLoaded(true) // Re-enable even on error
+      toast.error('Error', {
+        description: 'Failed to clear draft. Please try again.',
+      })
+    }
+  }
+
   // Handle form submission
   const onSubmit = async (data: FormValues, event?: React.BaseSyntheticEvent) => {
     // Prevent accidental submissions from nested forms or buttons
@@ -562,7 +640,11 @@ export function CreatePostForm() {
             }
           } catch (error: any) {
             console.error('Error uploading image:', error)
+            isSubmittingRef.current = false
             setIsLoading(false)
+            toast.error('Error', {
+              description: 'Failed to upload image. Please try again.',
+            })
             return
           }
         }
@@ -581,7 +663,11 @@ export function CreatePostForm() {
             }
           } catch (error: any) {
             console.error('Error validating image URL:', error)
+            isSubmittingRef.current = false
             setIsLoading(false)
+            toast.error('Error', {
+              description: 'Failed to validate image URL. Please try again.',
+            })
             return
           }
         }
@@ -593,8 +679,11 @@ export function CreatePostForm() {
 
       // Cover image is required
       if (!coverImageUrl) {
+        isSubmittingRef.current = false
         setIsLoading(false)
-        // Show error toast
+        toast.error('Error', {
+          description: 'Cover image is required. Please upload an image.',
+        })
         return
       }
 
@@ -627,11 +716,56 @@ export function CreatePostForm() {
         return
       }
 
-      // Blog created successfully - clear draft data
+      // Blog created successfully - clear draft data BEFORE navigation
+      // Flow: Submit => Image upload => blog created => draft deleted
       try {
         console.log('Blog created successfully, clearing draft data...')
+
+        // Disable draft saving before clearing
+        setIsDraftLoaded(false)
+
+        // Clear draft from storage
         await clearDraftCookie()
+        setHasDraftData(false)
         console.log('✅ Draft data cleared from IndexedDB and cookies')
+
+        // Reset form to default values after clearing draft
+        form.reset(
+          {
+            title: '',
+            slug: '',
+            excerpt: '',
+            content: '',
+            publishDate: new Date(),
+            metaTitle: '',
+            metaDescription: '',
+            focusKeyword: '',
+            imageAltText: '',
+            externalLinks: [],
+            internalLinks: [],
+            status: 'draft',
+          },
+          { keepDefaultValues: false },
+        )
+
+        // Clear categories and image data
+        setSelectedCategories([])
+        setDraftImageLoaded(false)
+        handleImageUploadDataChange((prev) => ({
+          ...prev,
+          coverImage: null,
+          file: null,
+          imageUrl: '',
+          alt: '',
+          preview: null,
+          dimensions: null,
+          result: null,
+          uploadMethod: null,
+        }))
+
+        // Reset file input
+        const fileInput = document.getElementById('file-input') as HTMLInputElement
+        if (fileInput) fileInput.value = ''
       } catch (clearError) {
         // Even if clearing fails, log it but don't block the success flow
         console.error('Warning: Failed to clear draft data:', clearError)
@@ -639,11 +773,15 @@ export function CreatePostForm() {
 
       hasShownLeaveToastRef.current = false
       isSubmittingRef.current = false
-      setDraftImageLoaded(false)
 
       toast.success('Success', {
-        description: 'Post created successfully',
+        description: 'Post created successfully. Draft has been cleared.',
       })
+
+      // Small delay to ensure draft clearing is complete before navigation
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Navigate after draft is cleared and form is reset
       router.push('/dashboard/blog')
     } catch (error: any) {
       console.error('Error creating post:', error)
@@ -737,6 +875,28 @@ export function CreatePostForm() {
 
   return (
     <div className="container mx-auto pt-3 pb-6">
+      {/* Clear Draft Button - Show when draft data exists */}
+      {hasDraftData && (
+        <div className="mb-4 flex items-center justify-between p-4 border rounded-md bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <span className="text-sm text-amber-800 dark:text-amber-200">
+              Draft data detected. You can continue editing or clear it to start fresh.
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleClearDraft}
+            disabled={isLoading}
+            className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+          >
+            Clear Draft
+          </Button>
+        </div>
+      )}
+
       <Form {...form}>
         <form
           onSubmit={(e) => {
