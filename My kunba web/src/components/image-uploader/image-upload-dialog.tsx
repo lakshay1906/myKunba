@@ -52,6 +52,7 @@ export default function ImageUploadDialog({
             }
           />
           <Button
+            type="button"
             variant="destructive"
             size="icon"
             className="absolute top-2 right-2"
@@ -65,6 +66,7 @@ export default function ImageUploadDialog({
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
+              type="button"
               variant="outline"
               className="w-full h-48 flex flex-col items-center justify-center gap-2 border-dashed border-2 hover:border-solid hover:bg-muted/50 transition-all bg-transparent"
               disabled={disabled}

@@ -6,7 +6,6 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import CategorySelector from './category-selector'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -71,7 +69,7 @@ const formSchema = z.object({
       z.object({
         url: z.string().url('Must be a valid URL'),
         anchorText: z.string().min(1, 'Anchor text is required'),
-      })
+      }),
     )
     .optional(),
   internalLinks: z
@@ -79,7 +77,7 @@ const formSchema = z.object({
       z.object({
         url: z.string().min(1, 'URL is required'),
         anchorText: z.string().min(1, 'Anchor text is required'),
-      })
+      }),
     )
     .optional(),
 })
@@ -90,7 +88,7 @@ export function CreatePostForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
   const router = useRouter()
-  const [catLoading, setCatLoading] = useState(true)
+  const [currentTab, setCurrentTab] = useState('content')
   const { loginDetail } = useAppStore()
   const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
     file: null,
@@ -134,7 +132,7 @@ export function CreatePostForm() {
 
   // Watch form values for SEO validation
   const watchedValues = form.watch()
-  
+
   // Run SEO validation when relevant fields change (debounced for performance)
   useEffect(() => {
     // Debounce validation to avoid running on every keystroke
@@ -144,7 +142,7 @@ export function CreatePostForm() {
         watchedValues.slug,
         watchedValues.metaDescription || watchedValues.excerpt,
         watchedValues.content,
-        watchedValues.focusKeyword || ''
+        watchedValues.focusKeyword || '',
       )
       setSeoValidation(validation)
     }, 500) // Wait 500ms after user stops typing
@@ -525,7 +523,13 @@ export function CreatePostForm() {
   }
 
   // Handle form submission
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: FormValues, event?: React.BaseSyntheticEvent) => {
+    // Prevent accidental submissions from nested forms or buttons
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+
     setIsLoading(true)
     isSubmittingRef.current = true
     try {
@@ -609,8 +613,10 @@ export function CreatePostForm() {
           // SEO fields
           focusKeyword: data.focusKeyword || undefined,
           imageAltText: data.imageAltText || undefined,
-          externalLinks: data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
-          internalLinks: data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
+          externalLinks:
+            data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
+          internalLinks:
+            data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
         }),
       })
       if (!response.ok) {
@@ -701,7 +707,6 @@ export function CreatePostForm() {
 
   // Function to refresh categories list
   const refreshCategories = useCallback(async () => {
-    setCatLoading(true)
     try {
       const categories = await fetchAllCategories()
       setCategories(categories.docs)
@@ -710,8 +715,6 @@ export function CreatePostForm() {
       toast.error('Error', {
         description: 'Failed to refresh categories',
       })
-    } finally {
-      setCatLoading(false)
     }
   }, [])
 
@@ -733,11 +736,18 @@ export function CreatePostForm() {
   )
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-6xl">
+    <div className="container mx-auto pt-3 pb-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Tabs defaultValue="content">
-            <TabsList className="mb-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit(onSubmit)(e)
+          }}
+          className="space-y-8"
+        >
+          <Tabs value={currentTab} onValueChange={setCurrentTab}>
+            <TabsList className="mb-4">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -767,34 +777,6 @@ export function CreatePostForm() {
                             disabled={isLoading}
                           />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Slug Field */}
-                  <FormField
-                    control={form.control}
-                    name="slug"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Slug</FormLabel>
-                        <FormControl>
-                          <Input placeholder="enter-post-slug" {...field} disabled={isLoading} maxLength={100} />
-                        </FormControl>
-                        <FormDescription>
-                          The URL-friendly version of the title.
-                          {seoValidation && seoValidation.metrics.slugLength > 75 && (
-                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                              ⚠️ {seoValidation.metrics.slugLength}/75 characters (recommended)
-                            </span>
-                          )}
-                          {seoValidation && seoValidation.metrics.slugLength <= 75 && (
-                            <span className="block mt-1 text-green-600 dark:text-green-400">
-                              ✓ {seoValidation.metrics.slugLength}/75 characters
-                            </span>
-                          )}
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -947,6 +929,39 @@ export function CreatePostForm() {
                     )}
                   />
 
+                  {/* Slug Field */}
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="enter-post-slug"
+                            {...field}
+                            disabled={isLoading}
+                            maxLength={100}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The URL-friendly version of the title.
+                          {seoValidation && seoValidation.metrics.slugLength > 75 && (
+                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                              ⚠️ {seoValidation.metrics.slugLength}/75 characters (recommended)
+                            </span>
+                          )}
+                          {seoValidation && seoValidation.metrics.slugLength <= 75 && (
+                            <span className="block mt-1 text-green-600 dark:text-green-400">
+                              ✓ {seoValidation.metrics.slugLength}/75 characters
+                            </span>
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Meta Description Field */}
                   <FormField
                     control={form.control}
@@ -989,7 +1004,8 @@ export function CreatePostForm() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Primary keyword for SEO optimization. This keyword should appear in your title, content, and meta description.
+                          Primary keyword for SEO optimization. This keyword should appear in your
+                          title, content, and meta description.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1011,7 +1027,8 @@ export function CreatePostForm() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Alt text for the cover image. Include your focus keyword if relevant. Important for SEO and accessibility.
+                          Alt text for the cover image. Include your focus keyword if relevant.
+                          Important for SEO and accessibility.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1026,7 +1043,8 @@ export function CreatePostForm() {
                       <FormItem>
                         <FormLabel>External Links</FormLabel>
                         <FormDescription className="mb-2">
-                          Add external links to authoritative sources. These will be included in your blog post for SEO.
+                          Add external links to authoritative sources. These will be included in
+                          your blog post for SEO.
                         </FormDescription>
                         {field.value?.map((link, index) => (
                           <div key={index} className="flex gap-2 mb-2">
@@ -1086,7 +1104,8 @@ export function CreatePostForm() {
                       <FormItem>
                         <FormLabel>Internal Links</FormLabel>
                         <FormDescription className="mb-2">
-                          Add internal links to other blog posts or pages. These help with SEO and user engagement.
+                          Add internal links to other blog posts or pages. These help with SEO and
+                          user engagement.
                         </FormDescription>
                         {field.value?.map((link, index) => (
                           <div key={index} className="flex gap-2 mb-2">
@@ -1142,11 +1161,15 @@ export function CreatePostForm() {
                   {seoValidation && seoValidation.warnings.length > 0 && (
                     <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <AlertTitle className="text-amber-800 dark:text-amber-200">SEO Recommendations</AlertTitle>
+                      <AlertTitle className="text-amber-800 dark:text-amber-200">
+                        SEO Recommendations
+                      </AlertTitle>
                       <AlertDescription className="text-amber-700 dark:text-amber-300">
                         <ul className="list-disc list-inside space-y-1 mt-2">
                           {seoValidation.warnings.map((warning: string, index: number) => (
-                            <li key={index} className="text-sm">{warning}</li>
+                            <li key={index} className="text-sm">
+                              {warning}
+                            </li>
                           ))}
                         </ul>
                       </AlertDescription>
@@ -1160,45 +1183,79 @@ export function CreatePostForm() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-muted-foreground">Meta Title:</span>{' '}
-                          <span className={seoValidation.metrics.metaTitleLength > 60 ? 'text-amber-600' : 'text-green-600'}>
+                          <span
+                            className={
+                              seoValidation.metrics.metaTitleLength > 60
+                                ? 'text-amber-600'
+                                : 'text-green-600'
+                            }
+                          >
                             {seoValidation.metrics.metaTitleLength}/60
                           </span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Slug:</span>{' '}
-                          <span className={seoValidation.metrics.slugLength > 75 ? 'text-amber-600' : 'text-green-600'}>
+                          <span
+                            className={
+                              seoValidation.metrics.slugLength > 75
+                                ? 'text-amber-600'
+                                : 'text-green-600'
+                            }
+                          >
                             {seoValidation.metrics.slugLength}/75
                           </span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Description:</span>{' '}
-                          <span className={seoValidation.metrics.descriptionLength > 160 ? 'text-amber-600' : 'text-green-600'}>
+                          <span
+                            className={
+                              seoValidation.metrics.descriptionLength > 160
+                                ? 'text-amber-600'
+                                : 'text-green-600'
+                            }
+                          >
                             {seoValidation.metrics.descriptionLength}/160
                           </span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Word Count:</span>{' '}
-                          <span className={seoValidation.metrics.wordCount < 600 ? 'text-amber-600' : 'text-green-600'}>
-                            {seoValidation.metrics.wordCount} {seoValidation.metrics.wordCount < 600 ? '(recommended: 600+)' : '✓'}
+                          <span
+                            className={
+                              seoValidation.metrics.wordCount < 600
+                                ? 'text-amber-600'
+                                : 'text-green-600'
+                            }
+                          >
+                            {seoValidation.metrics.wordCount}{' '}
+                            {seoValidation.metrics.wordCount < 600 ? '(recommended: 600+)' : '✓'}
                           </span>
                         </div>
                         {watchedValues.focusKeyword && (
                           <>
                             <div>
                               <span className="text-muted-foreground">Keyword (First 10%):</span>{' '}
-                              <span className={seoValidation.metrics.keywordDensity.first10Percent > 0 ? 'text-green-600' : 'text-amber-600'}>
+                              <span
+                                className={
+                                  seoValidation.metrics.keywordDensity.first10Percent > 0
+                                    ? 'text-green-600'
+                                    : 'text-amber-600'
+                                }
+                              >
                                 {seoValidation.metrics.keywordDensity.first10Percent.toFixed(2)}%
                               </span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Keyword (Rest 90%):</span>{' '}
-                              <span className={
-                                seoValidation.metrics.keywordDensity.rest90Percent >= 1.5 && 
-                                seoValidation.metrics.keywordDensity.rest90Percent <= 2.5 
-                                  ? 'text-green-600' 
-                                  : 'text-amber-600'
-                              }>
-                                {seoValidation.metrics.keywordDensity.rest90Percent.toFixed(2)}% (target: 1.5-2%)
+                              <span
+                                className={
+                                  seoValidation.metrics.keywordDensity.rest90Percent >= 1.5 &&
+                                  seoValidation.metrics.keywordDensity.rest90Percent <= 2.5
+                                    ? 'text-green-600'
+                                    : 'text-amber-600'
+                                }
+                              >
+                                {seoValidation.metrics.keywordDensity.rest90Percent.toFixed(2)}%
+                                (target: 1.5-2%)
                               </span>
                             </div>
                           </>
@@ -1351,9 +1408,26 @@ export function CreatePostForm() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Post'}
-            </Button>
+            {currentTab === 'settings' ? (
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Creating...' : 'Create Post'}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => {
+                  // Navigate to next tab
+                  if (currentTab === 'content') {
+                    setCurrentTab('seo')
+                  } else if (currentTab === 'seo') {
+                    setCurrentTab('settings')
+                  }
+                }}
+                disabled={isLoading}
+              >
+                Next
+              </Button>
+            )}
           </div>
         </form>
       </Form>

@@ -149,7 +149,7 @@ export default function RichTextEditor({
         console.log('Setting editor content from value prop:', {
           value: value?.substring(0, 100) + '...',
           currentContent: currentContent?.substring(0, 100) + '...',
-          isDifferent: currentContent !== value
+          isDifferent: currentContent !== value,
         })
         editor.commands.setContent(value)
       }
@@ -248,9 +248,10 @@ export default function RichTextEditor({
   return (
     <Card className="w-full">
       {/* Fixed Toolbar */}
-      <div className="sticky top-4 z-50 border-b p-2 flex flex-wrap gap-1 bg-white dark:bg-background shadow-sm">
+      <div className="sticky top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
         {/* Undo/Redo */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
@@ -259,6 +260,7 @@ export default function RichTextEditor({
           <Undo className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
@@ -302,6 +304,7 @@ export default function RichTextEditor({
 
         {/* Text Formatting */}
         <Button
+          type="button"
           variant={editor.isActive('bold') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -309,6 +312,7 @@ export default function RichTextEditor({
           <Bold className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('italic') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -316,6 +320,7 @@ export default function RichTextEditor({
           <Italic className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('underline') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -323,6 +328,7 @@ export default function RichTextEditor({
           <UnderlineIcon className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('strike') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -334,7 +340,12 @@ export default function RichTextEditor({
 
         {/* Colors */}
         <div className="relative">
-          <Button variant="ghost" size="sm" onClick={() => setShowColorPicker(!showColorPicker)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowColorPicker(!showColorPicker)}
+          >
             <Type className="h-4 w-4" />
           </Button>
           {showColorPicker && (
@@ -343,6 +354,7 @@ export default function RichTextEditor({
                 {colors.map((color) => (
                   <button
                     key={color}
+                    type="button"
                     className="w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
                     style={{ backgroundColor: color }}
                     onClick={() => {
@@ -353,6 +365,7 @@ export default function RichTextEditor({
                 ))}
               </div>
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -368,6 +381,7 @@ export default function RichTextEditor({
 
         <div className="relative">
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
@@ -380,6 +394,7 @@ export default function RichTextEditor({
                 {colors.map((color) => (
                   <button
                     key={color}
+                    type="button"
                     className="w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
                     style={{ backgroundColor: color }}
                     onClick={() => {
@@ -390,6 +405,7 @@ export default function RichTextEditor({
                 ))}
               </div>
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -407,6 +423,7 @@ export default function RichTextEditor({
 
         {/* Alignment */}
         <Button
+          type="button"
           variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -414,6 +431,7 @@ export default function RichTextEditor({
           <AlignLeft className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
@@ -421,6 +439,7 @@ export default function RichTextEditor({
           <AlignCenter className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
@@ -428,6 +447,7 @@ export default function RichTextEditor({
           <AlignRight className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive({ textAlign: 'justify' }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
@@ -439,6 +459,7 @@ export default function RichTextEditor({
 
         {/* Lists */}
         <Button
+          type="button"
           variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -446,6 +467,7 @@ export default function RichTextEditor({
           <List className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -457,6 +479,7 @@ export default function RichTextEditor({
 
         {/* Quote and Code */}
         <Button
+          type="button"
           variant={editor.isActive('blockquote') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
@@ -464,6 +487,7 @@ export default function RichTextEditor({
           <Quote className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('codeBlock') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
@@ -475,6 +499,7 @@ export default function RichTextEditor({
 
         {/* Subscript/Superscript */}
         <Button
+          type="button"
           variant={editor.isActive('subscript') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleSubscript().run()}
@@ -482,6 +507,7 @@ export default function RichTextEditor({
           <SubscriptIcon className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant={editor.isActive('superscript') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleSuperscript().run()}
@@ -492,13 +518,13 @@ export default function RichTextEditor({
         <Separator orientation="vertical" className="h-8" />
 
         {/* Media and Table */}
-        <Button variant="ghost" size="sm" onClick={addLink}>
+        <Button type="button" variant="ghost" size="sm" onClick={addLink}>
           <LinkIcon className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={addImage}>
+        <Button type="button" variant="ghost" size="sm" onClick={addImage}>
           <ImageIcon className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={insertTable}>
+        <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
           <TableIcon className="h-4 w-4" />
         </Button>
       </div>

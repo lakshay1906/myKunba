@@ -440,8 +440,8 @@ export default function EditBlogPage({
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto py-6 px-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4 lg:gap-0">
         <div className="flex items-center space-x-2">
           <Link href={'/dashboard/blog'}>
             <Button variant="ghost" size="sm">
@@ -623,7 +623,8 @@ export default function EditBlogPage({
                   placeholder="e.g., web development, react tutorial"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Primary keyword for SEO optimization. Should appear in title, content, and meta description.
+                  Primary keyword for SEO optimization. Should appear in title, content, and meta
+                  description.
                 </p>
               </div>
               <div className="space-y-2">
@@ -636,7 +637,8 @@ export default function EditBlogPage({
                   placeholder="Descriptive alt text for the cover image"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Alt text for the cover image. Include your focus keyword if relevant. Important for SEO and accessibility.
+                  Alt text for the cover image. Include your focus keyword if relevant. Important
+                  for SEO and accessibility.
                 </p>
               </div>
               <div className="space-y-2">
@@ -668,7 +670,9 @@ export default function EditBlogPage({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        const newLinks = (blog.externalLinks || []).filter((_: any, i: number) => i !== index)
+                        const newLinks = (blog.externalLinks || []).filter(
+                          (_: any, i: number) => i !== index,
+                        )
                         setBlog({ ...blog, externalLinks: newLinks })
                       }}
                     >
@@ -718,7 +722,9 @@ export default function EditBlogPage({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        const newLinks = (blog.internalLinks || []).filter((_: any, i: number) => i !== index)
+                        const newLinks = (blog.internalLinks || []).filter(
+                          (_: any, i: number) => i !== index,
+                        )
                         setBlog({ ...blog, internalLinks: newLinks })
                       }}
                     >
