@@ -272,15 +272,19 @@ export default function UnifiedImageUpload({
 
         {/* Alt Text */}
         <div className="space-y-2">
-          <Label htmlFor="alt-text">Alt Text *</Label>
+          <Label htmlFor="alt-text">Image Alt Text *</Label>
           <Input
             id="alt-text"
             type="text"
-            placeholder="Describe the image..."
+            placeholder="Descriptive alt text for the cover image"
             value={imageUploadData.alt}
             onChange={(e) => setImageUploadData((prev) => ({ ...prev, alt: e.target.value }))}
             required
           />
+          <p className="text-sm text-muted-foreground">
+            Alt text for the cover image. Include your focus keyword if relevant. Important for SEO
+            and accessibility.
+          </p>
         </div>
 
         {/* Upload Button */}
@@ -313,7 +317,11 @@ export default function UnifiedImageUpload({
       {/* Result Messages */}
       {imageUploadData.result && (
         <Alert
-          className={`${imageUploadData.result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}
+          className={`${
+            imageUploadData.result.success
+              ? 'border-green-200 bg-green-50'
+              : 'border-red-200 bg-red-50'
+          }`}
         >
           {imageUploadData.result.success ? (
             <CheckCircle className="h-4 w-4 text-green-600" />

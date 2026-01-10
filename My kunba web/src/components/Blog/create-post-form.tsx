@@ -245,13 +245,21 @@ export function CreatePostForm() {
             const newState = {
               ...prev,
               coverImage: draftData.coverImage || null,
+              // Restore alt text if it exists in draft (for backwards compatibility)
+              alt: (draftData as any).imageAltText || prev.alt || '',
             }
             console.log('Cover image set in imageUploadData:', {
               coverImage: newState.coverImage?.substring(0, 50) || 'null',
+              alt: newState.alt,
             })
             setDraftImageLoaded(true)
             return newState
           })
+
+          // Also restore alt text to form if it exists (for backwards compatibility with old drafts)
+          if ((draftData as any).imageAltText) {
+            form.setValue('imageAltText', (draftData as any).imageAltText, { shouldDirty: false })
+          }
         }
 
         console.log('Form reset with draft data, content:', draftData.content)
@@ -330,7 +338,7 @@ export function CreatePostForm() {
         }, 1000) // Debounce for 1 second
       }
     },
-    [form, selectedCategories, imageUploadData.coverImage, isDraftLoaded],
+    [form, selectedCategories, imageUploadData.coverImage, imageUploadData.alt, isDraftLoaded],
   )
 
   // Store saveDraft in ref for use in handleImageUploadDataChange
@@ -348,17 +356,24 @@ export function CreatePostForm() {
     return () => subscription.unsubscribe()
   }, [form, saveDraft, isDraftLoaded])
 
-  // Watch for category and image changes
+  // Watch for category, image, and alt text changes
   useEffect(() => {
     if (!isDraftLoaded) return
-    console.log('Image or categories changed - triggering save:', {
+    console.log('Image, alt text, or categories changed - triggering save:', {
       hasImage: !!imageUploadData.coverImage,
       imagePreview: imageUploadData.coverImage?.substring(0, 50) || 'none',
+      altText: imageUploadData.alt || 'none',
       categoriesCount: selectedCategories.length,
     })
-    // Save immediately when image or categories change
+    // Save immediately when image, alt text, or categories change
     saveDraft()
-  }, [selectedCategories, imageUploadData.coverImage, saveDraft, isDraftLoaded])
+  }, [
+    selectedCategories,
+    imageUploadData.coverImage,
+    imageUploadData.alt,
+    saveDraft,
+    isDraftLoaded,
+  ])
 
   // Watch content field specifically (RichTextEditor might not trigger form.watch properly)
   const contentValue = form.watch('content')
@@ -563,7 +578,7 @@ export function CreatePostForm() {
       // Clear categories
       setSelectedCategories([])
 
-      // Clear image upload data
+      // Clear image upload data including alt text
       handleImageUploadDataChange((prev) => ({
         ...prev,
         coverImage: null,
@@ -701,7 +716,7 @@ export function CreatePostForm() {
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
           // SEO fields
           focusKeyword: data.focusKeyword || undefined,
-          imageAltText: data.imageAltText || undefined,
+          imageAltText: imageUploadData.alt?.trim() || undefined,
           externalLinks:
             data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
           internalLinks:
@@ -1166,29 +1181,6 @@ export function CreatePostForm() {
                         <FormDescription>
                           Primary keyword for SEO optimization. This keyword should appear in your
                           title, content, and meta description.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Image Alt Text Field */}
-                  <FormField
-                    control={form.control}
-                    name="imageAltText"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image Alt Text</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Descriptive alt text for the cover image"
-                            {...field}
-                            disabled={isLoading}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Alt text for the cover image. Include your focus keyword if relevant.
-                          Important for SEO and accessibility.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
