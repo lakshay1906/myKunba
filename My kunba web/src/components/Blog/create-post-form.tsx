@@ -1408,9 +1408,25 @@ export function CreatePostForm() {
             >
               Cancel
             </Button>
+            {currentTab !== 'content' && (
+              <Button
+                type="button"
+                onClick={() => {
+                  // Navigate to next tab
+                  if (currentTab === 'seo') {
+                    setCurrentTab('content')
+                  } else if (currentTab === 'settings') {
+                    setCurrentTab('seo')
+                  }
+                }}
+                disabled={isLoading}
+              >
+                Previous
+              </Button>
+            )}
             {currentTab === 'settings' ? (
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Creating...' : 'Create Post'}
+                {isLoading ? 'Submitting...' : 'Submit'}
               </Button>
             ) : (
               <Button

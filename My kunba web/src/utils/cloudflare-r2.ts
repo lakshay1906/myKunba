@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import sharp from 'sharp'
 
 // Validate required environment variables
 function validateEnvVars() {
@@ -32,6 +33,100 @@ function getS3Client(): S3Client {
     })
   }
   return s3Client
+}
+
+/**
+ * Convert image to WebP format if not already WebP
+ * @param buffer - Image buffer to convert
+ * @param originalContentType - Original MIME type of the image
+ * @param originalFileName - Original filename
+ * @returns Object containing the converted buffer, new filename, and content type
+ */
+export async function convertToWebP(
+  buffer: Buffer,
+  originalContentType: string,
+  originalFileName: string,
+): Promise<{ buffer: Buffer; fileName: string; contentType: string }> {
+  try {
+    // Skip conversion for SVG files - they are vector graphics and cannot be converted to WebP
+    if (
+      originalContentType === 'image/svg+xml' ||
+      originalContentType === 'image/svg' ||
+      originalFileName.toLowerCase().endsWith('.svg')
+    ) {
+      return {
+        buffer,
+        fileName: originalFileName,
+        contentType: originalContentType,
+      }
+    }
+
+    // Validate that the file is an image before processing
+    if (!originalContentType || !originalContentType.startsWith('image/')) {
+      throw new Error(`Invalid image type: ${originalContentType}`)
+    }
+
+    // Check the actual image format using sharp metadata
+    let metadata
+    try {
+      metadata = await sharp(buffer).metadata()
+    } catch (sharpError) {
+      // If sharp can't read the buffer, it's likely not a valid image
+      throw new Error('Invalid image format or corrupted image file')
+    }
+
+    const format = metadata.format
+
+    // If image is already WebP, return as-is (but ensure filename has .webp extension)
+    if (format === 'webp' || originalContentType === 'image/webp') {
+      return {
+        buffer,
+        fileName: originalFileName.endsWith('.webp')
+          ? originalFileName
+          : `${originalFileName.replace(/\.[^/.]+$/, '')}.webp`,
+        contentType: 'image/webp',
+      }
+    }
+
+    // Validate that sharp detected a valid raster image format
+    // Sharp supports: jpeg, png, webp, gif, svg, tiff, avif, heic, raw, etc.
+    // But we want to skip vector formats and only convert raster images
+    const supportedFormats = ['jpeg', 'jpg', 'png', 'gif', 'tiff', 'bmp', 'avif', 'heic']
+    if (format && !supportedFormats.includes(format.toLowerCase())) {
+      // If format is not in supported list, return original
+      console.warn(`Unsupported format for WebP conversion: ${format}, using original image`)
+      return {
+        buffer,
+        fileName: originalFileName,
+        contentType: originalContentType,
+      }
+    }
+
+    // Convert to WebP with 100% quality
+    // Using quality: 100 for maximum quality preservation
+    const webpBuffer = await sharp(buffer)
+      .webp({ quality: 100, effort: 6 })
+      .toBuffer()
+
+    // Update filename to have .webp extension
+    const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '')
+    const webpFileName = `${fileNameWithoutExt}.webp`
+
+    return {
+      buffer: webpBuffer,
+      fileName: webpFileName,
+      contentType: 'image/webp',
+    }
+  } catch (error) {
+    // If conversion fails, return original image
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.warn('Failed to convert image to WebP, using original:', errorMessage)
+    return {
+      buffer,
+      fileName: originalFileName,
+      contentType: originalContentType,
+    }
+  }
 }
 
 /**
@@ -105,8 +200,8 @@ export async function uploadFromUrlToCloudflareR2(imageUrl: string, alt?: string
     throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
   }
 
-  const contentType = response.headers.get('content-type')
-  if (!contentType || !contentType.startsWith('image/')) {
+  const contentType = response.headers.get('content-type') || 'image/jpeg'
+  if (!contentType.startsWith('image/')) {
     throw new Error('URL does not point to a valid image')
   }
 
@@ -121,8 +216,12 @@ export async function uploadFromUrlToCloudflareR2(imageUrl: string, alt?: string
   const extension = contentType.split('/')[1] || 'jpg'
   const finalFilename = filename.includes('.') ? filename : `${filename}.${extension}`
 
+  // Convert to WebP if not already WebP (with 100% quality)
+  const { buffer: processedBuffer, fileName: processedFileName, contentType: processedContentType } =
+    await convertToWebP(buffer, contentType, finalFilename)
+
   // Upload to R2
-  return uploadToCloudflareR2(buffer, finalFilename, contentType)
+  return uploadToCloudflareR2(processedBuffer, processedFileName, processedContentType)
 }
 
 /**

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadToCloudflareR2 } from '@/utils/cloudflare-r2'
+import { uploadToCloudflareR2, convertToWebP } from '@/utils/cloudflare-r2'
 
 // OLD: Database storage implementation - COMMENTED OUT
 // import { payload } from '@/payload-client'
@@ -18,6 +18,14 @@ export async function POST(request: NextRequest) {
 
     if (!alt) {
       return NextResponse.json({ error: 'Alt text is required' }, { status: 400 })
+    }
+
+    // Validate file type is an image
+    if (!file.type || !file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Please upload an image file.' },
+        { status: 400 },
+      )
     }
 
     // OLD: Database storage - COMMENTED OUT
@@ -50,17 +58,24 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
+    // Convert to WebP if not already WebP (with 100% quality)
+    const { buffer: processedBuffer, fileName: processedFileName, contentType: processedContentType } =
+      await convertToWebP(buffer, file.type, file.name)
+
     // Upload to Cloudflare R2
-    const imageUrl = await uploadToCloudflareR2(buffer, file.name, file.type)
+    const imageUrl = await uploadToCloudflareR2(processedBuffer, processedFileName, processedContentType)
 
     return NextResponse.json({
       success: true,
       data: {
         url: imageUrl,
         alt: alt,
-        filename: file.name,
-        size: file.size,
-        mimetype: file.type,
+        filename: processedFileName,
+        size: processedBuffer.length,
+        mimetype: processedContentType,
+        originalFilename: file.name,
+        originalMimetype: file.type,
+        converted: processedContentType !== file.type,
       },
       message: 'Image uploaded successfully',
     })
