@@ -7,16 +7,23 @@ import { Upload, CheckCircle, AlertCircle, Loader2, FileImage, Link } from 'luci
 import { getImageDimensions, getImageDimensionsFromUrl } from '@/utils/image-utils'
 import AspectRatioWarning from './aspect-ratio-warning'
 import ImagePreview from './image-preview'
-import { ImageUploadData } from '@/lib/types'
+import { ImageUploadData, UploadResponse } from '@/lib/types'
+import { toast } from 'sonner'
 
 export default function UnifiedImageUpload({
   imageUploadData,
   setImageUploadData,
   clearAll,
+  onUploadComplete,
+  fileInputId = 'file-input',
+  lazyUpload = false,
 }: {
   imageUploadData: ImageUploadData
   setImageUploadData: React.Dispatch<React.SetStateAction<ImageUploadData>>
   clearAll: () => void
+  onUploadComplete?: (imageUrl: string, alt: string) => void | Promise<void>
+  fileInputId?: string
+  lazyUpload?: boolean // If true, don't upload immediately - just return data URL or URL
 }) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -90,8 +97,8 @@ export default function UnifiedImageUpload({
       dimensions: null,
       result: null,
     }))
-    // Reset file input
-    const fileInput = document.getElementById('file-input') as HTMLInputElement
+    // Reset file input using the provided fileInputId
+    const fileInput = document.getElementById(fileInputId) as HTMLInputElement
     if (fileInput) fileInput.value = ''
 
     // Basic URL validation
@@ -159,8 +166,9 @@ export default function UnifiedImageUpload({
   return (
     <div className="space-y-4">
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
+          e.stopPropagation() // Prevent event from bubbling to parent forms
           if ((!imageUploadData.file && !imageUploadData.imageUrl) || !imageUploadData.alt.trim()) {
             setImageUploadData((prev) => ({
               ...prev,
@@ -171,35 +179,139 @@ export default function UnifiedImageUpload({
             }))
             return
           }
-          if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
-            const reader = new FileReader()
-            reader.onload = (e) => {
+
+          // If onUploadComplete callback is provided
+          if (onUploadComplete) {
+            if (lazyUpload) {
+              // Lazy upload mode: Don't upload immediately, just return data URL or URL
+              // Images will be uploaded during form submission
+              let imageSrc: string | null = null
+
+              if (imageUploadData.uploadMethod === 'file' && imageUploadData.file && imageUploadData.preview?.startsWith('data:')) {
+                // Use the data URL that was already created for preview
+                imageSrc = imageUploadData.preview
+              } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
+                // Use the URL directly (will be uploaded on form submission if needed)
+                imageSrc = imageUploadData.imageUrl
+              }
+
+              if (imageSrc) {
+                await onUploadComplete(imageSrc, imageUploadData.alt.trim())
+                setImageUploadData((prev) => ({
+                  ...prev,
+                  uploading: false,
+                  isOpen: false,
+                  coverImage: imageSrc,
+                  result: { success: true, data: { url: imageSrc } },
+                }))
+                clearAll()
+              }
+            } else {
+              // Immediate upload mode: Upload to Cloudflare R2 now
+              setImageUploadData((prev) => ({ ...prev, uploading: true }))
+              try {
+                let imageUrl: string | null = null
+
+                // Upload file
+                if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
+                  const formData = new FormData()
+                  formData.append('file', imageUploadData.file)
+                  formData.append('alt', imageUploadData.alt.trim())
+
+                  const response = await fetch('/api/image/upload', {
+                    method: 'POST',
+                    body: formData,
+                  })
+
+                  const data: UploadResponse = await response.json()
+
+                  if (response.ok && data.success && data.data?.url) {
+                    imageUrl = data.data.url
+                  } else {
+                    throw new Error(data.error || data.message || 'Failed to upload image')
+                  }
+                }
+                // Upload from URL
+                else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
+                  const response = await fetch('/api/image/upload-from-url', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      imageUrl: imageUploadData.imageUrl.trim(),
+                      alt: imageUploadData.alt.trim(),
+                    }),
+                  })
+
+                  const data: UploadResponse = await response.json()
+
+                  if (response.ok && data.success && data.data?.url) {
+                    imageUrl = data.data.url
+                  } else {
+                    throw new Error(data.error || data.message || 'Failed to validate image URL')
+                  }
+                }
+
+                if (imageUrl) {
+                  await onUploadComplete(imageUrl, imageUploadData.alt.trim())
+                  setImageUploadData((prev) => ({
+                    ...prev,
+                    uploading: false,
+                    isOpen: false,
+                    coverImage: imageUrl,
+                    result: { success: true, data: { url: imageUrl } },
+                  }))
+                  clearAll()
+                }
+              } catch (error: any) {
+                console.error('Error uploading image:', error)
+                setImageUploadData((prev) => ({
+                  ...prev,
+                  uploading: false,
+                  result: {
+                    success: false,
+                    error: error.message || 'Failed to upload image',
+                  },
+                }))
+                toast.error('Upload failed', {
+                  description: error.message || 'Failed to upload image. Please try again.',
+                })
+              }
+            }
+          } else {
+            // Original behavior: just set coverImage as data URL (for cover image upload)
+            if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
+              const reader = new FileReader()
+              reader.onload = (e) => {
+                setImageUploadData((prev) => ({
+                  ...prev,
+                  uploading: false,
+                  isOpen: false,
+                  coverImage: e.target?.result as string,
+                }))
+              }
+              reader.readAsDataURL(imageUploadData.file)
+            } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
               setImageUploadData((prev) => ({
                 ...prev,
                 uploading: false,
                 isOpen: false,
-                coverImage: e.target?.result as string,
+                coverImage: imageUploadData.imageUrl,
               }))
             }
-            reader.readAsDataURL(imageUploadData.file)
-          } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl)
-            setImageUploadData((prev) => ({
-              ...prev,
-              uploading: false,
-              isOpen: false,
-              coverImage: imageUploadData.imageUrl,
-            }))
+          }
         }}
         className="space-y-4"
       >
         {/* File Upload Section */}
         <div className="space-y-2">
-          <Label htmlFor="file-input" className="flex items-center gap-2">
+          <Label htmlFor={fileInputId} className="flex items-center gap-2">
             <FileImage className="w-4 h-4" />
             Select Image File
           </Label>
           <Input
-            id="file-input"
+            id={fileInputId}
             type="file"
             accept="image/*"
             onChange={handleFileChange}
@@ -276,29 +388,46 @@ export default function UnifiedImageUpload({
           <Input
             id="alt-text"
             type="text"
-            placeholder="Descriptive alt text for the cover image"
+            placeholder={onUploadComplete ? "Descriptive alt text for the image" : "Descriptive alt text for the cover image"}
             value={imageUploadData.alt}
             onChange={(e) => setImageUploadData((prev) => ({ ...prev, alt: e.target.value }))}
             required
           />
           <p className="text-sm text-muted-foreground">
-            Alt text for the cover image. Include your focus keyword if relevant. Important for SEO
-            and accessibility.
+            Alt text for the image. {onUploadComplete ? "Important for SEO and accessibility." : "Include your focus keyword if relevant. Important for SEO and accessibility."}
           </p>
         </div>
 
         {/* Upload Button */}
         <Button
-          type="submit"
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const form = e.currentTarget.closest('form')
+            if (form) {
+              form.requestSubmit()
+            }
+          }}
           className="w-full"
           disabled={
             !hasContent ||
             !imageUploadData.alt.trim() ||
-            (imageUploadData.uploadMethod === 'url' && !isValidUrl)
+            (imageUploadData.uploadMethod === 'url' && !isValidUrl) ||
+            imageUploadData.uploading
           }
         >
-          <Upload className="w-4 h-4 mr-2" />
-          Done{' '}
+          {imageUploadData.uploading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4 mr-2" />
+              {onUploadComplete ? (lazyUpload ? 'Add to Content' : 'Upload & Add') : 'Done'}
+            </>
+          )}
         </Button>
 
         {/* Clear Button */}

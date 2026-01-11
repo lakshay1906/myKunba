@@ -83,18 +83,35 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
           break
 
         case 'p':
-          const pChildren =
-            elementChildren.length > 0 ? elementChildren : [createTextNode(element.text.trim())]
-          if (pChildren.some((child) => (child as LexicalTextNode).text?.trim())) {
-            result.push({
-              type: 'paragraph',
-              version: 1,
-              children: pChildren,
-              direction: 'ltr',
-              format: '',
-              indent: 0,
-            })
+          // Separate images from text content in paragraphs
+          const pTextChildren: (LexicalTextNode | LexicalElementNode)[] = []
+          const pImages: LexicalElementNode[] = []
+          
+          for (const child of elementChildren) {
+            if (child.type === 'image') {
+              pImages.push(child as LexicalElementNode)
+            } else {
+              pTextChildren.push(child)
+            }
           }
+          
+          // Add text paragraph if there's text content
+          if (pTextChildren.length > 0 || (!pImages.length && element.text.trim())) {
+            const finalChildren = pTextChildren.length > 0 ? pTextChildren : [createTextNode(element.text.trim())]
+            if (finalChildren.some((child) => (child as LexicalTextNode).text?.trim())) {
+              result.push({
+                type: 'paragraph',
+                version: 1,
+                children: finalChildren,
+                direction: 'ltr',
+                format: '',
+                indent: 0,
+              })
+            }
+          }
+          
+          // Add images as separate nodes (they shouldn't be nested in paragraphs)
+          result.push(...pImages)
           break
 
         case 'ul':
@@ -174,11 +191,52 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
           } as LexicalTextNode)
           break
 
+        case 'img':
+          // Handle image tags - create image node
+          const src = element.getAttribute('src') || ''
+          const alt = element.getAttribute('alt') || ''
+          const width = element.getAttribute('width')
+          const height = element.getAttribute('height')
+          
+          if (src) {
+            result.push({
+              type: 'image',
+              version: 1,
+              children: [],
+              direction: null,
+              format: '',
+              indent: 0,
+              url: src,
+              alt: alt,
+              width: width ? parseInt(width, 10) : undefined,
+              height: height ? parseInt(height, 10) : undefined,
+            } as LexicalElementNode & { url: string; alt?: string; width?: number; height?: number })
+          }
+          break
+
         default:
-          // For unknown elements, just extract text content
-          const text = element.text.trim()
-          if (text) {
-            result.push(createTextNode(text))
+          // For unknown elements (including img tags that might be nested), check if it's an image first
+          if (tagName === 'img') {
+            const src = element.getAttribute('src') || ''
+            const alt = element.getAttribute('alt') || ''
+            if (src) {
+              result.push({
+                type: 'image',
+                version: 1,
+                children: [],
+                direction: null,
+                format: '',
+                indent: 0,
+                url: src,
+                alt: alt,
+              } as LexicalElementNode & { url: string; alt?: string })
+            }
+          } else {
+            // For other unknown elements, just extract text content
+            const text = element.text.trim()
+            if (text) {
+              result.push(createTextNode(text))
+            }
           }
       }
     }

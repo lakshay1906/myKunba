@@ -35,6 +35,8 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
+import { processContentImages } from '@/utils/process-content-images'
+import { extractImageUrlsFromHtml } from '@/utils/cleanup-orphaned-images'
 
 // const templates = [
 //   { id: 'standard', name: 'Standard' },
@@ -81,6 +83,7 @@ export default function EditBlogPage({
     coverImage: null,
   })
   const isUploadingRef = useRef(false)
+  const originalContentImagesRef = useRef<string[]>([]) // Track original Cloudflare R2 images in content
 
   // Initialize blog data from prop
   useEffect(() => {
@@ -90,6 +93,10 @@ export default function EditBlogPage({
 
       setBlog(blogData)
       setContentHtml(htmlContent)
+
+      // Track original Cloudflare R2 images in content for cleanup on removal
+      const originalImages = extractImageUrlsFromHtml(htmlContent)
+      originalContentImagesRef.current = originalImages
 
       // Set categories
       if (blogData.categories && Array.isArray(blogData.categories)) {
@@ -252,13 +259,39 @@ export default function EditBlogPage({
         }
       }
 
+      // Process content HTML to upload any pending images (data URLs) to Cloudflare R2
+      let processedContent = blog.content
+      try {
+        // Only process if there are data URLs in content (pending uploads)
+        if (blog.content && blog.content.includes('data:image')) {
+          toast.info('Processing images...', {
+            description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
+          })
+          const contentProcessingResult = await processContentImages(blog.content)
+          processedContent = contentProcessingResult.processedContent
+        }
+      } catch (error: any) {
+        console.error('Error processing content images:', error)
+        toast.warning('Some images failed to upload', {
+          description: 'The blog will be saved, but some images may need to be re-uploaded.',
+        })
+      }
+
+      // Extract Cloudflare R2 images from updated content
+      const newContentImages = extractImageUrlsFromHtml(processedContent)
+      
+      // Find removed images (images that were in original but not in new content)
+      const removedImages = originalContentImagesRef.current.filter(
+        (originalUrl) => !newContentImages.includes(originalUrl)
+      )
+
       // Prepare data for API
       const updateData: any = {
         id: blog.id,
         title: blog.title,
         slug: blog.slug,
         excerpt: blog.excerpt,
-        content: blog.content, // HTML content, will be converted to lexical in API
+        content: processedContent, // Processed HTML content with uploaded image URLs
         status: blog.status,
         metaTitle: blog.metaTitle || '',
         metaDescription: blog.metaDescription || '',
@@ -304,6 +337,25 @@ export default function EditBlogPage({
 
       if (!response.ok) {
         throw new Error(result.message || 'Failed to save blog')
+      }
+
+      // Clean up removed images from Cloudflare R2 (non-blocking)
+      if (removedImages.length > 0) {
+        console.log(`Cleaning up ${removedImages.length} removed images from Cloudflare R2...`)
+        // Use the delete API endpoint
+        import('@/utils/cleanup-orphaned-images')
+          .then(({ cleanupOrphanedImages }) => {
+            cleanupOrphanedImages(removedImages).then((cleanupResult) => {
+              if (cleanupResult.failed.length > 0) {
+                console.warn('Failed to delete some removed images:', cleanupResult.failed)
+              } else {
+                console.log(`✅ Successfully cleaned up ${cleanupResult.success.length} removed images`)
+              }
+            })
+          })
+          .catch((error) => {
+            console.error('Error during image cleanup:', error)
+          })
       }
 
       toast.success('Blog saved successfully', {

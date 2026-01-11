@@ -35,7 +35,6 @@ import { CalendarIcon } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
-import { MultiSelect } from './multi-select'
 import { toast } from 'sonner'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { useAppStore } from '@/lib/context/store'
@@ -52,6 +51,7 @@ import {
 import { validateSEO } from '@/lib/utils/seo-validation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
+import { processContentImages } from '@/utils/process-content-images'
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -615,29 +615,82 @@ export function CreatePostForm() {
     }
   }
 
-  // Handle form submission
+  // Handle form submission - ONLY called from Submit button onClick
   const onSubmit = async (data: FormValues, event?: React.BaseSyntheticEvent) => {
-    // Prevent accidental submissions from nested forms or buttons
+    // Additional safeguard: prevent accidental submissions
     if (event) {
       event.preventDefault()
       event.stopPropagation()
     }
 
+    // Guard: ensure we're not already submitting
+    if (isSubmittingRef.current || isLoading) {
+      console.warn('Form submission already in progress, ignoring duplicate submit')
+      return
+    }
+
     setIsLoading(true)
     isSubmittingRef.current = true
+
+    // Track uploaded images for cleanup in case of failure
+    const uploadedImages: string[] = []
+
     try {
       if (!loginDetail) {
-        return (
-          <Toast
-            description="You're not authorized to perform this action"
-            isSuccess={false}
-            message="Error"
-          />
-        )
+        isSubmittingRef.current = false
+        setIsLoading(false)
+        toast.error('Error', {
+          description: "You're not authorized to perform this action",
+        })
         return
       }
 
-      // Upload image if one was selected
+      // PHASE 1: Pre-validation - Check unique fields BEFORE uploading images
+      toast.info('Validating...', {
+        description: 'Checking if title and slug are available...',
+      })
+
+      const validationResponse = await fetch(`/api/dashboard/blog/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({
+          title: data.title,
+          slug: data.slug,
+        }),
+      })
+
+      const validationResult = await validationResponse.json()
+
+      if (!validationResult.valid) {
+        isSubmittingRef.current = false
+        setIsLoading(false)
+
+        // Build error message from validation errors
+        const errorMessages = []
+        if (validationResult.errors?.title) {
+          errorMessages.push(validationResult.errors.title)
+        }
+        if (validationResult.errors?.slug) {
+          errorMessages.push(validationResult.errors.slug)
+        }
+
+        toast.error('Validation Failed', {
+          description:
+            errorMessages.join('. ') ||
+            'Title or slug already exists. Please choose different values.',
+        })
+        return
+      }
+
+      // PHASE 2: Validation passed - Now upload images
+      toast.info('Uploading images...', {
+        description: 'Uploading images to Cloudflare R2...',
+      })
+
+      // Upload cover image if one was selected
       let coverImageUrl: string | null = null
       if (imageUploadData.coverImage) {
         // If it's a data URL, it means a file was selected and needs to be uploaded
@@ -650,6 +703,9 @@ export function CreatePostForm() {
             const imageData = await handleUpload()
             if (imageData?.success && imageData.data?.url) {
               coverImageUrl = imageData.data.url
+              if (coverImageUrl) {
+                uploadedImages.push(coverImageUrl) // Track for cleanup
+              }
             } else {
               throw new Error('Failed to upload image')
             }
@@ -673,6 +729,9 @@ export function CreatePostForm() {
             const imageData = await handleUpload()
             if (imageData?.success && imageData.data?.url) {
               coverImageUrl = imageData.data.url
+              if (coverImageUrl) {
+                uploadedImages.push(coverImageUrl) // Track for cleanup
+              }
             } else {
               throw new Error('Failed to validate image URL')
             }
@@ -702,6 +761,43 @@ export function CreatePostForm() {
         return
       }
 
+      // Process content HTML to upload any pending images (data URLs) to Cloudflare R2
+      // This ensures all images in content are uploaded with WebP conversion
+      // ONLY process on actual form submission, not during image uploads
+      let processedContent = data.content
+      try {
+        // Only process if there are data URLs in content (pending uploads)
+        if (data.content && data.content.includes('data:image')) {
+          toast.info('Processing images...', {
+            description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
+          })
+          const contentProcessingResult = await processContentImages(data.content)
+          processedContent = contentProcessingResult.processedContent
+
+          if (contentProcessingResult.uploadedImages.length > 0) {
+            console.log(
+              `✅ Processed ${contentProcessingResult.uploadedImages.length} images in content`,
+            )
+            // Track uploaded content images for cleanup (filter out null values)
+            const contentImageUrls = contentProcessingResult.uploadedImages
+              .map((img) => img.uploadedUrl)
+              .filter((url): url is string => url !== null && url !== undefined)
+            uploadedImages.push(...contentImageUrls)
+          }
+        }
+      } catch (error: any) {
+        console.error('Error processing content images:', error)
+        // Continue with submission even if some images fail to upload
+        toast.warning('Some images failed to upload', {
+          description: 'The blog will be saved, but some images may need to be re-uploaded.',
+        })
+      }
+
+      // PHASE 3: Create blog post with uploaded images
+      toast.info('Creating blog post...', {
+        description: 'Saving your blog post...',
+      })
+
       const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
@@ -710,6 +806,7 @@ export function CreatePostForm() {
         },
         body: JSON.stringify({
           ...data,
+          content: processedContent, // Use processed content with uploaded image URLs
           // NEW: Cloudflare R2 storage - ACTIVE
           coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
           // Add categories from state
@@ -723,10 +820,37 @@ export function CreatePostForm() {
             data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
         }),
       })
+
       if (!response.ok) {
         const res = await response.json()
+
+        // If blog creation failed but images were uploaded, cleanup orphaned images
+        if (uploadedImages.length > 0) {
+          console.warn(
+            'Blog creation failed but images were uploaded. Cleaning up orphaned images...',
+            uploadedImages,
+          )
+
+          // Attempt cleanup (non-blocking)
+          import('@/utils/cleanup-orphaned-images')
+            .then(({ cleanupOrphanedImages }) => {
+              cleanupOrphanedImages(uploadedImages).then((result) => {
+                if (result.failed.length > 0) {
+                  console.error('Failed to cleanup some orphaned images:', result.failed)
+                  // Log for manual cleanup or queue cleanup job
+                }
+              })
+            })
+            .catch((error) => {
+              console.error('Error during image cleanup:', error)
+            })
+        }
+
+        isSubmittingRef.current = false
+        setIsLoading(false)
         toast.error('Error', {
-          description: res.message ?? "You're not authorized to perform this action",
+          description:
+            res.message ?? 'Failed to create blog post. Uploaded images have been cleaned up.',
         })
         return
       }
@@ -915,9 +1039,27 @@ export function CreatePostForm() {
       <Form {...form}>
         <form
           onSubmit={(e) => {
+            // Prevent any form submission events - only allow explicit Submit button click
             e.preventDefault()
             e.stopPropagation()
-            form.handleSubmit(onSubmit)(e)
+            // Do NOT call onSubmit here - it should only be called from Submit button onClick
+            // This prevents Enter key or other form submission triggers
+          }}
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting the form when pressed on buttons
+            // Allow Enter to work normally in text inputs and textareas
+            if (e.key === 'Enter') {
+              const target = e.target as HTMLElement
+              // Only prevent if Enter is pressed on a button or submit input
+              if (
+                target.tagName === 'BUTTON' ||
+                (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'submit')
+              ) {
+                e.preventDefault()
+                e.stopPropagation()
+              }
+              // For text inputs and textareas, allow normal Enter behavior (new line, etc.)
+            }
           }}
           className="space-y-8"
         >
@@ -1577,7 +1719,22 @@ export function CreatePostForm() {
               </Button>
             )}
             {currentTab === 'settings' ? (
-              <Button type="submit" disabled={isLoading}>
+              <Button
+                type="button"
+                onClick={(e) => {
+                  // Explicitly prevent any event bubbling
+                  e.preventDefault()
+                  e.stopPropagation()
+
+                  // Only execute onSubmit when this specific button is clicked
+                  // Validate form and call onSubmit handler
+                  form.handleSubmit((data, event) => {
+                    // Ensure this is only called from the Submit button
+                    onSubmit(data, event)
+                  })(e)
+                }}
+                disabled={isLoading || isSubmittingRef.current}
+              >
                 {isLoading ? 'Submitting...' : 'Submit'}
               </Button>
             ) : (

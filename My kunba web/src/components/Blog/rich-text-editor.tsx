@@ -12,6 +12,8 @@ import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 import Image from '@tiptap/extension-image'
+import ImageUploadDialog from '@/components/image-uploader/image-upload-dialog'
+import { ImageUploadData } from '@/lib/types'
 import Link from '@tiptap/extension-link'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
@@ -19,6 +21,12 @@ import FontFamily from '@tiptap/extension-font-family'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Bold,
   Italic,
@@ -43,12 +51,16 @@ import {
   SuperscriptIcon,
 } from 'lucide-react'
 import { useCallback, useState, useEffect } from 'react'
+import { toast } from 'sonner'
+import { UploadResponse } from '@/lib/types'
+import UnifiedImageUpload from '@/components/image-uploader/unified-image-upload'
 
 interface RichTextEditorProps {
   value?: string
   onChange?: (content: string) => void
   placeholder?: string
   height?: string
+  onImageUpload?: (imageUrl: string, alt: string) => Promise<string> // Returns uploaded URL
 }
 
 export default function RichTextEditor({
@@ -56,11 +68,25 @@ export default function RichTextEditor({
   onChange,
   placeholder = 'Start writing...',
   height = '400px',
+  onImageUpload,
 }: RichTextEditorProps) {
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showHighlightPicker, setShowHighlightPicker] = useState(false)
   const [currentHeading, setCurrentHeading] = useState('0')
   const [currentFontFamily, setCurrentFontFamily] = useState('unset')
+  const [showImageDialog, setShowImageDialog] = useState(false)
+  const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
+    file: null,
+    imageUrl: '',
+    alt: '',
+    preview: null,
+    result: null,
+    dimensions: null,
+    loadingDimensions: false,
+    uploadMethod: null,
+    isOpen: false,
+    coverImage: null,
+  })
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -90,7 +116,17 @@ export default function RichTextEditor({
       TableRow,
       TableHeader,
       TableCell,
-      Image,
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto',
+        },
+        // Ensure alt attribute is parsed and rendered
+        parseOptions: {
+          preserveWhitespace: 'full',
+        },
+      }),
       Link.configure({
         openOnClick: false,
       }),
@@ -201,12 +237,63 @@ export default function RichTextEditor({
     }
   }, [editor])
 
+  // Clear image upload data
+  const clearImageUpload = useCallback(() => {
+    setImageUploadData({
+      file: null,
+      imageUrl: '',
+      alt: '',
+      preview: null,
+      result: null,
+      dimensions: null,
+      loadingDimensions: false,
+      uploadMethod: null,
+      isOpen: false,
+      coverImage: null,
+      uploading: false,
+    })
+    // Clear file input with unique ID for rich text editor
+    const fileInput = document.getElementById('rich-text-file-input') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+  }, [])
+
+  // Handle image selection - insert as data URL (lazy upload - will upload on form submission)
+  const handleImageUploadComplete = useCallback(
+    async (imageSrc: string, alt: string) => {
+      if (!editor) return
+
+      // Insert image with alt text into editor at current cursor position
+      // imageSrc is already a data URL (for file uploads) or external URL (for URL uploads)
+      // Will be uploaded to Cloudflare R2 only on form submission
+      editor.chain().focus().setImage({ src: imageSrc, alt: alt || '' }).run()
+
+      toast.success('Image added', {
+        description: 'Image added to content. It will be uploaded when you submit the blog.',
+      })
+
+      // Close dialog and reset
+      setShowImageDialog(false)
+      clearImageUpload()
+    },
+    [editor, clearImageUpload],
+  )
+
+  // Open image upload dialog
   const addImage = useCallback(() => {
-    const url = window.prompt('Enter image URL:')
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
-  }, [editor])
+    setShowImageDialog(true)
+    setImageUploadData({
+      file: null,
+      imageUrl: '',
+      alt: '',
+      preview: null,
+      result: null,
+      dimensions: null,
+      loadingDimensions: false,
+      uploadMethod: null,
+      isOpen: true,
+      coverImage: null,
+    })
+  }, [])
 
   const insertTable = useCallback(() => {
     if (editor) {
@@ -541,6 +628,31 @@ export default function RichTextEditor({
           </div>
         )}
       </div>
+
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent 
+          className="sm:max-w-[500px] max-h-[calc(100vh-20px)] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle>Upload Image</DialogTitle>
+          </DialogHeader>
+          <div 
+            className="overflow-y-auto rich-text-image-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <UnifiedImageUpload
+              imageUploadData={imageUploadData}
+              setImageUploadData={setImageUploadData}
+              clearAll={clearImageUpload}
+              onUploadComplete={handleImageUploadComplete}
+              fileInputId="rich-text-file-input"
+              lazyUpload={true}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style jsx global>{`
         .ProseMirror {

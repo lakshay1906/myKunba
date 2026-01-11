@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import Image from 'next/image'
 
 interface PayloadTextNode {
   type: 'text'
@@ -184,14 +185,15 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       const imageNode = node as PayloadElementNode & { url?: string; alt?: string; width?: number; height?: number }
       if (imageNode.url) {
         return (
-          <div className="my-6">
-            <img
+          <div className="my-6 w-full aspect-video relative rounded-lg overflow-hidden">
+            <Image
               src={imageNode.url}
               alt={imageNode.alt || 'Blog post image'}
-              width={imageNode.width}
-              height={imageNode.height}
-              className="max-w-full h-auto rounded-lg"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
               loading="lazy"
+              unoptimized={!imageNode.url.startsWith('/') && !imageNode.url.startsWith('data:')}
             />
           </div>
         )

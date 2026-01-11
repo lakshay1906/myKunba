@@ -24,4 +24,5 @@ export interface ImageUploadData {
   uploadMethod: 'file' | 'url' | null
   isOpen: boolean
   coverImage: string | null
+  uploading?: boolean
 }
