@@ -9,7 +9,7 @@ Disallow: /upload
 
 # Sitemap location
 # Update this with your actual production domain when deploying
-Sitemap: https://www.mykunba.org/sitemap.xml
+Sitemap: https://new.mykunba.org/sitemap.xml
 
 # Crawl-delay (optional, adjust as needed)
 Crawl-delay: 1
