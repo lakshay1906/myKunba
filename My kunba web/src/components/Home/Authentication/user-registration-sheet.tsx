@@ -21,7 +21,7 @@ import { deleteUser, User } from 'firebase/auth'
 interface UserRegistrationSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  btnText: 'Sign In' | 'Login'
+  btnText: 'Sign Up' | 'Login'
 }
 
 export interface UserDetails {
@@ -104,7 +104,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 role: data.role,
               })
             }
-          } else if (btnText === 'Sign In') {
+          } else if (btnText === 'Sign Up') {
             // For Google auth users, auto-complete registration without showing profile form
             if (loginText === 'google') {
               // Google auth provides displayName and email, so we can auto-create the user
@@ -295,7 +295,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 >
                   Reset password
                 </Button> */}
-                {btnText === 'Sign In' && (
+                {btnText === 'Sign Up' && (
                   <div>
                     <Label htmlFor="confirm-pass">Confirm Password</Label>
                     <Input

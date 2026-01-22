@@ -338,7 +338,7 @@ export default function Navbar({
           ) : (
             <div className="flex gap-2 justify-between items-center">
               <SignInButton btnText="Login" />
-              <SignInButton btnText="Sign In" />
+              <SignInButton btnText="Sign Up" />
             </div>
           )}
         </div>
@@ -487,7 +487,7 @@ export default function Navbar({
                       ) : (
                         <div className="flex flex-col gap-3.5 mt-3">
                           <SignInButton btnText="Login" size="sm" className="w-full" />
-                          <SignInButton btnText="Sign In" size="sm" className="w-full" />
+                          <SignInButton btnText="Sign Up" size="sm" className="w-full" />
                         </div>
                       )}
                     </div>

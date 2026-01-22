@@ -85,8 +85,6 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
       sort: '-createdAt',
     })
 
-    console.log(`blog from server: ${blog}`)
-
     return {
       data: blog.docs,
       total: blog.totalDocs,
