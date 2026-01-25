@@ -1,42 +1,37 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
 import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
+import { authenticateUser } from '@/utils/auth'
 
 export async function GET(req: NextRequest) {
   try {
-    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
-    if (!accessToken)
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    const authResult = await authenticateUser(req, {
+      requireRole: null, // Allow admin and author roles
+      fetchUser: true,
+    })
+
+    if (!authResult) {
       return NextResponse.json(
         { message: "You're not authorized to perform this action" },
         { status: 401 },
       )
-    const secret = process.env.ACCESS_SECRET
-    if (secret === undefined)
-      return NextResponse.json({ message: 'Signing secret not provided' }, { status: 401 })
-    const userData: any = jwt.verify(accessToken, secret)
-    if (!userData) return NextResponse.json({ message: 'Invalid access token' }, { status: 401 })
+    }
 
-    let data = await payload.find({
-      collection: 'users',
-      where: {
-        email: {
-          equals: userData.email,
-        },
-        uid: {
-          equals: userData.uid,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        role: {
-          not_equals: 'user',
-        },
-      },
-    })
+    const { user: userData } = authResult
+
+    // Check if user has admin or author role
+    if (userData.role === 'user') {
+      return NextResponse.json(
+        { message: "You're not authorized to perform this action" },
+        { status: 403 },
+      )
+    }
+
+    let data = { docs: [userData], totalDocs: 1 }
     if (data.totalDocs > 0) {
       const slug = req.nextUrl.searchParams.get('slug')
       if (slug) {
@@ -140,35 +135,35 @@ export async function POST(req: NextRequest) {
       externalLinks,
       internalLinks,
     } = await req.json()
-    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
-    const accessSecret = process.env.ACCESS_SECRET
-    if (!accessToken) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    else if (!accessSecret)
-      return NextResponse.json({ message: 'Signing secret not provided' }, { status: 401 })
-    const data: any = jwt.verify(accessToken, accessSecret)
-    const author = await payload.find({
-      collection: 'users',
-      where: {
-        email: {
-          equals: data.email,
-        },
-        uid: {
-          equals: data.uid,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        role: {
-          not_equals: 'user',
-        },
-      },
+
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    const authResult = await authenticateUser(req, {
+      requireRole: null, // Allow admin and author roles
+      fetchUser: true,
     })
-    if (author.docs.length <= 0 || !author.docs[0].id) {
+
+    if (!authResult) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { user: authorData } = authResult
+
+    // Check if user has admin or author role
+    if (authorData.role === 'user') {
       return NextResponse.json(
-        { message: "User with this email address doesn't exists" },
+        { message: "User with this email address doesn't exist or insufficient permissions" },
         { status: 401 },
       )
     }
+
+    if (!authorData.id) {
+      return NextResponse.json(
+        { message: "User with this email address doesn't exist" },
+        { status: 401 },
+      )
+    }
+
+    const author = { docs: [authorData] }
     if (!coverImage)
       return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
 
@@ -315,42 +310,25 @@ export async function PUT(req: NextRequest) {
       internalLinks,
     } = await req.json()
 
-    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
-    const accessSecret = process.env.ACCESS_SECRET
-
-    if (!accessToken) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    if (!accessSecret)
-      return NextResponse.json({ message: 'Signing secret not provided' }, { status: 401 })
-
-    const userData: any = jwt.verify(accessToken, accessSecret)
-
-    // Verify user exists and has proper role
-    const user = await payload.find({
-      collection: 'users',
-      where: {
-        email: {
-          equals: userData.email,
-        },
-        uid: {
-          equals: userData.uid,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        role: {
-          not_equals: 'user',
-        },
-      },
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    const authResult = await authenticateUser(req, {
+      requireRole: null, // Allow admin and author roles
+      fetchUser: true,
     })
 
-    if (user.docs.length <= 0 || !user.docs[0].id) {
+    if (!authResult) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { user: currentUser } = authResult
+
+    // Check if user has admin or author role
+    if (currentUser.role === 'user') {
       return NextResponse.json(
-        { message: "User with this email address doesn't exist" },
+        { message: "User with this email address doesn't exist or insufficient permissions" },
         { status: 401 },
       )
     }
-
-    const currentUser = user.docs[0]
     const isAdmin = currentUser.role === 'admin'
 
     // Fetch the blog post to check ownership
@@ -494,53 +472,25 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
 
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return NextResponse.json({ message: 'Unauthorized - No authorization header' }, { status: 401 })
-    }
-
-    const accessToken = authHeader.split(' ')[1]
-    const accessSecret = process.env.ACCESS_SECRET
-
-    if (!accessToken) {
-      return NextResponse.json({ message: 'Unauthorized - No token provided' }, { status: 401 })
-    }
-    if (!accessSecret) {
-      return NextResponse.json({ message: 'Signing secret not provided' }, { status: 401 })
-    }
-
-    let userData: any
-    try {
-      userData = jwt.verify(accessToken, accessSecret)
-    } catch (jwtError) {
-      console.error('JWT verification error:', jwtError)
-      return NextResponse.json({ message: 'Unauthorized - Invalid token' }, { status: 401 })
-    }
-
-    // Verify user exists and has proper role
-    const user = await payload.find({
-      collection: 'users',
-      where: {
-        email: {
-          equals: userData.email,
-        },
-        uid: {
-          equals: userData.uid,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        role: {
-          not_equals: 'user',
-        },
-      },
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    const authResult = await authenticateUser(req, {
+      requireRole: null, // Allow admin and author roles
+      fetchUser: true,
     })
 
-    if (user.docs.length <= 0) {
-      return NextResponse.json({ message: 'Unauthorized - User not found or insufficient permissions' }, { status: 401 })
+    if (!authResult) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const currentUser = user.docs[0]
+    const { user: currentUser } = authResult
+
+    // Check if user has admin or author role
+    if (currentUser.role === 'user') {
+      return NextResponse.json(
+        { message: 'Unauthorized - User not found or insufficient permissions' },
+        { status: 401 },
+      )
+    }
     const isAdmin = currentUser.role === 'admin'
 
     // Fetch the blog post to check ownership

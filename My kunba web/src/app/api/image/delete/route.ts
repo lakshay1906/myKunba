@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
+import { authenticateUser } from '@/utils/auth'
 
 /**
  * Delete an image from Cloudflare R2
@@ -7,6 +8,16 @@ import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    // Rate limiting is handled by middleware
+    const authResult = await authenticateUser(request, {
+      requireRole: null, // Allow any authenticated user
+      fetchUser: false, // Don't need full user data for image deletion
+    })
+
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { url } = await request.json()
 
     if (!url || typeof url !== 'string') {

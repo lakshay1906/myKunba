@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import { authenticateUser } from '@/utils/auth'
 
 /**
  * Pre-validation endpoint for blog posts
@@ -19,47 +19,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('bearer ')) {
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    const authResult = await authenticateUser(req, {
+      requireRole: null, // Allow admin and author roles
+      fetchUser: true,
+    })
+
+    if (!authResult) {
       return NextResponse.json(
         { valid: false, errors: { message: 'Unauthorized' } },
         { status: 401 },
       )
     }
 
-    const accessToken = authHeader.split(' ')[1]
-    const accessSecret = process.env.ACCESS_SECRET
+    const { user } = authResult
 
-    if (!accessSecret) {
-      return NextResponse.json(
-        { valid: false, errors: { message: 'Server configuration error' } },
-        { status: 500 },
-      )
-    }
-
-    let userData: any
-    try {
-      userData = jwt.verify(accessToken, accessSecret)
-    } catch (jwtError: any) {
-      return NextResponse.json(
-        { valid: false, errors: { message: 'Invalid token' } },
-        { status: 401 },
-      )
-    }
-
-    // Verify user exists and has permission
-    const user = await payload.find({
-      collection: 'users',
-      where: {
-        email: { equals: userData.email },
-        uid: { equals: userData.uid },
-        deleted_at: { equals: null },
-        role: { not_equals: 'user' },
-      },
-    })
-
-    if (user.docs.length <= 0) {
+    // Check if user has admin or author role
+    if (user.role === 'user') {
       return NextResponse.json(
         { valid: false, errors: { message: 'User not found or insufficient permissions' } },
         { status: 401 },

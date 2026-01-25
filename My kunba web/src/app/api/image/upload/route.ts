@@ -2,12 +2,23 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadToCloudflareR2, convertToWebP } from '@/utils/cloudflare-r2'
+import { authenticateUser } from '@/utils/auth'
 
 // OLD: Database storage implementation - COMMENTED OUT
 // import { payload } from '@/payload-client'
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    // Rate limiting is handled by middleware
+    const authResult = await authenticateUser(request, {
+      requireRole: null, // Allow any authenticated user
+      fetchUser: false, // Don't need full user data for image upload
+    })
+
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const formData = await request.formData()
     const file = formData.get('file') as File
     const alt = formData.get('alt') as string

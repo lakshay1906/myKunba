@@ -10,24 +10,20 @@ export const Posts: CollectionConfig = {
     {
       name: 'title',
       type: 'text',
-      required: true,
       unique: true,
     },
     {
       name: 'slug',
       type: 'text',
-      required: true,
       unique: true,
     },
     {
       name: 'excerpt',
       type: 'textarea',
-      required: true,
     },
     {
       name: 'content',
       type: 'richText',
-      required: true,
     },
     {
       name: 'commentsEnabled',
@@ -50,7 +46,6 @@ export const Posts: CollectionConfig = {
     {
       name: 'media',
       type: 'text',
-      required: true,
       admin: {
         description: 'URL of the cover image stored in Cloudflare R2',
       },
@@ -59,12 +54,10 @@ export const Posts: CollectionConfig = {
       name: 'status',
       type: 'select',
       options: ['draft', 'published', 'pending_approval'],
-      required: true,
     },
     {
       name: 'publishDate',
       type: 'date',
-      required: true,
     },
     {
       name: 'metaTitle',

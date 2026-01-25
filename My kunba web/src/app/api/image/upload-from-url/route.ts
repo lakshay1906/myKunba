@@ -1,9 +1,20 @@
 export const dynamic = 'force-dynamic'
 
 import { type NextRequest, NextResponse } from 'next/server'
+import { authenticateUser } from '@/utils/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user (supports both web cookies and mobile Authorization header)
+    // Rate limiting is handled by middleware
+    const authResult = await authenticateUser(request, {
+      requireRole: null, // Allow any authenticated user
+      fetchUser: false, // Don't need full user data for image URL validation
+    })
+
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { imageUrl, alt } = await request.json()
 
     if (!imageUrl) {
