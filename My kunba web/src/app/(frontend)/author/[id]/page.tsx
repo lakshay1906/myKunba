@@ -44,39 +44,44 @@ export async function generateMetadata({
     }
 
     const siteUrl =
-      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
     const authorUrl = `${siteUrl}/author/${id}`
 
+    const displayName = author.displayName ?? 'Author'
+    const bio = author.bio ?? undefined
+    const profileImageUrl =
+      typeof author.profileImage === 'string' ? author.profileImage : undefined
+
     return {
-      title: `${author.displayName} - Author Profile | My Kunba`,
-      description: author.bio
-        ? `${author.bio} Read articles by ${author.displayName} on My Kunba.`
-        : `Read articles and blog posts by ${author.displayName} on My Kunba.`,
-      keywords: [author.displayName, 'author', 'blogger', 'writer', 'articles'],
-      authors: [{ name: author.displayName }],
+      title: `${displayName} - Author Profile | My Kunba`,
+      description: bio
+        ? `${bio} Read articles by ${displayName} on My Kunba.`
+        : `Read articles and blog posts by ${displayName} on My Kunba.`,
+      keywords: [displayName, 'author', 'blogger', 'writer', 'articles'],
+      authors: [{ name: displayName }],
       openGraph: {
-        title: `${author.displayName} - Author Profile | My Kunba`,
-        description: author.bio || `Read articles by ${author.displayName}`,
+        title: `${displayName} - Author Profile | My Kunba`,
+        description: bio ?? `Read articles by ${displayName}`,
         url: authorUrl,
-        type: 'profile',
-        ...(author.profileImage && {
-          images: [
-            {
-              url: author.profileImage,
-              width: 400,
-              height: 400,
-              alt: author.displayName,
-            },
-          ],
-        }),
+        type: 'profile' as const,
+        ...(profileImageUrl
+          ? {
+              images: [
+                {
+                  url: profileImageUrl,
+                  width: 400,
+                  height: 400,
+                  alt: displayName,
+                },
+              ],
+            }
+          : {}),
       },
       twitter: {
-        card: 'summary',
-        title: `${author.displayName} - Author Profile`,
-        description: author.bio || `Read articles by ${author.displayName}`,
-        ...(author.profileImage && {
-          images: [author.profileImage],
-        }),
+        card: 'summary' as const,
+        title: `${displayName} - Author Profile`,
+        description: bio ?? `Read articles by ${displayName}`,
+        ...(profileImageUrl ? { images: [profileImageUrl] } : {}),
       },
       alternates: {
         canonical: authorUrl,
@@ -171,7 +176,7 @@ export default async function AuthorPage({
 
     // Generate structured data for author page (E-E-A-T)
     const siteUrl =
-      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
     const authorUrl = `${siteUrl}/author/${id}`
 
     const personSchema = {
@@ -243,7 +248,10 @@ export default async function AuthorPage({
           <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="size-24 border-4 border-background shadow-lg">
-                <AvatarImage src={author.profileImage || ''} alt={author.displayName} />
+                <AvatarImage
+                  src={typeof author.profileImage === 'string' ? author.profileImage : ''}
+                  alt={author.displayName ?? undefined}
+                />
                 <AvatarFallback className="text-2xl">
                   {author.displayName
                     ?.split(' ')

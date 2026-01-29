@@ -51,7 +51,7 @@ export default function BlogSchema({
     siteUrlProp ||
     process.env.NEXT_PUBLIC_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_NEXT_URL ||
-    'http://localhost:3000'
+    'https://new.mykunba.org'
   const blogUrl = `${siteUrl}/blog/${post.slug}`
   const authorName =
     (post.author && typeof post.author === 'object' && post.author.displayName) || 'Author'
@@ -118,11 +118,11 @@ export default function BlogSchema({
       { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/blog` },
       ...(post.categories && post.categories.length > 0
         ? post.categories.map((cat, index) => ({
-            '@type': 'ListItem' as const,
-            position: 3 + index,
-            name: cat.name,
-            item: `${siteUrl}/blog?category=${cat.id}`,
-          }))
+          '@type': 'ListItem' as const,
+          position: 3 + index,
+          name: cat.name,
+          item: `${siteUrl}/blog?category=${cat.id}`,
+        }))
         : []),
       {
         '@type': 'ListItem',

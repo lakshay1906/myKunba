@@ -52,14 +52,14 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
 
       return {
         id: doc.id,
-        title: doc.title,
-        slug: doc.slug,
-        excerpt: doc.excerpt,
+        title: doc.title ?? '',
+        slug: doc.slug ?? '',
+        excerpt: doc.excerpt ?? '',
         media: typeof doc.media === 'string' ? doc.media : '',
-        publishDate: doc.publishDate,
+        publishDate: doc.publishDate ?? '',
         author: {
-          displayName: author?.displayName || 'Unknown',
-          verified: author?.verified || false,
+          displayName: author?.displayName ?? 'Unknown',
+          verified: author?.verified ?? false,
         },
       }
     })
@@ -125,16 +125,16 @@ export async function fetchRelatedArticles(
 
     return result.docs.map((doc) => ({
       id: doc.id,
-      title: doc.title,
-      slug: doc.slug,
-      excerpt: doc.excerpt,
+      title: doc.title ?? '',
+      slug: doc.slug ?? '',
+      excerpt: doc.excerpt ?? '',
       media: typeof doc.media === 'string' ? doc.media : null,
-      publishDate: doc.publishDate,
+      publishDate: doc.publishDate ?? '',
       categories: Array.isArray(doc.categories)
-        ? doc.categories.map((cat: any) => ({
-            id: typeof cat === 'object' ? cat.id : cat,
-            name: typeof cat === 'object' ? cat.name : '',
-            slug: typeof cat === 'object' ? cat.slug : '',
+        ? doc.categories.map((cat: { id?: number; name?: string; slug?: string } | number) => ({
+            id: typeof cat === 'object' ? cat.id ?? 0 : cat,
+            name: typeof cat === 'object' ? cat.name ?? '' : '',
+            slug: typeof cat === 'object' ? cat.slug ?? '' : '',
           }))
         : [],
     }))

@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import type { Where } from 'payload'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
@@ -57,12 +58,10 @@ export async function GET(req: NextRequest) {
     const pageNum = page ? Number(page) : 1
     const limitNum = limit ? Number(limit) : 10
 
-    const where: Record<string, unknown> = {
+    const where: Where = {
       categories: { contains: Number(categoryId) },
       deleted_at: { equals: null },
-    }
-    if (!isAdmin) {
-      where.author = { equals: currentUser.id }
+      ...(isAdmin ? {} : { author: { equals: currentUser.id } }),
     }
 
     // Fetch posts that belong to this category - only necessary fields
@@ -144,10 +143,7 @@ export async function PUT(req: NextRequest) {
     const currentUser = user.docs[0] as { id: number; role?: string }
     const isAdmin = currentUser.role === 'admin'
 
-    const updateWhere: Record<string, unknown> = { deleted_at: { equals: null } }
-    if (!isAdmin) {
-      updateWhere.author = { equals: currentUser.id }
-    }
+    const updateWhere: Where = { deleted_at: { equals: null }, ...(isAdmin ? {} : { author: { equals: currentUser.id } }) }
 
     // Get posts to update (admin: all; author: only their own)
     const allPosts = await payload.find({

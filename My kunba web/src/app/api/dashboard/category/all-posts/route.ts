@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import type { Where } from 'payload'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
@@ -50,17 +51,11 @@ export async function GET(req: NextRequest) {
     const currentUser = user.docs[0] as { id: number; role?: string }
     const isAdmin = currentUser.role === 'admin'
 
-    const baseWhere: Record<string, unknown> = { deleted_at: { equals: null } }
-    if (!isAdmin) {
-      baseWhere.author = { equals: currentUser.id }
-    }
-
-    const categoryWhere: Record<string, unknown> = {
+    const baseWhere: Where = { deleted_at: { equals: null }, ...(isAdmin ? {} : { author: { equals: currentUser.id } }) }
+    const categoryWhere: Where = {
       categories: { contains: Number(categoryId) },
       deleted_at: { equals: null },
-    }
-    if (!isAdmin) {
-      categoryWhere.author = { equals: currentUser.id }
+      ...(isAdmin ? {} : { author: { equals: currentUser.id } }),
     }
 
     // Fetch all posts (admin: all; author: only own)

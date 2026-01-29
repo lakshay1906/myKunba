@@ -35,12 +35,12 @@ type AppContextType = {
   emailSignUp: ({ email, password }: { email: string; password: string }) => Promise<User>
   loading: boolean
   setLoading: React.Dispatch<SetStateAction<boolean>>
-  searchResults: any[] | null
-  setSearchResults: React.Dispatch<SetStateAction<any[] | null>>
+  searchResults: unknown[] | null
+  setSearchResults: React.Dispatch<SetStateAction<unknown[] | null>>
   searchQuery: string
   setSearchQuery: React.Dispatch<SetStateAction<string>>
-  originalBlogData: any[] | null
-  setOriginalBlogData: React.Dispatch<SetStateAction<any[] | null>>
+  originalBlogData: unknown[] | null
+  setOriginalBlogData: React.Dispatch<SetStateAction<unknown[] | null>>
   blogCategorySlug: string
   setBlogCategorySlug: React.Dispatch<SetStateAction<string>>
   blogAuthorEmail: string
@@ -58,9 +58,9 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
     role: string
   }>(null)
   const [loading, setLoading] = useState(!!token) // Initialize as true if token exists
-  const [searchResults, setSearchResults] = useState<any[] | null>(null)
+  const [searchResults, setSearchResults] = useState<unknown[] | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [originalBlogData, setOriginalBlogData] = useState<any[] | null>(null)
+  const [originalBlogData, setOriginalBlogData] = useState<unknown[] | null>(null)
   const [blogCategorySlug, setBlogCategorySlug] = useState<string>('all')
   const [blogAuthorEmail, setBlogAuthorEmail] = useState<string>('all')
 

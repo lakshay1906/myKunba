@@ -64,9 +64,10 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         emailError = err
+        const errObj = err as { message?: string; code?: string }
         console.error('Error sending subscription email:', {
-          message: err?.message,
-          code: err?.code,
+          message: errObj?.message,
+          code: errObj?.code,
         })
         // Don't fail the request if email fails - subscription is still created
       }
@@ -101,9 +102,10 @@ export async function POST(req: NextRequest) {
       })
     } catch (err) {
       emailError = err
+      const errObj = err as { message?: string; code?: string }
       console.error('Error sending subscription email:', {
-        message: err?.message,
-        code: err?.code,
+        message: errObj?.message,
+        code: errObj?.code,
       })
       // Don't fail the request if email fails - subscription is still created
     }

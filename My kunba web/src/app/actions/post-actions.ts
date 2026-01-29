@@ -20,7 +20,7 @@ export async function createPost(data: PostData, token: string) {
   try {
     // Get the authentication token if needed
     // const token = cookies().get('payload-token')?.value
-    const url = process.env.NEXT_PUBLIC_NEXT_URL
+    const url = process.env.NEXT_PUBLIC_NEXT_URL || process.env.NEXT_PUBLIC_PUBLIC_URL || 'http://3.6.239.45:3000'
     // For this example, we'll set a fixed author ID
     // In a real application, you would get this from the authenticated user
     const authorId = 2 // Replace with actual logic to get the current user ID

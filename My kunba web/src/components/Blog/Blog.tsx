@@ -22,11 +22,12 @@ const AUTHORS_CACHE_KEY = 'blog_authors_cache'
 const LIMIT = 24
 
 type BlogProps = {
-  posts: Record<string, any>
-  initialCategories?: Record<string, any>[]
+  posts: Record<string, unknown>
+  initialCategories?: Record<string, unknown>[]
   total?: number
   limit?: number
   hasMore?: boolean
+  initialSelectedCategory?: number
 }
 
 export default function Blog({
@@ -49,12 +50,12 @@ export default function Blog({
   } = useAppStore()
 
   const observerRef = useRef<HTMLDivElement>(null)
-  const [data, setData] = useState<any[]>(posts?.docs || [])
+  const [data, setData] = useState<any[]>(Array.isArray(posts?.docs) ? posts.docs : [])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [categories] = useState<Record<string, any>[]>([
+  const [categories] = useState<Record<string, unknown>[]>([
     { slug: 'all', name: 'All' },
-    ...initialCategories,
+    ...(Array.isArray(initialCategories) ? initialCategories : []),
   ])
   const [authors, setAuthors] = useState<Record<string, any>[]>([])
   const [total, setTotal] = useState(initialTotal)
@@ -65,21 +66,23 @@ export default function Blog({
   const selectedAuthor = blogAuthorEmail
   const limit = initialLimit
 
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
 
   // Persist original data when not in search mode
   useEffect(() => {
     if (posts?.docs && searchResults === null) {
-      if (!originalBlogData?.length) setOriginalBlogData(posts.docs)
+      const docs = Array.isArray(posts.docs) ? posts.docs : []
+      if (!originalBlogData?.length) setOriginalBlogData(docs)
     }
   }, [posts, searchResults, originalBlogData, setOriginalBlogData])
 
   // When server posts change (e.g. initial load), show them unless we're in search mode
   useEffect(() => {
     if (searchResults === null && posts?.docs) {
-      setData(posts.docs)
-      setTotal(initialTotal || posts?.totalDocs || 0)
-      setHasMore(initialHasMore ?? (posts?.hasNextPage ?? false))
+      const docs = Array.isArray(posts.docs) ? posts.docs : []
+      setData(docs)
+      setTotal(initialTotal ?? (typeof posts.totalDocs === 'number' ? posts.totalDocs : 0))
+      setHasMore(initialHasMore ?? (Boolean(posts.hasNextPage) ?? false))
       setOffset(initialLimit)
     }
   }, [posts, initialTotal, initialHasMore, initialLimit, searchResults])
@@ -137,7 +140,7 @@ export default function Blog({
       .then((res) => res.json())
       .then((result) => {
         if (!result?.docs) return
-        const sorted = result.docs.sort((a: any, b: any) => {
+        const sorted = result.docs.sort((a: { role?: string; displayName?: string }, b: { role?: string; displayName?: string }) => {
           if (a.role === 'admin' && b.role !== 'admin') return -1
           if (a.role !== 'admin' && b.role === 'admin') return 1
           return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase())
@@ -240,11 +243,16 @@ export default function Blog({
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.slug || cat.id || `cat-${cat.name}`} value={cat.slug || 'all'}>
-                  {cat.name}
-                </SelectItem>
-              ))}
+              {categories.map((cat) => {
+                const slug = typeof cat.slug === 'string' ? cat.slug : 'all'
+                const id = cat.id != null ? String(cat.id) : ''
+                const name = typeof cat.name === 'string' ? cat.name : ''
+                return (
+                  <SelectItem key={slug || id || `cat-${name}`} value={slug || 'all'}>
+                    {name}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>

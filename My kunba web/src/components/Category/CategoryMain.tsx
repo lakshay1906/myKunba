@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import DataTable from '@/components/DataTable'
 import Create from './Create'
 import { Category } from '@/lib/types'
-import { popoverEllipsis } from './categoryEdit'
+import { popoverEllipsis, type CategoryRow } from './categoryEdit'
 import { useAppStore } from '@/lib/context/store'
 
 interface CategoryMainProps {
@@ -22,7 +22,9 @@ export default function CategoryMain({
   initialTotalPages = 1,
   initialLimit = 10,
 }: CategoryMainProps) {
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [categories, setCategories] = useState<CategoryRow[]>(
+    (initialCategories ?? []) as CategoryRow[],
+  )
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(initialTotal)
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
@@ -49,7 +51,7 @@ export default function CategoryMain({
         throw new Error(error.message || 'Failed to fetch categories')
       }
       const data = await rawRes.json()
-      setCategories(data.docs || [])
+      setCategories((data.docs ?? []) as CategoryRow[])
       setTotal(data.totalDocs || 0)
       setCurrentPage(data.page || page)
       setTotalPages(data.totalPages || 1)
@@ -104,7 +106,7 @@ export default function CategoryMain({
         Name: category.name,
         Slug: `/${category.slug}`,
       }))}
-      EllipsisComponent={({ value }: { value: Record<string, any> }) =>
+      EllipsisComponent={({ value }: { value: { id: number; Name?: string; Slug?: string; name?: string; slug?: string; isVisible?: boolean; parent?: number | { id: number } | null } }) =>
         popoverEllipsis({
           value,
           isDetailPage: false,

@@ -1,8 +1,11 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import { getErrorMessage } from '@/lib/types'
 
-const url = process.env.NEXT_PUBLIC_NEXT_URL
+function getBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_NEXT_URL || process.env.NEXT_PUBLIC_PUBLIC_URL || 'http://3.6.239.45:3000'
+}
 
 export async function createCategory(
   name: string,
@@ -12,7 +15,7 @@ export async function createCategory(
   try {
     const token = (await cookies()).get('access_token')?.value
     if (!token) return null
-    const response = await fetch(`${url}/api/dashboard/category`, {
+    const response = await fetch(`${getBaseUrl()}/api/dashboard/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,15 +42,23 @@ export async function createCategory(
 
 export async function fetchAllCategories() {
   try {
-    const rawRes = await fetch(`${url}/api/user/category`)
+    const rawRes = await fetch(`${getBaseUrl()}/api/user/category`)
     if (!rawRes.ok) {
-      const error = await rawRes.json()
-      throw new Error(error.message || 'Failed to create category')
+      const error = await rawRes.json().catch(() => ({}))
+      throw new Error(error.message || 'Failed to fetch categories')
     }
 
     return await rawRes.json()
-  } catch (error) {
-    console.error('Error in createCategory:', error)
+  } catch (error: unknown) {
+    // During build (e.g. Docker) the API may be unavailable; return empty so static generation can complete
+    const isNetworkOrUrlError =
+      error instanceof TypeError ||
+      (error && typeof (error as NodeJS.ErrnoException).code === 'string' && ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED' || (error as NodeJS.ErrnoException).code === 'ENOTFOUND'))
+    if (isNetworkOrUrlError) {
+      console.warn('fetchAllCategories: API unavailable (e.g. during build), returning empty list')
+      return { docs: [] }
+    }
+    console.error('Error in fetchAllCategories:', error)
     throw error
   }
 }
@@ -59,7 +70,7 @@ export async function fetchCategoryData(id: number) {
       throw new Error('No authentication token found')
     }
 
-    const rawRes = await fetch(`${url}/api/dashboard/category?id=${id}`, {
+    const rawRes = await fetch(`${getBaseUrl()}/api/dashboard/category?id=${id}`, {
       method: 'GET',
       headers: {
         Authorization: `bearer ${token}`,
@@ -79,8 +90,8 @@ export async function fetchCategoryData(id: number) {
     }
 
     return data
-  } catch (error: any) {
-    console.error('Error fetching category data:', error)
+  } catch (error: unknown) {
+    console.error('Error fetching category data:', getErrorMessage(error))
     throw error
   }
 }
@@ -89,7 +100,7 @@ export async function fetchAllCategoryBlogs(catId: number) {
   try {
     const token = (await cookies()).get('access_token')?.value
     if (!token) return null
-    const rawRes = await fetch(`${url}/api/dashboard/category?id=${catId}`, {
+    const rawRes = await fetch(`${getBaseUrl()}/api/dashboard/category?id=${catId}`, {
       method: 'GET',
       headers: {
         Authorization: `bearer ${token}`,

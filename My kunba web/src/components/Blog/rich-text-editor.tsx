@@ -122,10 +122,6 @@ export default function RichTextEditor({
         HTMLAttributes: {
           class: 'max-w-full h-auto',
         },
-        // Ensure alt attribute is parsed and rendered
-        parseOptions: {
-          preserveWhitespace: 'full',
-        },
       }),
       Link.configure({
         openOnClick: false,

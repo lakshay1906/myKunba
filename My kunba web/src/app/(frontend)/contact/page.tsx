@@ -11,7 +11,7 @@ export default function Contact() {
     message: '',
   })
 
-  const [errors, setErrors] = useState<Record<string, any>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
@@ -24,7 +24,7 @@ export default function Contact() {
   }
 
   const validateForm = () => {
-    const newErrors: Record<string, any> = {}
+    const newErrors: Record<string, string> = {}
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required'
@@ -44,7 +44,7 @@ export default function Contact() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (validateForm()) {

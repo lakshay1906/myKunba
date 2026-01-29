@@ -34,9 +34,9 @@ export default function BlogCard({ post }: BlogCardProps) {
   })
 
   // Get author initials for avatar fallback
-  const authorInitials = post.author.displayName
+  const authorInitials = (post.author.displayName ?? '')
     .split(' ')
-    .map((name: any[]) => name[0])
+    .map((name: string) => name[0])
     .join('')
 
   // Track impression on click

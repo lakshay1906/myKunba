@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_PUBLIC_URL ||
-      process.env.NEXT_PUBLIC_NEXT_URL ||
-      'http://localhost:3000',
+    process.env.NEXT_PUBLIC_NEXT_URL ||
+    'https://new.mykunba.org',
   ),
   title: {
     default: 'My Kunba - Open Blogging Platform',

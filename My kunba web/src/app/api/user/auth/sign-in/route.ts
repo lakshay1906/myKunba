@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         bio: data.bio || null,
         role: data.role || 'user',
         verified: data.verified || false,
-        lastLogin: new Date(), // Ignore this error
+        lastLogin: new Date().toISOString(),
       },
     })
 

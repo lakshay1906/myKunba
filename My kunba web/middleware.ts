@@ -10,6 +10,8 @@ const allowedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   'http://localhost:3000',
   'http://localhost:3001',
+  'https://new.mykunba.org',
+  'https://mykunba.org',
   // Add your production domain(s) here
   // 'https://your-production-domain.com',
 ]

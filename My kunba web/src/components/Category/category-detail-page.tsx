@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import type { CategoryResponse } from '@/lib/types'
 
-export default function CategoryDetailPage({ id, response }: { id: string; response: any }) {
+export default function CategoryDetailPage({ id, response }: { id: string; response: CategoryResponse | null }) {
   if (!response || !response.id) {
     return (
       <div className="space-y-4">
@@ -56,8 +57,8 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
       headers: { Authorization: `bearer ${loginDetail.token}` },
     })
       .then((res) => res.json())
-      .then((data) => {
-        const docs = (data.docs || []).filter((c: any) => c.id !== categoryId)
+      .then((data: { docs?: { id: number; name: string }[] }) => {
+        const docs = (data.docs || []).filter((c) => c.id !== categoryId)
         setParentOptions(docs)
       })
       .catch(() => setParentOptions([]))
@@ -109,7 +110,7 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
     response.parent == null
       ? 'None'
       : typeof response.parent === 'object'
-        ? response.parent.name
+        ? (response.parent as { id: number; name?: string }).name ?? '—'
         : (parentOptions.find((c) => c.id === response.parent)?.name ?? '—')
 
   const handleSave = async () => {
@@ -137,7 +138,10 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
       response.name = updated.name
       response.slug = updated.slug
       response.isVisible = form.isVisible
-      response.parent = form.parentId === 'none' ? null : { id: Number(form.parentId), name: parentOptions.find((c) => c.id === Number(form.parentId))?.name }
+      response.parent =
+        form.parentId === 'none'
+          ? null
+          : { id: Number(form.parentId), name: parentOptions.find((c) => c.id === Number(form.parentId))?.name }
     } catch (e) {
       console.error(e)
     } finally {

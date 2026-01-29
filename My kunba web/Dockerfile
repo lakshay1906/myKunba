@@ -48,13 +48,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build Next.js (standalone output)
+# Use --webpack so standalone file tracing generates middleware.js.nft.json (Turbopack can omit it)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-  corepack enable pnpm && pnpm run build; \
+  corepack enable pnpm && pnpm exec next build --webpack; \
   elif [ -f yarn.lock ]; then \
-  yarn run build; \
+  yarn exec next build --webpack; \
   elif [ -f package-lock.json ]; then \
-  npm run build; \
+  npx next build --webpack; \
   else \
   echo "❌ No lockfile found" && exit 1; \
   fi

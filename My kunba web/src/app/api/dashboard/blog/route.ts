@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import type { Where } from 'payload'
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
@@ -37,12 +38,10 @@ export async function GET(req: NextRequest) {
       const slug = req.nextUrl.searchParams.get('slug')
       if (slug) {
         const isAdmin = userData.role === 'admin'
-        const where: Record<string, unknown> = {
+        const where: Where = {
           slug: { equals: slug },
           deleted_at: { equals: null },
-        }
-        if (!isAdmin) {
-          where.author = { equals: userData.id }
+          ...(isAdmin ? {} : { author: { equals: userData.id } }),
         }
         const blog = await payload.find({
           collection: 'posts',
@@ -246,7 +245,7 @@ export async function POST(req: NextRequest) {
       collection: 'posts',
       data: postData,
     })
-    revalidateBlogPost(createdPost.slug)
+    revalidateBlogPost(createdPost.slug ?? '')
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -453,7 +452,7 @@ export async function PUT(req: NextRequest) {
       id: Number(id),
       data: updateData,
     })
-    revalidateBlogPost(updatedPost.slug)
+    revalidateBlogPost(updatedPost.slug ?? '')
 
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
@@ -528,7 +527,7 @@ export async function DELETE(req: NextRequest) {
         deleted_at: new Date().toISOString(),
       },
     })
-    revalidateBlogPost(blogPost.slug)
+    revalidateBlogPost(blogPost.slug ?? '')
     return NextResponse.json({ message: 'Blog post deleted successfully' }, { status: 200 })
   } catch (error: any) {
     console.error('Error in DELETE /api/dashboard/blog:', error)

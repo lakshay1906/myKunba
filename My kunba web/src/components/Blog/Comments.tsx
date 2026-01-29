@@ -45,7 +45,7 @@ type CommentItemProps = {
   depth: number
   postId: number
   postAuthorId: number
-  loginDetail: any
+  loginDetail: { token: string; email: string; profile_pic: string; name: string; role: string } | null
   currentUserId: number | null
   submitting: boolean
   editingCommentId: number | null

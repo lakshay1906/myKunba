@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 }
 
 export default async function BlogListingPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
   const limit = 24
   const offset = 0
 

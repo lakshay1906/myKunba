@@ -41,7 +41,7 @@ type Blog = {
 
 // Fetch blog data from API (returns null on 404 for proper notFound handling)
 async function fetchBlogBySlug(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
   const res = await fetch(`${baseUrl}/api/user/blog?slug=${slug}`, {
     next: { revalidate: 3600 },
   })
@@ -77,7 +77,7 @@ export async function generateMetadata({
   const imageAlt = post.imageAltText || post.title
   const focusKeyword = post.focusKeyword || ''
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
-  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
   const blogUrl = `${siteUrl}/blog/${post.slug}`
 
   // Build keywords array including focus keyword
@@ -86,7 +86,7 @@ export async function generateMetadata({
     keywords.push(focusKeyword)
   }
   if (post.categories && Array.isArray(post.categories)) {
-    post.categories.forEach((cat: any) => {
+    post.categories.forEach((cat: { name: string }) => {
       if (cat.name && !keywords.includes(cat.name)) {
         keywords.push(cat.name)
       }
@@ -105,13 +105,13 @@ export async function generateMetadata({
       siteName: 'My Kunba',
       images: imageUrl
         ? [
-            {
-              url: imageUrl,
-              width: 1200,
-              height: 630,
-              alt: imageAlt,
-            },
-          ]
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: imageAlt,
+          },
+        ]
         : [],
       locale: 'en_US',
       type: 'article',
@@ -139,7 +139,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   if (!blog) notFound()
 
   // Fetch comments, current user ID, and related articles server-side
-  const categoryIds = blog.categories?.map((cat: any) => cat.id) || []
+  const categoryIds = blog.categories?.map((cat: { id: number }) => cat.id) || []
   const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),
     getCurrentUserId(),
@@ -149,7 +149,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   const siteUrl =
     process.env.NEXT_PUBLIC_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_NEXT_URL ||
-    'http://localhost:3000'
+    'https://new.mykunba.org'
 
   return (
     <>

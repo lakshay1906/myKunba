@@ -26,15 +26,25 @@ import { Switch } from '../ui/switch'
 import Link from 'next/link'
 import { useAppStore } from '@/lib/context/store'
 
+export interface CategoryRow {
+  id: number
+  Name?: string
+  name?: string
+  Slug?: string
+  slug?: string
+  isVisible?: boolean
+  parent?: number | { id: number } | null
+}
+
 export function popoverEllipsis({
   value,
   isDetailPage,
   setCategories,
   onCategoryUpdated,
 }: {
-  value: Record<string, any>
+  value: CategoryRow
   isDetailPage: boolean
-  setCategories?: any
+  setCategories?: React.Dispatch<React.SetStateAction<CategoryRow[]>>
   onCategoryUpdated?: () => void
 }) {
   const { loginDetail } = useAppStore()
@@ -46,7 +56,7 @@ export function popoverEllipsis({
     isVisible: boolean
     parentId: string
   }>({
-    name: value.Name,
+    name: value.Name ?? '',
     slug: value.Slug?.replace?.(/^\//, '') ?? value.slug ?? '',
     isVisible: value.isVisible ?? true,
     parentId: value.parent != null ? String(typeof value.parent === 'object' ? value.parent.id : value.parent) : 'none',
@@ -55,7 +65,7 @@ export function popoverEllipsis({
   useEffect(() => {
     if (isSheetOpen) {
       setEditCategoryData({
-        name: value.Name,
+        name: value.Name ?? '',
         slug: value.Slug?.replace?.(/^\//, '') ?? value.slug ?? '',
         isVisible: value.isVisible ?? true,
         parentId:
@@ -105,7 +115,7 @@ export function popoverEllipsis({
     }
     const updatedCategory = await rawRes.json()
     if (setCategories && updatedCategory) {
-      setCategories((prev: any[]) =>
+      setCategories((prev: CategoryRow[]) =>
         prev.map((category) => {
           if (category.id === id) {
             return {
@@ -153,7 +163,7 @@ export function popoverEllipsis({
       throw new Error(error.message || 'Failed to delete category')
     }
     if (setCategories) {
-      setCategories((prev: any[]) => prev.filter((category) => category.id !== id))
+      setCategories((prev: CategoryRow[]) => prev.filter((category) => category.id !== id))
     }
     if (onCategoryUpdated) onCategoryUpdated()
     setDeleteDialogOpen(false)

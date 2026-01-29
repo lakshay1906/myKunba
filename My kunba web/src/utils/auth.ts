@@ -1,7 +1,9 @@
+import type { Where } from 'payload'
 import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import type { JwtPayload } from '@/lib/types'
 
 /**
  * Extract JWT token from request
@@ -29,16 +31,16 @@ export async function getTokenFromRequest(request: NextRequest): Promise<string 
  * @param token - JWT token string
  * @returns User data from JWT payload or null if invalid
  */
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): JwtPayload | null {
   const accessSecret = process.env.ACCESS_SECRET
   if (!accessSecret) {
     throw new Error('ACCESS_SECRET is not configured')
   }
 
   try {
-    const userData = jwt.verify(token, accessSecret)
+    const userData = jwt.verify(token, accessSecret) as JwtPayload
     return userData
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -57,7 +59,7 @@ export async function authenticateUser(
     requireRole?: 'admin' | 'author' | 'user' | null // null = any role except deleted
     fetchUser?: boolean // Whether to fetch full user from database
   } = {},
-): Promise<{ user: any; token: string } | null> {
+): Promise<{ user: Record<string, unknown>; token: string } | null> {
   const { requireRole = null, fetchUser = true } = options
 
   // Extract token
@@ -78,21 +80,17 @@ export async function authenticateUser(
   }
 
   // Build user query
-  const whereClause: any = {
+  const whereClause: Where = {
     email: { equals: userData.email },
     uid: { equals: userData.uid },
     deleted_at: { equals: null },
-  }
-
-  // Add role filter if specified
-  if (requireRole === 'admin') {
-    whereClause.role = { equals: 'admin' }
-  } else if (requireRole === 'author') {
-    whereClause.role = { in: ['admin', 'author'] }
-  } else if (requireRole === 'user') {
-    whereClause.role = { equals: 'user' }
-  } else if (requireRole === null) {
-    // Allow any role except deleted users (already filtered by deleted_at)
+    ...(requireRole === 'admin'
+      ? { role: { equals: 'admin' } }
+      : requireRole === 'author'
+        ? { role: { in: ['admin', 'author'] } }
+        : requireRole === 'user'
+          ? { role: { equals: 'user' } }
+          : {}),
   }
 
   // Fetch user from database
@@ -106,7 +104,7 @@ export async function authenticateUser(
     return null
   }
 
-  return { user: userQuery.docs[0], token }
+  return { user: userQuery.docs[0] as unknown as Record<string, unknown>, token }
 }
 
 /**

@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         },
       },
       data: {
-        lastLogin: new Date(),
+        lastLogin: new Date().toISOString(),
       },
     })
 

@@ -11,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  
+
   try {
     const category = await payload.find({
       collection: 'categories',
@@ -37,7 +37,7 @@ export async function generateMetadata({
     }
 
     const cat = category.docs[0]
-    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
     const categoryUrl = `${siteUrl}/category/${slug}`
 
     return {
@@ -101,7 +101,7 @@ export default async function CategoryPage({
     }
 
     const cat = category.docs[0]
-    const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
     const limit = 12
     const offset = (page - 1) * limit
 
@@ -117,7 +117,7 @@ export default async function CategoryPage({
     const categories = categoriesRes?.docs || []
 
     // Generate structured data for category page
-    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
     const categoryUrl = `${siteUrl}/category/${slug}`
 
     const collectionPageSchema = {
@@ -129,7 +129,7 @@ export default async function CategoryPage({
       mainEntity: {
         '@type': 'ItemList',
         numberOfItems: posts.totalDocs || 0,
-        itemListElement: posts.docs?.slice(0, 10).map((post: any, index: number) => ({
+        itemListElement: posts.docs?.slice(0, 10).map((post: { title: string; slug: string }, index: number) => ({
           '@type': 'ListItem',
           position: index + 1,
           item: {

@@ -34,7 +34,7 @@ export default async function Home({
   const params = await searchParams
   const categoryId = params.category ? Number(params.category) : undefined
 
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
   const page = params.page ? Number(params.page) : 1
   const limit = 12
   const offset = (page - 1) * limit
@@ -52,7 +52,7 @@ export default async function Home({
 
   // Validate category ID exists in categories
   const validCategoryId =
-    categoryId && !isNaN(categoryId) && categories.some((cat: any) => cat.id === categoryId)
+    categoryId && !isNaN(categoryId) && categories.some((cat: { id: number }) => cat.id === categoryId)
       ? categoryId
       : undefined
 
@@ -60,7 +60,7 @@ export default async function Home({
   const publicUrl =
     process.env.NEXT_PUBLIC_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_NEXT_URL ||
-    'http://localhost:3000'
+    'https://new.mykunba.org'
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -111,7 +111,7 @@ export default async function Home({
       <Blog
         posts={posts}
         initialCategories={categories}
-        initialSelectedCategory={validCategoryId}
+        {...(validCategoryId !== undefined && { initialSelectedCategory: validCategoryId })}
         total={posts.totalDocs || 0}
         limit={limit}
       />
