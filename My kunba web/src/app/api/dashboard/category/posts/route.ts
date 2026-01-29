@@ -47,11 +47,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    const currentUser = user.docs[0] as { id: number; role?: string }
+    const isAdmin = currentUser.role === 'admin'
+
     // Get pagination parameters
     const page = req.nextUrl.searchParams.get('page')
     const limit = req.nextUrl.searchParams.get('limit')
     const pageNum = page ? Number(page) : 1
     const limitNum = limit ? Number(limit) : 10
+
+    const where: Record<string, unknown> = {
+      categories: { contains: Number(categoryId) },
+      deleted_at: { equals: null },
+    }
+    if (!isAdmin) {
+      where.author = { equals: currentUser.id }
+    }
 
     // Fetch posts that belong to this category - only necessary fields
     const posts = await payload.find({
@@ -62,14 +73,7 @@ export async function GET(req: NextRequest) {
         slug: true,
         status: true,
       },
-      where: {
-        categories: {
-          contains: Number(categoryId),
-        },
-        deleted_at: {
-          equals: null,
-        },
-      },
+      where,
       pagination: true,
       limit: limitNum,
       page: pageNum,
@@ -136,14 +140,18 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all posts to update their categories
+    const currentUser = user.docs[0] as { id: number; role?: string }
+    const isAdmin = currentUser.role === 'admin'
+
+    const updateWhere: Record<string, unknown> = { deleted_at: { equals: null } }
+    if (!isAdmin) {
+      updateWhere.author = { equals: currentUser.id }
+    }
+
+    // Get posts to update (admin: all; author: only their own)
     const allPosts = await payload.find({
       collection: 'posts',
-      where: {
-        deleted_at: {
-          equals: null,
-        },
-      },
+      where: updateWhere,
       depth: 1,
     })
 

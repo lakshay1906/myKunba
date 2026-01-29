@@ -23,16 +23,9 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>
-}) {
-  const params = await searchParams
-  const categoryId = params.category ? Number(params.category) : undefined
-
+export default async function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-  const limit = 24 // Load more posts initially for infinite scroll
+  const limit = 24
   const offset = 0
 
   const [postsRes, categoriesRes, featuredBlogs] = await Promise.all([
@@ -46,14 +39,8 @@ export default async function Home({
   const posts = await postsRes.json()
   const categories = categoriesRes?.docs || []
 
-  // Validate category ID exists in categories
-  const validCategoryId =
-    categoryId && !isNaN(categoryId) && categories.some((cat: any) => cat.id === categoryId)
-      ? categoryId
-      : undefined
-
   return (
-    <>
+    <div className="w-full">
       {featuredBlogs.length > 0 && (
         <div className="mb-8">
           <BlogCarousel blogs={featuredBlogs} />
@@ -62,11 +49,10 @@ export default async function Home({
       <Blog
         posts={posts}
         initialCategories={categories}
-        initialSelectedCategory={validCategoryId}
         total={posts.totalDocs || 0}
         limit={limit}
         hasMore={posts.hasNextPage || false}
       />
-    </>
+    </div>
   )
 }

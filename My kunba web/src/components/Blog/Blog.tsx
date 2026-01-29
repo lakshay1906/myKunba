@@ -2,19 +2,28 @@
 
 import React, { useEffect, useRef, useCallback } from 'react'
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
-import { fetchAllCategories } from '@/app/actions/category-actions'
 import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 import { motion } from 'framer-motion'
 import { useAppStore } from '@/lib/context/store'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
+import { Label } from '../ui/label'
+import { getBlogFilterFromCookies, setBlogFilterCookies } from '@/lib/utils/cookies'
+
+const AUTHORS_CACHE_KEY = 'blog_authors_cache'
+const LIMIT = 24
 
 type BlogProps = {
   posts: Record<string, any>
   initialCategories?: Record<string, any>[]
-  initialSelectedCategory?: number
   total?: number
   limit?: number
   hasMore?: boolean
@@ -23,275 +32,279 @@ type BlogProps = {
 export default function Blog({
   posts,
   initialCategories = [],
-  initialSelectedCategory,
   total: initialTotal = 0,
-  limit: initialLimit = 24,
+  limit: initialLimit = LIMIT,
   hasMore: initialHasMore = false,
 }: BlogProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { searchResults, originalBlogData, setOriginalBlogData } = useAppStore()
+  const {
+    searchResults,
+    setSearchResults,
+    setSearchQuery,
+    blogCategorySlug,
+    setBlogCategorySlug,
+    blogAuthorEmail,
+    setBlogAuthorEmail,
+    originalBlogData,
+    setOriginalBlogData,
+  } = useAppStore()
+
   const observerRef = useRef<HTMLDivElement>(null)
-  const [data, setData] = useState<
-    {
-      id: number
-      title: string
-      slug: string
-      author: Record<string, any>
-      categories: Record<string, any>[]
-      excerpt: string
-      media: string | null
-      content: string
-      createdAt: string
-      updatedAt: string
-    }[]
-  >(posts?.docs || [])
+  const [data, setData] = useState<any[]>(posts?.docs || [])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [categories, setCategories] = useState<Record<string, any>[]>([
-    { id: 0, name: 'All' },
+  const [categories] = useState<Record<string, any>[]>([
+    { slug: 'all', name: 'All' },
     ...initialCategories,
   ])
-  const [selectedCat, setSelectedCat] = useState<number>(initialSelectedCategory || 0)
+  const [authors, setAuthors] = useState<Record<string, any>[]>([])
   const [total, setTotal] = useState(initialTotal)
   const [hasMore, setHasMore] = useState(initialHasMore)
-  const [limit] = useState(initialLimit)
   const [offset, setOffset] = useState(initialLimit)
 
-  // Store original data when component mounts or when posts change (only if not in search mode)
+  const selectedCat = blogCategorySlug
+  const selectedAuthor = blogAuthorEmail
+  const limit = initialLimit
+
+  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
+
+  // Persist original data when not in search mode
   useEffect(() => {
     if (posts?.docs && searchResults === null) {
-      // Only update original data if we're not currently in search mode
-      // This ensures we preserve the original data even when new posts load
-      if (!originalBlogData || originalBlogData.length === 0) {
-        setOriginalBlogData(posts.docs)
-      }
+      if (!originalBlogData?.length) setOriginalBlogData(posts.docs)
     }
   }, [posts, searchResults, originalBlogData, setOriginalBlogData])
 
-  // Update state when props change (from SSR)
+  // When server posts change (e.g. initial load), show them unless we're in search mode
   useEffect(() => {
-    if (posts?.docs) {
-      // Only update if not in search mode
-      if (!searchResults) {
-        setData(posts.docs)
-      }
+    if (searchResults === null && posts?.docs) {
+      setData(posts.docs)
+      setTotal(initialTotal || posts?.totalDocs || 0)
+      setHasMore(initialHasMore ?? (posts?.hasNextPage ?? false))
+      setOffset(initialLimit)
     }
-    const newTotal = initialTotal || posts?.totalDocs || 0
-    const newHasMore = initialHasMore || posts?.hasNextPage || false
+  }, [posts, initialTotal, initialHasMore, initialLimit, searchResults])
 
-    setTotal(newTotal)
-    setHasMore(newHasMore)
-    setOffset(initialLimit)
-  }, [posts, initialTotal, initialHasMore, initialLimit, limit, searchResults])
-
-  // Update data when search results change
+  // Search mode: show search results
   useEffect(() => {
     if (searchResults !== null) {
-      // We're in search mode
       setData(searchResults)
-      setHasMore(false) // Disable infinite scroll for search results
-    } else {
-      // Restore original data
-      if (originalBlogData) {
-        setData(originalBlogData)
-        const newTotal = initialTotal || posts?.totalDocs || 0
-        const newHasMore = initialHasMore || posts?.hasNextPage || false
-        setTotal(newTotal)
-        setHasMore(newHasMore)
-      } else if (posts?.docs) {
-        setData(posts.docs)
-      }
+      setHasMore(false)
     }
-  }, [searchResults, originalBlogData, initialTotal, initialHasMore, posts])
+  }, [searchResults])
 
-  // Update selected category when initialSelectedCategory changes
+  // Restore category/author from cookies on mount and fetch with those filters (for "/" and "/blog")
+  const restoreFromCookiesDone = useRef(false)
   useEffect(() => {
-    if (initialSelectedCategory !== undefined) {
-      setSelectedCat(initialSelectedCategory)
-      // Scroll to blog section when category is selected from URL
-      setTimeout(() => {
-        const blogSection = document.getElementById('blog')
-        if (blogSection) {
-          blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }, 100)
+    if (restoreFromCookiesDone.current) return
+    const { categorySlug, authorEmail } = getBlogFilterFromCookies()
+    if (categorySlug !== 'all' || authorEmail !== 'all') {
+      restoreFromCookiesDone.current = true
+      setBlogCategorySlug(categorySlug)
+      setBlogAuthorEmail(authorEmail)
+      setLoading(true)
+      const categoryParam =
+        categorySlug === 'all' ? '' : `&category=${encodeURIComponent(categorySlug)}`
+      const authorParam =
+        authorEmail === 'all' ? '' : `&author=${encodeURIComponent(authorEmail)}`
+      fetch(
+        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
+        { cache: 'no-store' },
+      )
+        .then((res) => res.json())
+        .then((result) => {
+          if (result?.docs) {
+            setData(result.docs)
+            setTotal(result.totalDocs ?? 0)
+            setHasMore(result.hasNextPage ?? false)
+            setOffset(limit)
+          }
+        })
+        .catch((e) => console.error('Error fetching blogs from filter cookies:', e))
+        .finally(() => setLoading(false))
     }
-  }, [initialSelectedCategory])
+  }, [baseUrl, limit, setBlogCategorySlug, setBlogAuthorEmail])
 
-  // Load more blogs for infinite scroll
+  // Fetch authors once (with simple cache to avoid double fetch in StrictMode)
+  useEffect(() => {
+    const cached = typeof window !== 'undefined' ? sessionStorage.getItem(AUTHORS_CACHE_KEY) : null
+    if (cached) {
+      try {
+        setAuthors(JSON.parse(cached))
+        return
+      } catch (_) { }
+    }
+    fetch(`${baseUrl}/api/user/authors`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((result) => {
+        if (!result?.docs) return
+        const sorted = result.docs.sort((a: any, b: any) => {
+          if (a.role === 'admin' && b.role !== 'admin') return -1
+          if (a.role !== 'admin' && b.role === 'admin') return 1
+          return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase())
+        })
+        const list = [{ email: 'all', displayName: 'All', role: '' }, ...sorted]
+        setAuthors(list)
+        if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(list))
+      })
+      .catch((e) => console.error('Error fetching authors:', e))
+  }, [baseUrl])
+
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return
-
     setLoadingMore(true)
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-      const categoryParam = selectedCat === 0 ? '' : `&category=${selectedCat}`
-
-      const response = await fetch(
-        `${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}`,
-        {
-          cache: 'no-store',
-        },
+      const categoryParam = selectedCat === 'all' ? '' : `&category=${encodeURIComponent(selectedCat)}`
+      const authorParam = selectedAuthor === 'all' ? '' : `&author=${encodeURIComponent(selectedAuthor)}`
+      const res = await fetch(
+        `${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}${authorParam}`,
+        { cache: 'no-store' }
       )
-      const result = await response.json()
-
-      if (response.ok) {
-        setData((prevData) => [...prevData, ...(result.docs || [])])
-        setHasMore(result.hasNextPage || false)
-        setOffset((prevOffset) => prevOffset + limit)
-        setTotal(result.totalDocs || 0)
+      const result = await res.json()
+      if (res.ok && result?.docs) {
+        setData((prev) => [...prev, ...result.docs])
+        setHasMore(result.hasNextPage ?? false)
+        setOffset((o) => o + limit)
+        setTotal(result.totalDocs ?? 0)
       }
-    } catch (error) {
-      console.error('Error loading more blogs:', error)
+    } catch (e) {
+      console.error('Error loading more:', e)
     } finally {
       setLoadingMore(false)
     }
-  }, [loadingMore, hasMore, limit, offset, selectedCat])
+  }, [loadingMore, hasMore, limit, offset, selectedCat, selectedAuthor, baseUrl])
 
-  // Intersection Observer for infinite scroll
   useEffect(() => {
+    const el = observerRef.current
+    if (!el) return
     const observer = new IntersectionObserver(
       (entries) => {
-        const target = entries[0]
-        if (target.isIntersecting && hasMore && !loadingMore) {
-          loadMore()
-        }
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore) loadMore()
       },
-      {
-        threshold: 0.1,
-        rootMargin: '100px',
-      },
+      { threshold: 0.1, rootMargin: '100px' }
     )
-
-    const currentObserverRef = observerRef.current
-    if (currentObserverRef) {
-      observer.observe(currentObserverRef)
-    }
-
-    return () => {
-      if (currentObserverRef) {
-        observer.unobserve(currentObserverRef)
-      }
-    }
+    observer.observe(el)
+    return () => observer.unobserve(el)
   }, [hasMore, loadingMore, loadMore])
 
-  // Handle category selection and update URL
-  const handleCategoryClick = async (categoryId: number) => {
-    setSelectedCat(categoryId)
+  const handleFilterChange = async (type: 'category' | 'author', value: string) => {
+    const newCat = type === 'category' ? value : selectedCat
+    const newAuthor = type === 'author' ? value : selectedAuthor
+
+    if (type === 'category') setBlogCategorySlug(value)
+    else setBlogAuthorEmail(value)
+
+    setBlogFilterCookies(newCat, newAuthor)
+
+    setSearchResults(null)
+    setSearchQuery('')
+
     setLoading(true)
-
-    // Update URL query parameter
-    const params = new URLSearchParams(searchParams.toString())
-    if (categoryId === 0) {
-      // Remove category parameter if "All" is selected
-      params.delete('category')
-    } else {
-      // Set category parameter
-      params.set('category', categoryId.toString())
-    }
-
-    // Update URL without page reload
-    const newUrl = params.toString() ? `/blog?${params.toString()}` : '/blog'
-    router.push(newUrl, { scroll: false })
-
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-      const categoryParam = categoryId === 0 ? '' : `&category=${categoryId}`
-
-      const response = await fetch(
-        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}`,
-        {
-          cache: 'no-store',
-        },
+      const categoryParam = newCat === 'all' ? '' : `&category=${encodeURIComponent(newCat)}`
+      const authorParam = newAuthor === 'all' ? '' : `&author=${encodeURIComponent(newAuthor)}`
+      const res = await fetch(
+        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
+        { cache: 'no-store' }
       )
-      const result = await response.json()
-
-      if (response.ok) {
+      const result = await res.json()
+      if (res.ok) {
         setData(result.docs || [])
-        setTotal(result.totalDocs || 0)
-        setHasMore(result.hasNextPage || false)
+        setTotal(result.totalDocs ?? 0)
+        setHasMore(result.hasNextPage ?? false)
         setOffset(limit)
       }
-    } catch (error) {
-      console.error('Error fetching blogs by category:', error)
+    } catch (e) {
+      console.error('Error fetching blogs:', e)
     } finally {
       setLoading(false)
     }
-
-    // Scroll to blog section
-    setTimeout(() => {
-      const blogSection = document.getElementById('blog')
-      if (blogSection) {
-        blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 100)
   }
 
   return (
-    <div id="blog" className="w-full h-full">
+    <div id="blog" className="container mx-auto! px-4!">
       <div className="mt-2 md:mt-4 lg:mt-6">
         <h1 className="text-2xl font-semibold">Blog</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-6 mt-1">
           Discover stories, insights, and updates from our community.
         </p>
       </div>
+      <div className="max-w-3xl flex flex-col sm:flex-row gap-4 mt-0 sm:mt-2 md:mt-4">
+        <div className="space-y-3 flex-1">
+          <Label htmlFor="category-select">Category</Label>
+          <Select
+            value={selectedCat}
+            onValueChange={(value) => handleFilterChange('category', value)}
+            disabled={loading}
+          >
+            <SelectTrigger id="category-select">
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.slug || cat.id || `cat-${cat.name}`} value={cat.slug || 'all'}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-3 flex-1">
+          <Label htmlFor="author-select">Author</Label>
+          <Select
+            value={selectedAuthor}
+            onValueChange={(value) => handleFilterChange('author', value)}
+            disabled={loading}
+          >
+            <SelectTrigger id="author-select">
+              <SelectValue placeholder="Select an author" />
+            </SelectTrigger>
+            <SelectContent>
+              {authors.map((author) => (
+                <SelectItem
+                  key={author.email || author.id || `author-${author.displayName}`}
+                  value={author.email || 'all'}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{author.displayName || 'Unknown'}</span>
+                    {author.role === 'admin' && (
+                      <Badge variant="default" className="text-xs">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       {loading ? (
-        <div className="w-full h-full">
+        <div className="w-full flex justify-center items-center py-12 mt-4">
           <Spinner />
         </div>
       ) : (
         <>
-          <div className="flex flex-nowrap gap-2 mt-0 sm:mt-2 md:mt-4 overflow-x-auto scrollbar-hidden">
-            {categories.map((ele) => (
-              <Badge
-                variant={ele.id === selectedCat ? 'default' : 'secondary'}
-                key={ele.id}
-                onClick={() => handleCategoryClick(ele.id)}
-                className="text-sm lg:text-[14px] font-normal text-nowrap cursor-pointer"
-              >
-                {ele.name}
-              </Badge>
-            ))}
-          </div>
-          {data.filter((post) => {
-            if (selectedCat === 0) return true
-            return post.categories.some((category) => {
-              return category.id === selectedCat
-            })
-          }).length > 0 ? (
+          {data.length > 0 ? (
             <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
-              {data
-                .filter((post) => {
-                  if (selectedCat === 0) return true
-                  return post.categories.some((category) => {
-                    return category.id === selectedCat
-                  })
-                })
-                .map((ele, idx) => (
-                  <motion.div
-                    key={ele.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 * idx }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    className="size-full"
-                  >
-                    <BlogCard key={ele.id} post={ele} />
-                  </motion.div>
-                ))}
+              {data.map((ele, idx) => (
+                <motion.div
+                  key={ele.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: 0.1 * idx }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  className="size-full"
+                >
+                  <BlogCard key={ele.id} post={ele} />
+                </motion.div>
+              ))}
             </div>
           ) : (
             <EmptyBlogState />
           )}
-          {/* Infinite Scroll Observer */}
           {hasMore && (
             <div ref={observerRef} className="flex justify-center items-center py-8">
-              {loadingMore ? (
-                <Spinner />
-              ) : (
-                <div className="h-4" /> // Empty element to observe
-              )}
+              {loadingMore ? <Spinner /> : <div className="h-4" />}
             </div>
           )}
         </>

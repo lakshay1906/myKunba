@@ -41,6 +41,10 @@ type AppContextType = {
   setSearchQuery: React.Dispatch<SetStateAction<string>>
   originalBlogData: any[] | null
   setOriginalBlogData: React.Dispatch<SetStateAction<any[] | null>>
+  blogCategorySlug: string
+  setBlogCategorySlug: React.Dispatch<SetStateAction<string>>
+  blogAuthorEmail: string
+  setBlogAuthorEmail: React.Dispatch<SetStateAction<string>>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -57,6 +61,8 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   const [searchResults, setSearchResults] = useState<any[] | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [originalBlogData, setOriginalBlogData] = useState<any[] | null>(null)
+  const [blogCategorySlug, setBlogCategorySlug] = useState<string>('all')
+  const [blogAuthorEmail, setBlogAuthorEmail] = useState<string>('all')
 
   async function googleSignIn() {
     const provider = new GoogleAuthProvider()
@@ -139,6 +145,10 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
         setSearchQuery,
         originalBlogData,
         setOriginalBlogData,
+        blogCategorySlug,
+        setBlogCategorySlug,
+        blogAuthorEmail,
+        setBlogAuthorEmail,
       }}
     >
       {children}

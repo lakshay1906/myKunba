@@ -91,6 +91,39 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
 }
 
+/** Cookie names for blog listing filters (category/author on "/" and "/blog") */
+const BLOG_FILTER_CATEGORY = 'blog_filter_category'
+const BLOG_FILTER_AUTHOR = 'blog_filter_author'
+const BLOG_FILTER_COOKIE_DAYS = 365
+
+/**
+ * Read saved category slug and author email from cookies (for blog dropdowns on "/").
+ */
+export function getBlogFilterFromCookies(): { categorySlug: string; authorEmail: string } {
+  const categorySlug = getCookie(BLOG_FILTER_CATEGORY)
+  const authorEmail = getCookie(BLOG_FILTER_AUTHOR)
+  return {
+    categorySlug: categorySlug && categorySlug.trim() !== '' ? categorySlug : 'all',
+    authorEmail: authorEmail && authorEmail.trim() !== '' ? authorEmail : 'all',
+  }
+}
+
+/**
+ * Save category slug and author email to cookies (for blog dropdowns on "/").
+ */
+export function setBlogFilterCookies(categorySlug: string, authorEmail: string) {
+  setCookie(
+    BLOG_FILTER_CATEGORY,
+    categorySlug === 'all' ? '' : categorySlug,
+    BLOG_FILTER_COOKIE_DAYS,
+  )
+  setCookie(
+    BLOG_FILTER_AUTHOR,
+    authorEmail === 'all' ? '' : authorEmail,
+    BLOG_FILTER_COOKIE_DAYS,
+  )
+}
+
 /**
  * Save blog draft data using IndexedDB for large data and cookies for metadata
  * IndexedDB is ALWAYS used for any data with images or content > 1KB to ensure persistence

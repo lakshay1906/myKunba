@@ -4,10 +4,13 @@ import { cookies } from 'next/headers'
 
 const url = process.env.NEXT_PUBLIC_NEXT_URL
 
-export async function createCategory(name: string) {
+export async function createCategory(
+  name: string,
+  isVisible: boolean = true,
+  parent?: number | null,
+) {
   try {
     const token = (await cookies()).get('access_token')?.value
-    // Get the authentication token if needed
     if (!token) return null
     const response = await fetch(`${url}/api/dashboard/category`, {
       method: 'POST',
@@ -17,6 +20,8 @@ export async function createCategory(name: string) {
       },
       body: JSON.stringify({
         name,
+        isVisible,
+        ...(parent != null && parent !== 0 && { parent }),
       }),
     })
 

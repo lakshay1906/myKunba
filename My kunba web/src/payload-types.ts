@@ -207,6 +207,7 @@ export interface Category {
   slug: string;
   parent?: (number | null) | Category;
   deleted_at?: string | null;
+  isVisible: boolean;
   updatedAt: string;
   createdAt: string;
 }
@@ -230,10 +231,10 @@ export interface Comment {
  */
 export interface Post {
   id: number;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: {
+  title?: string | null;
+  slug?: string | null;
+  excerpt?: string | null;
+  content?: {
     root: {
       type: string;
       children: {
@@ -247,15 +248,15 @@ export interface Post {
       version: number;
     };
     [k: string]: unknown;
-  };
+  } | null;
   commentsEnabled?: boolean | null;
   isFeatured?: boolean | null;
   /**
    * URL of the cover image stored in Cloudflare R2
    */
-  media: string;
-  status: 'draft' | 'published' | 'pending_approval';
-  publishDate: string;
+  media?: string | null;
+  status?: ('draft' | 'published' | 'pending_approval') | null;
+  publishDate?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   /**
@@ -557,6 +558,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   slug?: T;
   parent?: T;
   deleted_at?: T;
+  isVisible?: T;
   updatedAt?: T;
   createdAt?: T;
 }

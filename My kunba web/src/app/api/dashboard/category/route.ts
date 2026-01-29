@@ -17,30 +17,53 @@ export async function GET(req: NextRequest) {
         depth: 2,
       })
     } else {
-      // Get pagination parameters
-      const page = req.nextUrl.searchParams.get('page')
-      const limit = req.nextUrl.searchParams.get('limit')
-      const pageNum = page ? Number(page) : 1
-      const limitNum = limit ? Number(limit) : 10
+      const all = req.nextUrl.searchParams.get('all') === 'true'
 
-      data = await payload.find({
-        collection: 'categories',
-        depth: 0,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-        where: {
-          deleted_at: {
-            equals: null,
+      if (all) {
+        // No pagination: return all categories (for dropdowns, etc.)
+        data = await payload.find({
+          collection: 'categories',
+          depth: 0,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
           },
-        },
-        pagination: true,
-        limit: limitNum,
-        page: pageNum,
-        sort: '-createdAt',
-      })
+          where: {
+            deleted_at: {
+              equals: null,
+            },
+          },
+          pagination: false,
+          limit: 10000,
+          sort: 'name',
+        })
+      } else {
+        // Pagination only for dashboard category listing page
+        const page = req.nextUrl.searchParams.get('page')
+        const limit = req.nextUrl.searchParams.get('limit')
+        const pageNum = page ? Number(page) : 1
+        const limitNum = limit ? Number(limit) : 10
+
+        data = await payload.find({
+          collection: 'categories',
+          depth: 0,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+          where: {
+            deleted_at: {
+              equals: null,
+            },
+          },
+          pagination: true,
+          limit: limitNum,
+          page: pageNum,
+          sort: '-createdAt',
+        })
+      }
     }
     return NextResponse.json(data, { status: 200 })
   } catch (error) {

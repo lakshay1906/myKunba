@@ -6,23 +6,24 @@ import { NextResponse } from 'next/server.js'
 export async function GET() {
   try {
     const data = await payload.find({
-      collection: 'categories',
+      collection: 'users',
       depth: 0,
       select: {
         id: true,
-        name: true,
-        slug: true,
+        displayName: true,
+        role: true,
+        email: true,
       },
       where: {
         deleted_at: {
           equals: null,
         },
-        isVisible: {
-          equals: true,
+        role: {
+          in: ['admin', 'author'],
         },
       },
       pagination: false,
-      limit: 10000,
+      sort: 'displayName',
     })
     return NextResponse.json(data, { status: 200 })
   } catch (error) {

@@ -47,28 +47,33 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch all posts
+    const currentUser = user.docs[0] as { id: number; role?: string }
+    const isAdmin = currentUser.role === 'admin'
+
+    const baseWhere: Record<string, unknown> = { deleted_at: { equals: null } }
+    if (!isAdmin) {
+      baseWhere.author = { equals: currentUser.id }
+    }
+
+    const categoryWhere: Record<string, unknown> = {
+      categories: { contains: Number(categoryId) },
+      deleted_at: { equals: null },
+    }
+    if (!isAdmin) {
+      categoryWhere.author = { equals: currentUser.id }
+    }
+
+    // Fetch all posts (admin: all; author: only own)
     const allPosts = await payload.find({
       collection: 'posts',
-      where: {
-        deleted_at: {
-          equals: null,
-        },
-      },
+      where: baseWhere,
       depth: 1,
     })
 
     // Fetch posts that belong to this category to determine which ones are selected
     const categoryPosts = await payload.find({
       collection: 'posts',
-      where: {
-        categories: {
-          contains: Number(categoryId),
-        },
-        deleted_at: {
-          equals: null,
-        },
-      },
+      where: categoryWhere,
       depth: 1,
     })
 

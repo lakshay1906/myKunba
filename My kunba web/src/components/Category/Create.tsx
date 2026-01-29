@@ -13,11 +13,20 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
-import { SetStateAction, useState } from 'react'
+import { SetStateAction, useEffect, useState } from 'react'
 import Toast from '../Toast'
 import { Category } from '@/lib/types'
 import { createCategory } from '@/app/actions/category-actions'
+import { useAppStore } from '@/lib/context/store'
 
 export default function Create({
   setCategories,
@@ -29,7 +38,23 @@ export default function Create({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
+  const [isVisible, setIsVisible] = useState(true)
+  const [parentId, setParentId] = useState<string>('none')
+  const [parentOptions, setParentOptions] = useState<{ id: number; name: string }[]>([])
   const router = useRouter()
+  const { loginDetail } = useAppStore()
+
+  useEffect(() => {
+    if (!open || !loginDetail?.token) return
+    fetch(`/api/dashboard/category?all=true`, {
+      headers: { Authorization: `bearer ${loginDetail.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setParentOptions(data.docs || [])
+      })
+      .catch(() => setParentOptions([]))
+  }, [open, loginDetail?.token])
 
   function handleOpenChange(isOpen: boolean) {
     if (loading) if (!isOpen) return
@@ -43,7 +68,8 @@ export default function Create({
     }
     setLoading(true)
     try {
-      const cat = await createCategory(name)
+      const parent = parentId === 'none' || !parentId ? null : Number(parentId)
+      const cat = await createCategory(name, isVisible, parent)
       if (setCategories) {
         setCategories((prev) => [...prev, cat])
       }
@@ -51,7 +77,9 @@ export default function Create({
         onCategoryCreated(cat)
       }
       handleOpenChange(false)
-      setName('') // Reset form
+      setName('')
+      setIsVisible(true)
+      setParentId('none')
       ;<Toast message={'Success'} description={'Category created successfully'} isSuccess={true} />
     } catch (error) {
       ;<Toast
@@ -86,6 +114,37 @@ export default function Create({
           <p className="text-sm text-muted-foreground">
             Slug will be automatically generated from the name.
           </p>
+          <div className="space-y-2 pt-2">
+            <Label>Parent category</Label>
+            <Select
+              value={parentId}
+              onValueChange={setParentId}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {parentOptions.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <Label htmlFor="isVisible" className="text-sm font-normal">
+              Visible to users
+            </Label>
+            <Switch
+              id="isVisible"
+              checked={isVisible}
+              onCheckedChange={setIsVisible}
+              disabled={loading}
+            />
+          </div>
         </div>
         <DialogFooter className="flex justify-between">
           <DialogClose asChild>

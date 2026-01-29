@@ -27,6 +27,12 @@ export const Categories: CollectionConfig = {
       name: 'deleted_at',
       type: 'date',
     },
+    {
+      name: 'isVisible',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+    },
   ],
   hooks: {
     beforeValidate: [

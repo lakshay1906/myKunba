@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 
 interface Category {
@@ -51,6 +52,7 @@ export default function CategorySelector({
   const [open, setOpen] = useState(false)
   const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [isVisible, setIsVisible] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const selectedItems = allCategories.filter((category) => selectedCategories.includes(category.id))
 
@@ -86,6 +88,7 @@ export default function CategorySelector({
         body: JSON.stringify({
           name: newCategoryName.trim(),
           slug: slug,
+          isVisible: isVisible,
         }),
       })
 
@@ -106,6 +109,7 @@ export default function CategorySelector({
 
       // Reset form and close dialog
       setNewCategoryName('')
+      setIsVisible(true)
       setNewCategoryOpen(false)
       setOpen(false)
 
@@ -201,6 +205,17 @@ export default function CategorySelector({
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Enter category name"
+              />
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <Label htmlFor="isVisible" className="text-sm font-normal">
+                Visible to users
+              </Label>
+              <Switch
+                id="isVisible"
+                checked={isVisible}
+                onCheckedChange={setIsVisible}
+                disabled={isCreating}
               />
             </div>
           </div>

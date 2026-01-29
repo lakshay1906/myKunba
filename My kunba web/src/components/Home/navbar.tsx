@@ -230,20 +230,21 @@ export default function Navbar({
   }
 
   return (
-    <section className="p-4 fixed top-0 z-50 bg-background w-full border-b">
-      <nav className="hidden justify-between lg:flex w-full container mx-auto">
-        <div className="flex items-center gap-6">
-          <Link href={logo.url} className="flex items-center gap-2 bg-none">
-            <div className="overflow-hidden rounded-lg">
-              <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
-            </div>
-            <span className="text-lg font-semibold">{logo.title}</span>
-          </Link>
-          <div className="flex items-center">
-            <NavigationMenu>
-              <NavigationMenuList>
-                {menu.map((item) => renderMenuItem(item))}
-                {/* {loginDetail?.role === 'admin' && (
+    <div className='w-full border-b fixed top-0 z-50'>
+      <section className="p-4 bg-background container mx-auto! px-3!">
+        <nav className="hidden justify-between lg:flex w-full container mx-auto">
+          <div className="flex items-center gap-6">
+            <Link href={logo.url} className="flex items-center gap-2 bg-none">
+              <div className="overflow-hidden rounded-lg">
+                <Image src={logo.src} width={32} height={32} className="w-8" alt={logo.alt} />
+              </div>
+              <span className="text-lg font-semibold">{logo.title}</span>
+            </Link>
+            <div className="flex items-center">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  {menu.map((item) => renderMenuItem(item))}
+                  {/* {loginDetail?.role === 'admin' && (
                   <a
                     className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
                     href={'/dashboard'}
@@ -251,33 +252,254 @@ export default function Navbar({
                     Dashboard
                   </a>
                 )} */}
-              </NavigationMenuList>
-            </NavigationMenu>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-5 justify-center items-center">
-          {isBlogPage && (
-            <div className="flex gap-2 items-center">
-              <motion.div
-                initial={false}
-                animate={{
-                  width: isSearchExpanded ? '200px' : '42px',
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 30,
-                }}
-                className="relative"
-              >
+          <div className="flex gap-5 justify-center items-center">
+            {isBlogPage && (
+              <div className="flex gap-2 items-center">
                 {!isSearchExpanded ? (
                   <button
                     onClick={handleSearchClick}
-                    className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
+                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
+                    aria-label="Search"
                   >
-                    <Search className="h-6 w-6 text-foreground" />
+                    <Search className="h-5 w-5 text-foreground opacity-100" />
                   </button>
                 ) : (
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      width: '200px',
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                    className="relative h-10"
+                  >
+                    <div className="relative h-10 flex items-center">
+                      <Input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        onBlur={handleSearchBlur}
+                        placeholder="Search..."
+                        className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <Search className="absolute pointer-events-none left-3 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </motion.div>
+                )}
+                {isSearchExpanded && (
+                  <button
+                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
+                    onClick={handleReset}
+                    aria-label="Reset search"
+                  >
+                    <RotateCcw className="h-5 w-5 text-foreground" />
+                  </button>
+                )}
+              </div>
+            )}
+            <ThemeToggle />
+            {loginDetail ? (
+              <div className="flex gap-2 justify-center items-center">
+                {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
+                  <Link href={'/dashboard'}>
+                    <Button>Dashboard</Button>
+                  </Link>
+                )}
+
+                <Button
+                  onClick={async () => {
+                    await logout()
+                  }}
+                  variant="outline"
+                >
+                  Sign Out
+                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link href={'/profile'} className="rounded-full p-1 border border-white">
+                        <UserCircle />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">{loginDetail.email}</p>
+                        <p className="text-xs capitalize">{loginDetail.role}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            ) : (
+              <div className="flex gap-2 justify-between items-center">
+                <SignInButton btnText="Login" />
+                <SignInButton btnText="Sign Up" />
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Mobile Navbar */}
+        <div className="block lg:hidden w-full container mx-auto">
+          <div
+            className={`flex ${isSearchExpanded && isSmallScreen ? 'flex-col gap-3' : 'items-center justify-between'
+              }`}
+          >
+            <div className="flex items-center justify-between flex-1 min-w-0">
+              <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
+                <Image
+                  src={logo.src}
+                  width={32}
+                  height={32}
+                  className="w-8 shrink-0"
+                  alt={logo.alt}
+                />
+                <span className="text-lg font-semibold truncate">{logo.title}</span>
+              </a>
+              <div className="flex gap-5 justify-center items-center shrink-0">
+                {isBlogPage && isSmallScreen && !isSearchExpanded && (
+                  <button
+                    onClick={handleSearchClick}
+                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
+                    aria-label="Search"
+                  >
+                    <Search className="h-5 w-5 text-foreground opacity-100" />
+                  </button>
+                )}
+                {isBlogPage && !isSmallScreen && (
+                  <div className="flex gap-2 items-center">
+                    {!isSearchExpanded ? (
+                      <button
+                        onClick={handleSearchClick}
+                        className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
+                        aria-label="Search"
+                      >
+                        <Search className="h-5 w-5 text-foreground opacity-100" />
+                      </button>
+                    ) : (
+                      <motion.div
+                        initial={false}
+                        animate={{
+                          width: '160px',
+                        }}
+                        transition={{
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
+                        }}
+                        className="relative h-10"
+                      >
+                        <div className="relative h-10 flex items-center">
+                          <Input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onBlur={handleSearchBlur}
+                            placeholder="Search..."
+                            className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                          />
+                          <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </motion.div>
+                    )}
+                    {isSearchExpanded && (
+                      <button
+                        className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
+                        onClick={handleReset}
+                        aria-label="Reset search"
+                      >
+                        <RotateCcw className="h-5 w-5 text-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                <ThemeToggle />
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Menu className="size-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle>
+                        <a href={logo.url} className="flex items-center gap-2">
+                          <Image
+                            src={logo.src}
+                            width={32}
+                            height={32}
+                            className="w-8"
+                            alt={logo.alt}
+                          />
+                          <span className="text-lg font-semibold">{logo.title}</span>
+                        </a>
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="my-6 flex flex-col gap-6">
+                      <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
+                        {menu.map((item) => renderMobileMenuItem(item))}
+                      </Accordion>
+                      <div className="flex flex-col gap-3">
+                        {loginDetail ? (
+                          <div className="flex flex-col gap-2">
+                            {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
+                              <Link href={'/dashboard'}>
+                                <Button size="sm" className="w-full">
+                                  Dashboard
+                                </Button>
+                              </Link>
+                            )}
+                            <Link href={'/profile'}>
+                              <Button variant="outline" size="sm" className="w-full">
+                                Profile
+                              </Button>
+                            </Link>
+                            <Button
+                              onClick={async () => {
+                                await logout()
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Sign Out
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-3.5 mt-3">
+                            <SignInButton btnText="Login" size="sm" className="w-full" />
+                            <SignInButton btnText="Sign Up" size="sm" className="w-full" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+            {isBlogPage && isSearchExpanded && isSmallScreen && (
+              <div className="flex gap-2 items-center w-full">
+                <motion.div
+                  initial={false}
+                  animate={{
+                    width: '100%',
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 30,
+                  }}
+                  className="relative"
+                >
                   <div className="relative h-10 flex items-center">
                     <Input
                       ref={searchInputRef}
@@ -286,254 +508,24 @@ export default function Navbar({
                       onChange={handleSearchChange}
                       onBlur={handleSearchBlur}
                       placeholder="Search..."
-                      className="w-full h-full pl-12 pr-4 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                     />
-                    <Search className="absolute pointer-events-none left-3 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
                   </div>
-                )}
-              </motion.div>
-              {isSearchExpanded && (
+                </motion.div>
                 <button
-                  className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-between items-center"
+                  className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
                   onClick={handleReset}
+                  aria-label="Reset search"
                 >
-                  <RotateCcw className="h-6 w-6 text-foreground" />
+                  <RotateCcw className="h-5 w-5 text-foreground" />
                 </button>
-              )}
-            </div>
-          )}
-          <ThemeToggle />
-          {loginDetail ? (
-            <div className="flex gap-2 justify-center items-center">
-              {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
-                <Link href={'/dashboard'}>
-                  <Button>Dashboard</Button>
-                </Link>
-              )}
-
-              <Button
-                onClick={async () => {
-                  await logout()
-                }}
-                variant="outline"
-              >
-                Sign Out
-              </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href={'/profile'} className="rounded-full p-1 border border-white">
-                      <UserCircle />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="flex flex-col gap-1">
-                      <p className="font-medium">{loginDetail.email}</p>
-                      <p className="text-xs capitalize">{loginDetail.role}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          ) : (
-            <div className="flex gap-2 justify-between items-center">
-              <SignInButton btnText="Login" />
-              <SignInButton btnText="Sign Up" />
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Mobile Navbar */}
-      <div className="block lg:hidden w-full container mx-auto">
-        <div
-          className={`flex ${
-            isSearchExpanded && isSmallScreen ? 'flex-col gap-3' : 'items-center justify-between'
-          }`}
-        >
-          <div className="flex items-center justify-between flex-1 min-w-0">
-            <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
-              <Image
-                src={logo.src}
-                width={32}
-                height={32}
-                className="w-8 shrink-0"
-                alt={logo.alt}
-              />
-              <span className="text-lg font-semibold truncate">{logo.title}</span>
-            </a>
-            <div className="flex gap-5 justify-center items-center shrink-0">
-              {isBlogPage && isSmallScreen && !isSearchExpanded && (
-                <div className="flex gap-2 items-center">
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      width: '38px',
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                    className="relative h-10"
-                  >
-                    <button
-                      onClick={handleSearchClick}
-                      className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
-                    >
-                      <Search className="h-5 w-5 text-foreground" />
-                    </button>
-                  </motion.div>
-                </div>
-              )}
-              {isBlogPage && !isSmallScreen && (
-                <div className="flex gap-2 items-center">
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      width: isSearchExpanded ? '160px' : '38px',
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                    className="relative h-10"
-                  >
-                    {!isSearchExpanded ? (
-                      <button
-                        onClick={handleSearchClick}
-                        className="h-full aspect-square p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center"
-                      >
-                        <Search className="h-5 w-5 text-foreground" />
-                      </button>
-                    ) : (
-                      <div className="relative h-10 flex items-center">
-                        <Input
-                          ref={searchInputRef}
-                          type="text"
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          onBlur={handleSearchBlur}
-                          placeholder="Search..."
-                          className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                        />
-                        <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                  </motion.div>
-                  {isSearchExpanded && (
-                    <button
-                      className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center shrink-0"
-                      onClick={handleReset}
-                    >
-                      <RotateCcw className="h-5 w-5 text-foreground" />
-                    </button>
-                  )}
-                </div>
-              )}
-              <ThemeToggle />
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <Menu className="size-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>
-                      <a href={logo.url} className="flex items-center gap-2">
-                        <Image
-                          src={logo.src}
-                          width={32}
-                          height={32}
-                          className="w-8"
-                          alt={logo.alt}
-                        />
-                        <span className="text-lg font-semibold">{logo.title}</span>
-                      </a>
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="my-6 flex flex-col gap-6">
-                    <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
-                      {menu.map((item) => renderMobileMenuItem(item))}
-                    </Accordion>
-                    <div className="flex flex-col gap-3">
-                      {loginDetail ? (
-                        <div className="flex flex-col gap-2">
-                          {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
-                            <Link href={'/dashboard'}>
-                              <Button size="sm" className="w-full">
-                                Dashboard
-                              </Button>
-                            </Link>
-                          )}
-                          <Link href={'/profile'}>
-                            <Button variant="outline" size="sm" className="w-full">
-                              Profile
-                            </Button>
-                          </Link>
-                          <Button
-                            onClick={async () => {
-                              await logout()
-                            }}
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                          >
-                            Sign Out
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-3.5 mt-3">
-                          <SignInButton btnText="Login" size="sm" className="w-full" />
-                          <SignInButton btnText="Sign Up" size="sm" className="w-full" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+              </div>
+            )}
           </div>
-          {isBlogPage && isSearchExpanded && isSmallScreen && (
-            <div className="flex gap-2 items-center w-full">
-              <motion.div
-                initial={false}
-                animate={{
-                  width: '100%',
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 30,
-                }}
-                className="relative"
-              >
-                <div className="relative h-10 flex items-center">
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onBlur={handleSearchBlur}
-                    placeholder="Search..."
-                    className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                  />
-                  <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
-                </div>
-              </motion.div>
-              <button
-                className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex flex-col justify-center items-center shrink-0"
-                onClick={handleReset}
-              >
-                <RotateCcw className="h-5 w-5 text-foreground" />
-              </button>
-            </div>
-          )}
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   )
 }
 

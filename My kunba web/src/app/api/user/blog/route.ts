@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
     const category = req.nextUrl.searchParams.get('category')
+    const author = req.nextUrl.searchParams.get('author')
     const search = req.nextUrl.searchParams.get('search')
     let data: any
     if (slug) {
@@ -89,25 +90,70 @@ export async function GET(req: NextRequest) {
         },
       }
 
-      // Add category filter if provided
-      if (category && category !== '0') {
-        whereClause.categories = {
-          in: [Number(category)],
+      // Add category filter if provided (using slug)
+      if (category && category !== '0' && category !== 'all') {
+        // First, find the category by slug
+        const categoryResult = await payload.find({
+          collection: 'categories',
+          where: {
+            slug: {
+              equals: category,
+            },
+            deleted_at: {
+              equals: null,
+            },
+            isVisible: {
+              equals: true,
+            },
+          },
+          limit: 1,
+        })
+        
+        if (categoryResult.docs.length > 0) {
+          whereClause.categories = {
+            in: [categoryResult.docs[0].id],
+          }
+        }
+      }
+
+      // Add author filter if provided (using email)
+      if (author && author !== '0' && author !== 'all') {
+        // First, find the author by email
+        const authorResult = await payload.find({
+          collection: 'users',
+          where: {
+            email: {
+              equals: author,
+            },
+            deleted_at: {
+              equals: null,
+            },
+            role: {
+              in: ['admin', 'author'],
+            },
+          },
+          limit: 1,
+        })
+        
+        if (authorResult.docs.length > 0) {
+          whereClause.author = {
+            equals: authorResult.docs[0].id,
+          }
         }
       }
 
       // Add search filter if provided
       if (search && search.trim()) {
-        const searchTerm = `%${search.trim()}%`
+        const searchTerm = search.trim()
         whereClause.or = [
           {
             title: {
-              like: searchTerm,
+              contains: searchTerm,
             },
           },
           {
             excerpt: {
-              like: searchTerm,
+              contains: searchTerm,
             },
           },
         ]

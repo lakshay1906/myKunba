@@ -35,16 +35,17 @@ export async function GET(req: NextRequest) {
     if (data.totalDocs > 0) {
       const slug = req.nextUrl.searchParams.get('slug')
       if (slug) {
+        const isAdmin = userData.role === 'admin'
+        const where: Record<string, unknown> = {
+          slug: { equals: slug },
+          deleted_at: { equals: null },
+        }
+        if (!isAdmin) {
+          where.author = { equals: userData.id }
+        }
         const blog = await payload.find({
           collection: 'posts',
-          where: {
-            slug: {
-              equals: slug,
-            },
-            deleted_at: {
-              equals: null,
-            },
-          },
+          where,
           select: {
             id: true,
             title: true,

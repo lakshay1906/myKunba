@@ -5,6 +5,7 @@ import DataTable from '@/components/DataTable'
 import Create from './Create'
 import { Category } from '@/lib/types'
 import { popoverEllipsis } from './categoryEdit'
+import { useAppStore } from '@/lib/context/store'
 
 interface CategoryMainProps {
   initialCategories?: Category[]
@@ -27,6 +28,7 @@ export default function CategoryMain({
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
   const [limit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
+  const { loginDetail } = useAppStore()
 
   // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
   const fetchCategories = async (
@@ -37,7 +39,11 @@ export default function CategoryMain({
   ) => {
     setLoading(true)
     try {
-      const rawRes = await fetch(`/api/dashboard/category?page=${page}&limit=${limitParam}`)
+      const rawRes = await fetch(`/api/dashboard/category?page=${page}&limit=${limitParam}`, {
+        headers: loginDetail?.token
+          ? { Authorization: `bearer ${loginDetail.token}` }
+          : undefined,
+      })
       if (!rawRes.ok) {
         const error = await rawRes.json()
         throw new Error(error.message || 'Failed to fetch categories')
