@@ -43,11 +43,11 @@ export default async function BlogListingPage() {
   const categories = categoriesRes?.docs || []
 
   return (
-    <div className="w-full" role="main">
+    <div className="w-full">
       {featuredBlogs.length > 0 && (
-        <section className="mb-8" aria-label="Featured posts">
+        <div className="mb-8">
           <BlogCarousel blogs={featuredBlogs} />
-        </section>
+        </div>
       )}
       <Blog
         posts={posts}
