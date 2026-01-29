@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import { revalidateCategory } from '@/lib/revalidate-website'
 
 // GET posts for a specific category
 export async function GET(req: NextRequest) {
@@ -198,6 +199,12 @@ export async function PUT(req: NextRequest) {
         }
       }
     }
+
+    const category = await payload.findByID({
+      collection: 'categories',
+      id: Number(categoryId),
+    })
+    if (category?.slug) revalidateCategory(category.slug)
 
     return NextResponse.json({ message: 'Category posts updated successfully' }, { status: 200 })
   } catch (error: any) {

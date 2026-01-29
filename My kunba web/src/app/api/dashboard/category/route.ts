@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server.js'
+import { revalidateCategory } from '@/lib/revalidate-website'
 
 export async function GET(req: NextRequest) {
   try {
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       collection: 'categories',
       data: data,
     })
+    revalidateCategory(createdCat.slug)
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -113,11 +115,13 @@ export async function PUT(req: NextRequest) {
     })
     // Return updated category with only necessary fields
     if (updatedCat.docs && updatedCat.docs.length > 0) {
+      const slug = updatedCat.docs[0].slug
+      revalidateCategory(slug)
       return NextResponse.json(
         {
           id: updatedCat.docs[0].id,
           name: updatedCat.docs[0].name,
-          slug: updatedCat.docs[0].slug,
+          slug,
         },
         { status: 200 },
       )
@@ -132,6 +136,11 @@ export async function DELETE(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ message: 'Invalid request' }, { status: 400 })
+    const existing = await payload.findByID({
+      collection: 'categories',
+      id: Number(id),
+    })
+    const slug = existing?.slug
     await payload.update({
       collection: 'categories',
       data: {
@@ -146,6 +155,7 @@ export async function DELETE(req: NextRequest) {
         },
       },
     })
+    revalidateCategory(slug || '')
     return NextResponse.json({}, { status: 200 })
   } catch (error) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })

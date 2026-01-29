@@ -100,10 +100,10 @@ export default function BlogContent({
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-4 md:mt-6 lg:mt-8">
-      {/* Featured Image */}
+    <article className="max-w-4xl mx-auto mt-4 md:mt-6 lg:mt-8" aria-label={blog.title}>
+      {/* Featured Image - LCP: priority load for hero */}
       {blog.media && (
-        <div className="relative w-full aspect-video mb-5 rounded-lg overflow-hidden">
+        <section className="relative w-full aspect-video mb-5 rounded-lg overflow-hidden" aria-hidden="true">
           <Image
             // OLD: Database storage - COMMENTED OUT
             // src={blog.media.url || '/placeholder.svg'} // OLD: Media object with url property
@@ -114,8 +114,9 @@ export default function BlogContent({
             fill
             className="object-cover"
             priority
+            sizes="(max-width: 1024px) 100vw, 896px"
           />
-        </div>
+        </section>
       )}
 
       {/* Categories - Internal Linking for Topical Authority */}
@@ -183,7 +184,7 @@ export default function BlogContent({
       </div>
 
       {/* Blog Content */}
-      <div className="mb-10">
+      <section className="mb-10" aria-label="Article content">
         {isClient ? (
           <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
         ) : (
@@ -193,12 +194,12 @@ export default function BlogContent({
             <div className="h-4 bg-muted rounded w-5/6 mb-4"></div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Internal Links Section - Link Graph Optimization */}
       {blog.internalLinks && blog.internalLinks.length > 0 && (
-        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
+        <section className="mb-8 p-6 bg-muted/50 rounded-lg border" aria-labelledby="related-content-heading">
+          <h2 id="related-content-heading" className="text-xl font-semibold mb-4">Related Content</h2>
           <ul className="space-y-2">
             {blog.internalLinks.map((link, index) => (
               <li key={index}>
@@ -209,16 +210,16 @@ export default function BlogContent({
                 >
                   {link.anchorText}
                 </Link>
-              </li>
-            ))}
+            </li>
+          ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* External Links Section - Authority Links */}
       {blog.externalLinks && blog.externalLinks.length > 0 && (
-        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">References & Sources</h2>
+        <section className="mb-8 p-6 bg-muted/50 rounded-lg border" aria-labelledby="sources-heading">
+          <h2 id="sources-heading" className="text-xl font-semibold mb-4">References & Sources</h2>
           <ul className="space-y-2">
             {blog.externalLinks.map((link, index) => (
               <li key={index}>
@@ -230,11 +231,11 @@ export default function BlogContent({
                 >
                   {link.anchorText}
                   <span className="ml-1 text-xs">↗</span>
-                </a>
-              </li>
-            ))}
+            </a>
+          </li>
+          ))}
           </ul>
-        </div>
+        </section>
       )}
       <div id="comments" />
       {/* Comments Section */}
@@ -249,8 +250,8 @@ export default function BlogContent({
 
       {/* Related Articles - Topical Authority & Internal Linking */}
       {relatedArticles && relatedArticles.length > 0 && (
-        <section className="mt-12" aria-label="Related Articles">
-          <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
+        <section className="mt-12" aria-labelledby="related-articles-heading">
+          <h2 id="related-articles-heading" className="text-2xl font-bold mb-6">Related Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {relatedArticles.map((article) => (
               <Link
@@ -269,6 +270,7 @@ export default function BlogContent({
                           fill
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
+                          sizes="(max-width: 768px) 100vw, 50vw"
                         />
                       </div>
                     )}
@@ -296,6 +298,6 @@ export default function BlogContent({
           </div>
         </section>
       )}
-    </div>
+    </article>
   )
 }

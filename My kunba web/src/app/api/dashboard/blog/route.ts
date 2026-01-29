@@ -5,6 +5,7 @@ import { payload } from '@/payload-client'
 import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
 import { authenticateUser } from '@/utils/auth'
+import { revalidateBlogPost } from '@/lib/revalidate-website'
 
 export async function GET(req: NextRequest) {
   try {
@@ -245,6 +246,7 @@ export async function POST(req: NextRequest) {
       collection: 'posts',
       data: postData,
     })
+    revalidateBlogPost(createdPost.slug)
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -451,6 +453,7 @@ export async function PUT(req: NextRequest) {
       id: Number(id),
       data: updateData,
     })
+    revalidateBlogPost(updatedPost.slug)
 
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
@@ -525,6 +528,7 @@ export async function DELETE(req: NextRequest) {
         deleted_at: new Date().toISOString(),
       },
     })
+    revalidateBlogPost(blogPost.slug)
     return NextResponse.json({ message: 'Blog post deleted successfully' }, { status: 200 })
   } catch (error: any) {
     console.error('Error in DELETE /api/dashboard/blog:', error)

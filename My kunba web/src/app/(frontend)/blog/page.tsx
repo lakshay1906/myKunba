@@ -4,6 +4,9 @@ import { fetchFeaturedBlogs } from '@/app/actions/blog-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import type { Metadata } from 'next'
 
+// ISR: revalidate every hour so new posts show without full rebuild
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Blog',
   description: 'Browse all blog posts on My Kunba. Discover articles on technology, design, personal development, and more from our community of writers.',
@@ -23,14 +26,14 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function Home() {
+export default async function BlogListingPage() {
   const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
   const limit = 24
   const offset = 0
 
   const [postsRes, categoriesRes, featuredBlogs] = await Promise.all([
     fetch(`${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}`, {
-      cache: 'no-store',
+      next: { revalidate: 3600 },
     }),
     fetchAllCategories(),
     fetchFeaturedBlogs(),
@@ -40,11 +43,11 @@ export default async function Home() {
   const categories = categoriesRes?.docs || []
 
   return (
-    <div className="w-full">
+    <div className="w-full" role="main">
       {featuredBlogs.length > 0 && (
-        <div className="mb-8">
+        <section className="mb-8" aria-label="Featured posts">
           <BlogCarousel blogs={featuredBlogs} />
-        </div>
+        </section>
       )}
       <Blog
         posts={posts}

@@ -1,9 +1,8 @@
 import { MetadataRoute } from 'next'
 import { payload } from '@/payload-client'
 
-// Ensure sitemap is dynamically generated
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// ISR: revalidate every hour so new posts/categories show without full rebuild
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =

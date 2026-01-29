@@ -1,7 +1,12 @@
 import BlogContent from '@/components/Blog/BlogContent'
+import BlogSchema from '@/components/Blog/BlogSchema'
 import type { Metadata } from 'next'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
 import { fetchRelatedArticles } from '@/app/actions/blog-actions'
+import { notFound } from 'next/navigation'
+
+// ISR: revalidate every hour so new edits/comments show without full rebuild
+export const revalidate = 3600
 
 type Blog = {
   id: number
@@ -34,45 +39,54 @@ type Blog = {
   tags: Array<any>
 }
 
-// Fetch blog data from API
-async function fetchBlogById(slug: string) {
+// Fetch blog data from API (returns null on 404 for proper notFound handling)
+async function fetchBlogBySlug(slug: string) {
   const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
   const res = await fetch(`${baseUrl}/api/user/blog?slug=${slug}`, {
     next: { revalidate: 3600 },
   })
 
   if (!res.ok) {
+    if (res.status === 404) return null
     throw new Error('Failed to fetch blog data')
   }
 
   return await res.json()
 }
 
-// Generate metadata for SEO
+// Generate metadata for SEO (Metadata API - unique per post)
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const blog = await fetchBlogById(slug)
+  const blog = await fetchBlogBySlug(slug)
 
-  const title = blog.metaTitle || blog.title
-  const description = blog.metaDescription || blog.excerpt
-  const imageUrl = blog.media || ''
-  const imageAlt = blog.imageAltText || blog.title
-  const focusKeyword = blog.focusKeyword || ''
-  const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
+  if (!blog?.data?.[0]) {
+    return {
+      title: 'Post Not Found',
+      robots: { index: false, follow: false },
+    }
+  }
+
+  const post = blog.data[0]
+  const title = post.metaTitle || post.title
+  const description = post.metaDescription || post.excerpt
+  const imageUrl = post.media || ''
+  const imageAlt = post.imageAltText || post.title
+  const focusKeyword = post.focusKeyword || ''
+  const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-  const blogUrl = `${siteUrl}/blog/${blog.slug}`
+  const blogUrl = `${siteUrl}/blog/${post.slug}`
 
   // Build keywords array including focus keyword
   const keywords: string[] = []
   if (focusKeyword) {
     keywords.push(focusKeyword)
   }
-  if (blog.categories && Array.isArray(blog.categories)) {
-    blog.categories.forEach((cat: any) => {
+  if (post.categories && Array.isArray(post.categories)) {
+    post.categories.forEach((cat: any) => {
       if (cat.name && !keywords.includes(cat.name)) {
         keywords.push(cat.name)
       }
@@ -101,8 +115,8 @@ export async function generateMetadata({
         : [],
       locale: 'en_US',
       type: 'article',
-      publishedTime: blog.publishDate,
-      modifiedTime: blog.updatedAt || blog.publishDate,
+      publishedTime: post.publishDate,
+      modifiedTime: post.updatedAt || post.publishDate,
       authors: [authorName],
       ...(focusKeyword && { tags: [focusKeyword] }),
     },
@@ -120,7 +134,9 @@ export async function generateMetadata({
 
 export default async function BlogPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const blog = await fetchBlogById(slug)
+  const blogResponse = await fetchBlogBySlug(slug)
+  const blog = blogResponse?.data?.[0]
+  if (!blog) notFound()
 
   // Fetch comments, current user ID, and related articles server-side
   const categoryIds = blog.categories?.map((cat: any) => cat.id) || []
@@ -130,105 +146,14 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     fetchRelatedArticles(blog.id, categoryIds, 4),
   ])
 
-  // Generate structured data for SEO
-  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'http://localhost:3000'
-  const blogUrl = `${siteUrl}/blog/${blog.slug}`
-  const authorName = typeof blog.author === 'object' ? blog.author.displayName : 'Author'
-  const imageUrl = blog.media || `${siteUrl}/full_logo.png`
-
-  // Enhanced BlogPosting schema with E-E-A-T signals
-  const blogPostingSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: blog.metaTitle || blog.title,
-    description: blog.metaDescription || blog.excerpt,
-    image: imageUrl,
-    datePublished: blog.publishDate,
-    dateModified: blog.updatedAt || blog.publishDate,
-    author: {
-      '@type': 'Person',
-      name: authorName,
-      ...(blog.author.profileImage && {
-        image: blog.author.profileImage,
-      }),
-      ...(blog.author.bio && {
-        description: blog.author.bio,
-      }),
-      // E-E-A-T: Expertise signals
-      ...(blog.author.role && {
-        jobTitle: blog.author.role,
-      }),
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'My Kunba',
-      logo: {
-        '@type': 'ImageObject',
-        url: `${siteUrl}/full_logo.png`,
-        width: 1200,
-        height: 630,
-      },
-    },
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': blogUrl,
-    },
-    ...(blog.categories && blog.categories.length > 0 && {
-      articleSection: blog.categories.map((cat: any) => cat.name).join(', '),
-    }),
-    ...(blog.focusKeyword && {
-      keywords: [
-        blog.focusKeyword,
-        ...(blog.categories ? blog.categories.map((cat: any) => cat.name) : []),
-      ].join(', '),
-    }),
-  }
-
-  // BreadcrumbList schema for better navigation
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: siteUrl,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Blog',
-        item: `${siteUrl}/blog`,
-      },
-      ...(blog.categories && blog.categories.length > 0
-        ? blog.categories.map((cat: any, index: number) => ({
-            '@type': 'ListItem',
-            position: 3 + index,
-            name: cat.name,
-            item: `${siteUrl}/blog?category=${cat.id}`,
-          }))
-        : []),
-      {
-        '@type': 'ListItem',
-        position: 3 + (blog.categories?.length || 0) + 1,
-        name: blog.title,
-        item: blogUrl,
-      },
-    ],
-  }
+  const siteUrl =
+    process.env.NEXT_PUBLIC_PUBLIC_URL ||
+    process.env.NEXT_PUBLIC_NEXT_URL ||
+    'http://localhost:3000'
 
   return (
     <>
-      {/* Enhanced JSON-LD schemas */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <BlogSchema post={blog} siteUrl={siteUrl} />
       <main className="container mx-auto">
         <BlogContent
           blog={blog}
