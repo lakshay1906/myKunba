@@ -12,6 +12,8 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://new.mykunba.org',
   'https://mykunba.org',
+  'http://3.6.239.45:3000',
+  'http://172.31.7.147:3000'
   // Add your production domain(s) here
   // 'https://your-production-domain.com',
 ]
