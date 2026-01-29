@@ -22,10 +22,10 @@ WORKDIR /app
 # Copy lock files only (better cache)
 COPY package.json pnpm-lock.yaml* yarn.lock* package-lock.json* ./
 
-# Install dependencies
+# Install dependencies (use npm to install pnpm to avoid Corepack fetching registry on 503)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-  corepack enable pnpm && pnpm install --frozen-lockfile; \
+  npm install -g pnpm@9 && pnpm install --frozen-lockfile; \
   elif [ -f yarn.lock ]; then \
   yarn install --frozen-lockfile; \
   elif [ -f package-lock.json ]; then \
@@ -49,16 +49,8 @@ COPY . .
 
 # Build Next.js (standalone output)
 # Use --webpack so standalone file tracing generates middleware.js.nft.json (Turbopack can omit it)
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-  corepack enable pnpm && pnpm exec next build --webpack; \
-  elif [ -f yarn.lock ]; then \
-  yarn exec next build --webpack; \
-  elif [ -f package-lock.json ]; then \
-  npx next build --webpack; \
-  else \
-  echo "❌ No lockfile found" && exit 1; \
-  fi
+# npx uses node_modules from deps (no pnpm/yarn needed in builder)
+RUN npx next build --webpack
 
 # =========================
 # Runtime stage (minimal & secure)
