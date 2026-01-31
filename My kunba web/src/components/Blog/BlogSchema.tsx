@@ -3,6 +3,7 @@
  * Injects BlogPosting + BreadcrumbList into the page head for Rich Snippets.
  * Use absolute URLs and ISO 8601 dates for Google validation.
  */
+import { getPublicUrl } from '@/lib/env'
 
 type PostForSchema = {
   title: string
@@ -47,11 +48,7 @@ export default function BlogSchema({
   post: PostForSchema
   siteUrl?: string
 }) {
-  const siteUrl =
-    siteUrlProp ||
-    process.env.NEXT_PUBLIC_PUBLIC_URL ||
-    process.env.NEXT_PUBLIC_NEXT_URL ||
-    'https://new.mykunba.org'
+  const siteUrl = siteUrlProp || getPublicUrl()
   const blogUrl = `${siteUrl}/blog/${post.slug}`
   const authorName =
     (post.author && typeof post.author === 'object' && post.author.displayName) || 'Author'

@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '../ui/select'
 import { Label } from '../ui/label'
-import { getBlogFilterFromCookies, setBlogFilterCookies } from '@/lib/utils/cookies'
 
 const AUTHORS_CACHE_KEY = 'blog_authors_cache'
 const LIMIT = 24
@@ -24,6 +23,7 @@ const LIMIT = 24
 type BlogProps = {
   posts: Record<string, unknown>
   initialCategories?: Record<string, unknown>[]
+  initialAuthors?: Record<string, unknown>[]
   total?: number
   limit?: number
   hasMore?: boolean
@@ -33,6 +33,7 @@ type BlogProps = {
 export default function Blog({
   posts,
   initialCategories = [],
+  initialAuthors = [],
   total: initialTotal = 0,
   limit: initialLimit = LIMIT,
   hasMore: initialHasMore = false,
@@ -57,7 +58,9 @@ export default function Blog({
     { slug: 'all', name: 'All' },
     ...(Array.isArray(initialCategories) ? initialCategories : []),
   ])
-  const [authors, setAuthors] = useState<Record<string, any>[]>([])
+  const [authors, setAuthors] = useState<Record<string, unknown>[]>(
+    Array.isArray(initialAuthors) && initialAuthors.length > 0 ? initialAuthors : [],
+  )
   const [total, setTotal] = useState(initialTotal)
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [offset, setOffset] = useState(initialLimit)
@@ -66,26 +69,31 @@ export default function Blog({
   const selectedAuthor = blogAuthorEmail
   const limit = initialLimit
 
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
+  const originalDataPersisted = useRef(false)
+  const initialPostsApplied = useRef(false)
 
-  // Persist original data when not in search mode
+  // Persist original data when not in search mode (run once to avoid update loops)
   useEffect(() => {
-    if (posts?.docs && searchResults === null) {
-      const docs = Array.isArray(posts.docs) ? posts.docs : []
-      if (!originalBlogData?.length) setOriginalBlogData(docs)
-    }
-  }, [posts, searchResults, originalBlogData, setOriginalBlogData])
+    if (searchResults !== null || !posts?.docs) return
+    if (originalDataPersisted.current) return
+    const docs = Array.isArray(posts.docs) ? posts.docs : []
+    if (docs.length === 0) return
+    originalDataPersisted.current = true
+    setOriginalBlogData(docs)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOriginalBlogData stable; ref guards re-run
+  }, [searchResults])
 
-  // When server posts change (e.g. initial load), show them unless we're in search mode
+  // When server posts change (e.g. initial load), show them unless we're in search mode (run once)
   useEffect(() => {
-    if (searchResults === null && posts?.docs) {
-      const docs = Array.isArray(posts.docs) ? posts.docs : []
-      setData(docs)
-      setTotal(initialTotal ?? (typeof posts.totalDocs === 'number' ? posts.totalDocs : 0))
-      setHasMore(initialHasMore ?? (Boolean(posts.hasNextPage) ?? false))
-      setOffset(initialLimit)
-    }
-  }, [posts, initialTotal, initialHasMore, initialLimit, searchResults])
+    if (searchResults !== null || !posts?.docs) return
+    if (initialPostsApplied.current) return
+    const docs = Array.isArray(posts.docs) ? posts.docs : []
+    initialPostsApplied.current = true
+    setData(docs)
+    setTotal(initialTotal ?? (typeof posts.totalDocs === 'number' ? posts.totalDocs : 0))
+    setHasMore(initialHasMore ?? (Boolean(posts.hasNextPage) ?? false))
+    setOffset(initialLimit)
+  }, [posts?.docs, posts?.totalDocs, posts?.hasNextPage, searchResults, initialTotal, initialHasMore, initialLimit])
 
   // Search mode: show search results
   useEffect(() => {
@@ -95,40 +103,16 @@ export default function Blog({
     }
   }, [searchResults])
 
-  // Restore category/author from cookies on mount and fetch with those filters (for "/" and "/blog")
-  const restoreFromCookiesDone = useRef(false)
+  // Fetch authors only when not provided by server — run once on mount to avoid loop
+  const authorsFetched = useRef(false)
   useEffect(() => {
-    if (restoreFromCookiesDone.current) return
-    const { categorySlug, authorEmail } = getBlogFilterFromCookies()
-    if (categorySlug !== 'all' || authorEmail !== 'all') {
-      restoreFromCookiesDone.current = true
-      setBlogCategorySlug(categorySlug)
-      setBlogAuthorEmail(authorEmail)
-      setLoading(true)
-      const categoryParam =
-        categorySlug === 'all' ? '' : `&category=${encodeURIComponent(categorySlug)}`
-      const authorParam =
-        authorEmail === 'all' ? '' : `&author=${encodeURIComponent(authorEmail)}`
-      fetch(
-        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
-        { cache: 'no-store' },
-      )
-        .then((res) => res.json())
-        .then((result) => {
-          if (result?.docs) {
-            setData(result.docs)
-            setTotal(result.totalDocs ?? 0)
-            setHasMore(result.hasNextPage ?? false)
-            setOffset(limit)
-          }
-        })
-        .catch((e) => console.error('Error fetching blogs from filter cookies:', e))
-        .finally(() => setLoading(false))
+    if (authorsFetched.current) return
+    const hasServerAuthors = Array.isArray(initialAuthors) && initialAuthors.length > 0
+    if (hasServerAuthors) {
+      authorsFetched.current = true
+      return
     }
-  }, [baseUrl, limit, setBlogCategorySlug, setBlogAuthorEmail])
-
-  // Fetch authors once (with simple cache to avoid double fetch in StrictMode)
-  useEffect(() => {
+    authorsFetched.current = true
     const cached = typeof window !== 'undefined' ? sessionStorage.getItem(AUTHORS_CACHE_KEY) : null
     if (cached) {
       try {
@@ -136,7 +120,7 @@ export default function Blog({
         return
       } catch (_) { }
     }
-    fetch(`${baseUrl}/api/user/authors`, { cache: 'no-store' })
+    fetch('/api/user/authors', { cache: 'no-store' })
       .then((res) => res.json())
       .then((result) => {
         if (!result?.docs) return
@@ -150,7 +134,8 @@ export default function Blog({
         if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(list))
       })
       .catch((e) => console.error('Error fetching authors:', e))
-  }, [baseUrl])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; initialAuthors default [] would retrigger every render
+  }, [])
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return
@@ -159,7 +144,7 @@ export default function Blog({
       const categoryParam = selectedCat === 'all' ? '' : `&category=${encodeURIComponent(selectedCat)}`
       const authorParam = selectedAuthor === 'all' ? '' : `&author=${encodeURIComponent(selectedAuthor)}`
       const res = await fetch(
-        `${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}${authorParam}`,
+        `/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}${authorParam}`,
         { cache: 'no-store' }
       )
       const result = await res.json()
@@ -174,7 +159,7 @@ export default function Blog({
     } finally {
       setLoadingMore(false)
     }
-  }, [loadingMore, hasMore, limit, offset, selectedCat, selectedAuthor, baseUrl])
+  }, [loadingMore, hasMore, limit, offset, selectedCat, selectedAuthor])
 
   useEffect(() => {
     const el = observerRef.current
@@ -196,17 +181,14 @@ export default function Blog({
     if (type === 'category') setBlogCategorySlug(value)
     else setBlogAuthorEmail(value)
 
-    setBlogFilterCookies(newCat, newAuthor)
-
     setSearchResults(null)
     setSearchQuery('')
-
     setLoading(true)
     try {
       const categoryParam = newCat === 'all' ? '' : `&category=${encodeURIComponent(newCat)}`
       const authorParam = newAuthor === 'all' ? '' : `&author=${encodeURIComponent(newAuthor)}`
       const res = await fetch(
-        `${baseUrl}/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
+        `/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
         { cache: 'no-store' }
       )
       const result = await res.json()
@@ -267,21 +249,24 @@ export default function Blog({
               <SelectValue placeholder="Select an author" />
             </SelectTrigger>
             <SelectContent>
-              {authors.map((author) => (
-                <SelectItem
-                  key={author.email || author.id || `author-${author.displayName}`}
-                  value={author.email || 'all'}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{author.displayName || 'Unknown'}</span>
-                    {author.role === 'admin' && (
-                      <Badge variant="default" className="text-xs">
-                        Admin
-                      </Badge>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
+              {authors.map((author) => {
+                const email = typeof author.email === 'string' ? author.email : 'all'
+                const id = author.id != null ? String(author.id) : ''
+                const displayName = typeof author.displayName === 'string' ? author.displayName : 'Unknown'
+                const role = author.role
+                return (
+                  <SelectItem key={email || id || `author-${displayName}`} value={email || 'all'}>
+                    <div className="flex items-center gap-2">
+                      <span>{displayName}</span>
+                      {role === 'admin' && (
+                        <Badge variant="default" className="text-xs">
+                          Admin
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>

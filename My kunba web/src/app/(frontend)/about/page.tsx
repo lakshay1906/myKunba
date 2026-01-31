@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { getPublicUrl } from '@/lib/env'
 
 export const metadata: Metadata = {
   title: 'About Us',
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 }
 
 export default function About() {
-  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+  const siteUrl = getPublicUrl()
 
   // Enhanced Organization schema for E-E-A-T
   const organizationSchema = {

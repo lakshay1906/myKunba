@@ -47,9 +47,7 @@ const nextConfig = {
   },
   output: 'standalone', // Disabled for Windows compatibility
   compiler: {
-    removeConsole: {
-      exclude: ['error', 'warn'],
-    },
+    removeConsole: true,
   },
   webpack: (config, { webpack }) => {
     config.plugins.push(

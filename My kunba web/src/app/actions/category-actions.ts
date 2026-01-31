@@ -1,11 +1,8 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import { getServerApiUrl } from '@/lib/env'
 import { getErrorMessage } from '@/lib/types'
-
-function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_NEXT_URL || process.env.NEXT_PUBLIC_PUBLIC_URL || 'http://3.6.239.45:3000'
-}
 
 export async function createCategory(
   name: string,
@@ -15,7 +12,7 @@ export async function createCategory(
   try {
     const token = (await cookies()).get('access_token')?.value
     if (!token) return null
-    const response = await fetch(`${getBaseUrl()}/api/dashboard/category`, {
+    const response = await fetch(`${getServerApiUrl()}/api/dashboard/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +39,7 @@ export async function createCategory(
 
 export async function fetchAllCategories() {
   try {
-    const rawRes = await fetch(`${getBaseUrl()}/api/user/category`)
+    const rawRes = await fetch(`${getServerApiUrl()}/api/user/category`)
     if (!rawRes.ok) {
       const error = await rawRes.json().catch(() => ({}))
       throw new Error(error.message || 'Failed to fetch categories')
@@ -70,7 +67,7 @@ export async function fetchCategoryData(id: number) {
       throw new Error('No authentication token found')
     }
 
-    const rawRes = await fetch(`${getBaseUrl()}/api/dashboard/category?id=${id}`, {
+    const rawRes = await fetch(`${getServerApiUrl()}/api/dashboard/category?id=${id}`, {
       method: 'GET',
       headers: {
         Authorization: `bearer ${token}`,
@@ -100,7 +97,7 @@ export async function fetchAllCategoryBlogs(catId: number) {
   try {
     const token = (await cookies()).get('access_token')?.value
     if (!token) return null
-    const rawRes = await fetch(`${getBaseUrl()}/api/dashboard/category?id=${catId}`, {
+    const rawRes = await fetch(`${getServerApiUrl()}/api/dashboard/category?id=${catId}`, {
       method: 'GET',
       headers: {
         Authorization: `bearer ${token}`,

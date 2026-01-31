@@ -1,6 +1,7 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
 import type { Metadata } from 'next'
+import { getPublicUrl, getServerApiUrl } from '@/lib/env'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
 import { fetchRelatedArticles } from '@/app/actions/blog-actions'
 import { notFound } from 'next/navigation'
@@ -41,8 +42,7 @@ type Blog = {
 
 // Fetch blog data from API (returns null on 404 for proper notFound handling)
 async function fetchBlogBySlug(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
-  const res = await fetch(`${baseUrl}/api/user/blog?slug=${slug}`, {
+  const res = await fetch(`${getServerApiUrl()}/api/user/blog?slug=${slug}`, {
     next: { revalidate: 3600 },
   })
 
@@ -77,7 +77,7 @@ export async function generateMetadata({
   const imageAlt = post.imageAltText || post.title
   const focusKeyword = post.focusKeyword || ''
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
-  const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+  const siteUrl = getPublicUrl()
   const blogUrl = `${siteUrl}/blog/${post.slug}`
 
   // Build keywords array including focus keyword
@@ -146,10 +146,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     fetchRelatedArticles(blog.id, categoryIds, 4),
   ])
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_PUBLIC_URL ||
-    process.env.NEXT_PUBLIC_NEXT_URL ||
-    'https://new.mykunba.org'
+  const siteUrl = getPublicUrl()
 
   return (
     <>

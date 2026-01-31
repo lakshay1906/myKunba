@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
+import { getPublicUrl, getServerApiUrl } from '@/lib/env'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { notFound } from 'next/navigation'
 
@@ -37,7 +38,7 @@ export async function generateMetadata({
     }
 
     const cat = category.docs[0]
-    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+    const siteUrl = getPublicUrl()
     const categoryUrl = `${siteUrl}/category/${slug}`
 
     return {
@@ -101,13 +102,12 @@ export default async function CategoryPage({
     }
 
     const cat = category.docs[0]
-    const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
     const limit = 12
     const offset = (page - 1) * limit
 
-    // Fetch posts in this category
+    // Fetch posts in this category (server-to-self API: use server URL)
     const [postsRes, categoriesRes] = await Promise.all([
-      fetch(`${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}&category=${cat.id}`, {
+      fetch(`${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&category=${slug}`, {
         cache: 'no-store',
       }),
       fetchAllCategories(),
@@ -116,8 +116,8 @@ export default async function CategoryPage({
     const posts = await postsRes.json()
     const categories = categoriesRes?.docs || []
 
-    // Generate structured data for category page
-    const siteUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+    // Generate structured data for category page (public URL for canonical/schema)
+    const siteUrl = getPublicUrl()
     const categoryUrl = `${siteUrl}/category/${slug}`
 
     const collectionPageSchema = {

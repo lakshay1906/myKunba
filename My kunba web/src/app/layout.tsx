@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { getPublicUrl } from '@/lib/env'
 import './globals.css'
 
 const geistSans = Geist({
@@ -13,11 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_PUBLIC_URL ||
-    process.env.NEXT_PUBLIC_NEXT_URL ||
-    'https://new.mykunba.org',
-  ),
+  metadataBase: new URL(getPublicUrl()),
   title: {
     default: 'My Kunba - Open Blogging Platform',
     template: '%s | My Kunba',

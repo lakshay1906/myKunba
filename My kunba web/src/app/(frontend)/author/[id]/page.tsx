@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
+import { getPublicUrl } from '@/lib/env'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -43,8 +44,7 @@ export async function generateMetadata({
       }
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+    const siteUrl = getPublicUrl()
     const authorUrl = `${siteUrl}/author/${id}`
 
     const displayName = author.displayName ?? 'Author'
@@ -175,8 +175,7 @@ export default async function AuthorPage({
     const categories = categoriesRes?.docs || []
 
     // Generate structured data for author page (E-E-A-T)
-    const siteUrl =
-      process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
+    const siteUrl = getPublicUrl()
     const authorUrl = `${siteUrl}/author/${id}`
 
     const personSchema = {
