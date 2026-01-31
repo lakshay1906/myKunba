@@ -1,6 +1,7 @@
 import Blog from '@/components/Blog/Blog'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { fetchFeaturedBlogs } from '@/app/actions/blog-actions'
+import { fetchAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import type { Metadata } from 'next'
 
@@ -29,32 +30,25 @@ export const metadata: Metadata = {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; page?: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
   const params = await searchParams
-  const categoryId = params.category ? Number(params.category) : undefined
-
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
   const page = params.page ? Number(params.page) : 1
   const limit = 12
   const offset = (page - 1) * limit
 
-  const [postsRes, categoriesRes, featuredBlogs] = await Promise.all([
-    fetch(`${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}`, {
-      cache: 'no-store',
-    }),
+  const blogUrl = `${baseUrl}/api/user/blog?limit=${limit}&offset=${offset}`
+
+  const [postsRes, categoriesRes, featuredBlogs, initialAuthors] = await Promise.all([
+    fetch(blogUrl, { cache: 'no-store' }),
     fetchAllCategories(),
     fetchFeaturedBlogs(),
+    fetchAuthors(),
   ])
 
   const posts = await postsRes.json()
   const categories = categoriesRes?.docs || []
-
-  // Validate category ID exists in categories
-  const validCategoryId =
-    categoryId && !isNaN(categoryId) && categories.some((cat: { id: number }) => cat.id === categoryId)
-      ? categoryId
-      : undefined
 
   // Generate structured data for homepage
   const publicUrl =
@@ -111,9 +105,10 @@ export default async function Home({
       <Blog
         posts={posts}
         initialCategories={categories}
-        {...(validCategoryId !== undefined && { initialSelectedCategory: validCategoryId })}
+        initialAuthors={initialAuthors as unknown as Record<string, unknown>[]}
         total={posts.totalDocs || 0}
         limit={limit}
+        hasMore={posts.hasNextPage ?? false}
       />
     </>
   )

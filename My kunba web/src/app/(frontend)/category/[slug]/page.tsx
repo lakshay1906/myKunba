@@ -101,7 +101,7 @@ export default async function CategoryPage({
     }
 
     const cat = category.docs[0]
-    const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
     const limit = 12
     const offset = (page - 1) * limit
 

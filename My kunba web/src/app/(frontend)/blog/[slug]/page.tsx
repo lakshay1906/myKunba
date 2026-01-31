@@ -41,7 +41,7 @@ type Blog = {
 
 // Fetch blog data from API (returns null on 404 for proper notFound handling)
 async function fetchBlogBySlug(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_NEXT_URL || 'http://3.6.239.45:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.NEXT_PUBLIC_NEXT_URL || 'https://new.mykunba.org'
   const res = await fetch(`${baseUrl}/api/user/blog?slug=${slug}`, {
     next: { revalidate: 3600 },
   })
