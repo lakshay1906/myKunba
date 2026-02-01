@@ -17,12 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
       url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -64,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         pagination: false,
       })
       blogRoutes = posts.docs.map((post) => ({
-        url: `${baseUrl}/blog/${post.slug}`,
+        url: `${baseUrl}/${post.slug}`,
         lastModified: post.updatedAt
           ? new Date(post.updatedAt)
           : post.publishDate

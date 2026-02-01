@@ -6,8 +6,7 @@ import { payload } from '@/payload-client'
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  if (path === '/') return NextResponse.redirect(new URL('/blog', request.url))
-  else if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
+  if (path.startsWith('/dashboard') || path.startsWith('/api/dashboard')) {
     const cookieToken = (await cookies()).get('access_token')?.value
     let token: string | undefined | null = cookieToken
     if (!token || token === '') token = request.headers.get('Authorization')?.split(' ')[1]
@@ -74,8 +73,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next({ request: { headers: requestHeaders } })
     }
   }
+
+  // All other paths (e.g. /, /about, /[slug]) — must return to avoid undefined
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/:path*'],
+  // Only run proxy for dashboard and profile. Do not add / or public routes here —
+  // running proxy for / caused reload loops (dev) and is unnecessary; same applies on EC2/production.
+  matcher: ['/dashboard', '/dashboard/:path*', '/api/dashboard', '/api/dashboard/:path*', '/user/profile'],
 }

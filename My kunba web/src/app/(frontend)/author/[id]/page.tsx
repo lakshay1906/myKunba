@@ -217,7 +217,7 @@ export default async function AuthorPage({
           '@type': 'ListItem',
           position: 2,
           name: 'Authors',
-          item: `${siteUrl}/blog`,
+          item: `${siteUrl}/`,
         },
         {
           '@type': 'ListItem',

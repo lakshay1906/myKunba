@@ -1,5 +1,47 @@
 import { payload } from '@/payload-client'
 
+/**
+ * Fetch a single published blog post by slug (server-side).
+ * Use this in /[slug] (blog post page) so the page works without calling the API (avoids URL/reachability issues).
+ */
+export async function fetchBlogPostBySlug(slug: string) {
+  try {
+    const result = await payload.find({
+      collection: 'posts',
+      where: {
+        slug: { equals: slug },
+        status: { equals: 'published' },
+        deleted_at: { equals: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        media: true,
+        imageAltText: true,
+        author: true,
+        excerpt: true,
+        categories: true,
+        publishDate: true,
+        updatedAt: true,
+        content: true,
+        commentsEnabled: true,
+        metaTitle: true,
+        metaDescription: true,
+        focusKeyword: true,
+        externalLinks: true,
+        internalLinks: true,
+      },
+      depth: 2,
+      limit: 1,
+    })
+    return result.docs[0] ?? null
+  } catch (error) {
+    console.error('Error fetching blog post by slug:', error)
+    return null
+  }
+}
+
 export interface FeaturedBlog {
   id: number
   title: string

@@ -9,7 +9,7 @@ export interface AuthorOption {
 
 /**
  * Fetch authors (admin + author roles) for blog filter dropdown.
- * Used server-side so /blog can pass initialAuthors and avoid client /api/user/authors call.
+ * Used server-side so / (homepage) can pass initialAuthors and avoid client /api/user/authors call.
  */
 export async function fetchAuthors(): Promise<AuthorOption[]> {
   try {

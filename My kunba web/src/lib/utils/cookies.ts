@@ -91,7 +91,7 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
 }
 
-/** Cookie names for blog listing filters (category/author on "/" and "/blog") */
+/** Cookie names for blog listing filters (category/author on "/") */
 const BLOG_FILTER_CATEGORY = 'blog_filter_category'
 const BLOG_FILTER_AUTHOR = 'blog_filter_author'
 const BLOG_FILTER_COOKIE_DAYS = 365

@@ -125,7 +125,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
           {blogs.map((blog, index) => (
             <CarouselItem key={blog.id} className="pl-0">
               <Link
-                href={`/blog/${blog.slug}`}
+                href={`/${blog.slug}`}
                 onClick={async () => {
                   // Track impression on click
                   try {

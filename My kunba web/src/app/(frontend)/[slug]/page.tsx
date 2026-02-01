@@ -1,13 +1,13 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
 import type { Metadata } from 'next'
-import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { getPublicUrl } from '@/lib/env'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
-import { fetchRelatedArticles } from '@/app/actions/blog-actions'
+import { fetchBlogPostBySlug, fetchRelatedArticles } from '@/app/actions/blog-actions'
 import { notFound } from 'next/navigation'
 
-// ISR: revalidate every hour so new edits/comments show without full rebuild
-export const revalidate = 3600
+// Blog posts are served at /[slug] (e.g. /my-post-slug), not /blog/[slug]
+export const dynamic = 'force-dynamic'
 
 type Blog = {
   id: number
@@ -40,37 +40,22 @@ type Blog = {
   tags: Array<any>
 }
 
-// Fetch blog data from API (returns null on 404 for proper notFound handling)
-async function fetchBlogBySlug(slug: string) {
-  const res = await fetch(`${getServerApiUrl()}/api/user/blog?slug=${slug}`, {
-    next: { revalidate: 3600 },
-  })
-
-  if (!res.ok) {
-    if (res.status === 404) return null
-    throw new Error('Failed to fetch blog data')
-  }
-
-  return await res.json()
-}
-
-// Generate metadata for SEO (Metadata API - unique per post)
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const blog = await fetchBlogBySlug(slug)
-
-  if (!blog?.data?.[0]) {
+  if (!slug || typeof slug !== 'string') {
+    return { title: 'Post Not Found', robots: { index: false, follow: false } }
+  }
+  const post = await fetchBlogPostBySlug(slug.trim())
+  if (!post) {
     return {
       title: 'Post Not Found',
       robots: { index: false, follow: false },
     }
   }
-
-  const post = blog.data[0]
   const title = post.metaTitle || post.title
   const description = post.metaDescription || post.excerpt
   const imageUrl = post.media || ''
@@ -78,18 +63,13 @@ export async function generateMetadata({
   const focusKeyword = post.focusKeyword || ''
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = getPublicUrl()
-  const blogUrl = `${siteUrl}/blog/${post.slug}`
+  const postUrl = `${siteUrl}/${post.slug}`
 
-  // Build keywords array including focus keyword
   const keywords: string[] = []
-  if (focusKeyword) {
-    keywords.push(focusKeyword)
-  }
+  if (focusKeyword) keywords.push(focusKeyword)
   if (post.categories && Array.isArray(post.categories)) {
     post.categories.forEach((cat: { name: string }) => {
-      if (cat.name && !keywords.includes(cat.name)) {
-        keywords.push(cat.name)
-      }
+      if (cat.name && !keywords.includes(cat.name)) keywords.push(cat.name)
     })
   }
 
@@ -101,18 +81,9 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: blogUrl,
+      url: postUrl,
       siteName: 'My Kunba',
-      images: imageUrl
-        ? [
-          {
-            url: imageUrl,
-            width: 1200,
-            height: 630,
-            alt: imageAlt,
-          },
-        ]
-        : [],
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: imageAlt }] : [],
       locale: 'en_US',
       type: 'article',
       publishedTime: post.publishDate,
@@ -126,19 +97,16 @@ export async function generateMetadata({
       description,
       images: imageUrl ? [imageUrl] : [],
     },
-    alternates: {
-      canonical: blogUrl,
-    },
+    alternates: { canonical: postUrl },
   }
 }
 
-export default async function BlogPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const blogResponse = await fetchBlogBySlug(slug)
-  const blog = blogResponse?.data?.[0]
+  if (!slug || typeof slug !== 'string') notFound()
+  const blog = await fetchBlogPostBySlug(slug.trim())
   if (!blog) notFound()
 
-  // Fetch comments, current user ID, and related articles server-side
   const categoryIds = blog.categories?.map((cat: { id: number }) => cat.id) || []
   const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),

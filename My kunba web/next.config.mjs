@@ -42,6 +42,8 @@ const payloadUIScssPaths = findPayloadUIScssPaths()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
+  // async redirects() { ... } removed
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },

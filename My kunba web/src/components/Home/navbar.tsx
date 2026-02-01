@@ -76,16 +76,16 @@ export default function Navbar({
     title: 'myKunba',
   },
   menu = [
-    { title: 'Home', url: '/blog' },
+    { title: 'Home', url: '/' },
     {
       title: 'Products',
-      url: '/blog',
+      url: '/',
       items: [
         {
           title: 'Blog',
           description: 'The latest industry news, updates, and info',
           icon: <Book className="size-5 shrink-0" />,
-          url: '/blog',
+          url: '/',
         },
         {
           title: 'Quiz',
@@ -118,7 +118,7 @@ export default function Navbar({
     },
     {
       title: 'Website',
-      url: '/blog',
+      url: '/',
       items: [
         {
           title: 'About Us',
@@ -144,7 +144,7 @@ export default function Navbar({
 }: NavbarProps) {
   const { loginDetail, logout, searchQuery, setSearchQuery, setSearchResults } = useAppStore()
   const pathname = usePathname()
-  const isBlogPage = pathname === '/blog'
+  const isBlogPage = pathname === '/'
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [isSmallScreen, setIsSmallScreen] = useState(false)

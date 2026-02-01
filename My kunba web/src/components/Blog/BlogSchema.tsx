@@ -49,7 +49,7 @@ export default function BlogSchema({
   siteUrl?: string
 }) {
   const siteUrl = siteUrlProp || getPublicUrl()
-  const blogUrl = `${siteUrl}/blog/${post.slug}`
+  const blogUrl = `${siteUrl}/${post.slug}`
   const authorName =
     (post.author && typeof post.author === 'object' && post.author.displayName) || 'Author'
   const authorUrl = post.author?.id ? `${siteUrl}/author/${post.author.id}` : undefined
@@ -112,13 +112,13 @@ export default function BlogSchema({
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/blog` },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/` },
       ...(post.categories && post.categories.length > 0
         ? post.categories.map((cat, index) => ({
           '@type': 'ListItem' as const,
           position: 3 + index,
           name: cat.name,
-          item: `${siteUrl}/blog?category=${cat.id}`,
+          item: `${siteUrl}/?category=${cat.id}`,
         }))
         : []),
       {

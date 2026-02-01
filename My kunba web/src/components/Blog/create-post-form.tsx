@@ -1404,7 +1404,7 @@ export function CreatePostForm() {
                         {field.value?.map((link, index) => (
                           <div key={index} className="flex gap-2 mb-2">
                             <Input
-                              placeholder="/blog/post-slug or /page"
+                              placeholder="/post-slug or /page"
                               value={link.url}
                               onChange={(e) => {
                                 const newLinks = [...(field.value || [])]

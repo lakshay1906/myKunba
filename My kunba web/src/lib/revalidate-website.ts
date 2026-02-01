@@ -10,9 +10,8 @@ import { revalidatePath } from 'next/cache'
 
 export function revalidateBlogPost(slug: string) {
   if (slug) {
-    revalidatePath(`/blog/${slug}`)
+    revalidatePath(`/${slug}`)
   }
-  revalidatePath('/blog')
   revalidatePath('/')
 }
 
@@ -20,17 +19,14 @@ export function revalidateCategory(slug: string) {
   if (slug) {
     revalidatePath(`/category/${slug}`)
   }
-  revalidatePath('/blog')
   revalidatePath('/')
 }
 
 export function revalidateAuthor(userId: number) {
   revalidatePath(`/author/${userId}`)
-  revalidatePath('/blog')
   revalidatePath('/')
 }
 
 export function revalidateListings() {
-  revalidatePath('/blog')
   revalidatePath('/')
 }

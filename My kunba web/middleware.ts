@@ -19,19 +19,28 @@ const allowedOrigins = [
 ]
 
 /**
- * Middleware to enforce CORS and rate limiting
- * 
- * Layer 1: CORS Protection (Web)
- * - Checks Origin header for browser requests
- * - Only allows requests from whitelisted origins
- * 
- * Layer 2: Rate Limiting
- * - Protects against abuse, DDoS, and data scraping
- * - Limits requests per IP address within a time window
+ * Middleware: /blog redirects first, then CORS + rate limiting for API.
+ *
+ * - /blog -> / (302) and /blog/:slug -> /:slug (302) to avoid redirect loops from config
+ * - API routes: CORS and rate limiting
  */
 export function middleware(request: NextRequest) {
-  const origin = request.headers.get('origin')
   const pathname = request.nextUrl.pathname
+
+  // Redirect legacy /blog URLs before any other logic (302 to avoid cache loops)
+  if (pathname === '/blog') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url, 302)
+  }
+  if (pathname.startsWith('/blog/') && pathname.length > 6) {
+    const slug = pathname.slice('/blog/'.length)
+    const url = request.nextUrl.clone()
+    url.pathname = `/${slug}`
+    return NextResponse.redirect(url, 302)
+  }
+
+  const origin = request.headers.get('origin')
   const method = request.method
 
   // Only apply security to API routes
@@ -125,5 +134,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*', // Only apply to API routes
+  // Run on /blog, /blog/*, and all API routes
+  matcher: ['/blog', '/blog/:path*', '/api/:path*'],
 }

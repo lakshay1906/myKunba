@@ -135,7 +135,7 @@ export default async function CategoryPage({
           item: {
             '@type': 'BlogPosting',
             headline: post.title,
-            url: `${siteUrl}/blog/${post.slug}`,
+            url: `${siteUrl}/${post.slug}`,
           },
         })) || [],
       },
@@ -155,7 +155,7 @@ export default async function CategoryPage({
           '@type': 'ListItem',
           position: 2,
           name: 'Blog',
-          item: `${siteUrl}/blog`,
+          item: `${siteUrl}/`,
         },
         {
           '@type': 'ListItem',

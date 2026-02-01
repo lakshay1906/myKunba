@@ -6,6 +6,9 @@ import { fetchAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import type { Metadata } from 'next'
 
+// ISR: revalidate every hour so new posts show without full rebuild
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Home',
   description:
@@ -41,7 +44,7 @@ export default async function Home({
   const blogUrl = `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}`
 
   const [postsRes, categoriesRes, featuredBlogs, initialAuthors] = await Promise.all([
-    fetch(blogUrl, { cache: 'no-store' }),
+    fetch(blogUrl, { next: { revalidate: 3600 } }),
     fetchAllCategories(),
     fetchFeaturedBlogs(),
     fetchAuthors(),
@@ -78,7 +81,7 @@ export default async function Home({
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${publicUrl}/blog?search={search_term_string}`,
+        urlTemplate: `${publicUrl}/?search={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },

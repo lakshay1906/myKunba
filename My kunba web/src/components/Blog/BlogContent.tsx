@@ -256,7 +256,7 @@ export default function BlogContent({
             {relatedArticles.map((article) => (
               <Link
                 key={article.id}
-                href={`/blog/${article.slug}`}
+                href={`/${article.slug}`}
                 className="group block"
                 rel="related"
               >

@@ -60,7 +60,7 @@ export default function BlogCard({ post }: BlogCardProps) {
 
   return (
     <Link
-      href={`/blog/${post.slug}`}
+      href={`/${post.slug}`}
       className="group cursor-pointer size-full"
       onClick={handleClick}
     >

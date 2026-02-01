@@ -504,7 +504,7 @@ export default function EditBlogPage({
           <h1 className="text-2xl font-bold">Edit Blog</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => router.push(`/blog/${blog.slug}`)}>
+          <Button variant="outline" onClick={() => router.push(`/${blog.slug}`)}>
             Preview
           </Button>
           <Button onClick={handleSave} disabled={saving}>
@@ -753,7 +753,7 @@ export default function EditBlogPage({
                 {(blog.internalLinks || []).map((link: any, index: number) => (
                   <div key={index} className="flex gap-2 mb-2">
                     <Input
-                      placeholder="/blog/post-slug or /page"
+                      placeholder="/post-slug or /page"
                       value={link.url || ''}
                       onChange={(e) => {
                         const newLinks = [...(blog.internalLinks || [])]
