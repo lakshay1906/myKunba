@@ -38,7 +38,7 @@ export default function ImageUploadDialog({
   return (
     <div className="w-full">
       {imageUploadData.coverImage ? (
-        <div className="relative w-full h-48 border rounded-md overflow-hidden">
+        <div className="relative w-full aspect-video border rounded-md overflow-hidden bg-muted">
           <Image
             src={imageUploadData.coverImage || '/placeholder.svg'}
             alt="Cover image"
@@ -68,7 +68,7 @@ export default function ImageUploadDialog({
             <Button
               type="button"
               variant="outline"
-              className="w-full h-48 flex flex-col items-center justify-center gap-2 border-dashed border-2 hover:border-solid hover:bg-muted/50 transition-all bg-transparent"
+              className="w-full aspect-video min-h-[180px] flex flex-col items-center justify-center gap-2 border-dashed border-2 hover:border-solid hover:bg-muted/50 transition-all bg-transparent"
               disabled={disabled}
             >
               <ImageIcon className="h-8 w-8 text-muted-foreground" />

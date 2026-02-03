@@ -145,7 +145,12 @@ export async function fetchDashboardBlogBySlug(slug: string) {
 
     // Check authorization: admin can view any, author can only view their own
     const isAdmin = user.role === 'admin'
-    if (!isAdmin && blogPost.author !== user.id) {
+    // author can be populated (object with id) when depth > 0, or a raw id
+    const authorId =
+      typeof blogPost.author === 'object' && blogPost.author !== null && 'id' in blogPost.author
+        ? (blogPost.author as { id: number }).id
+        : blogPost.author
+    if (!isAdmin && authorId !== user.id) {
       throw new Error('You are not authorized to view this blog post')
     }
 

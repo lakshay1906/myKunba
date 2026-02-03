@@ -1130,48 +1130,19 @@ export function CreatePostForm() {
                   <div className="space-y-2">
                     <Label>Featured Image</Label>
                     <div className="border rounded-md p-4">
-                      {imageUploadData.coverImage ? (
-                        <div className="space-y-4">
-                          <div className="relative h-64 w-full overflow-hidden rounded-md">
-                            <img
-                              src={imageUploadData.coverImage}
-                              alt="Cover image"
-                              className="object-cover w-full h-full"
-                              onError={(e) =>
-                                console.error('Image failed to load:', imageUploadData.coverImage)
-                              }
-                              onLoad={() =>
-                                console.log(
-                                  'Image loaded successfully:',
-                                  imageUploadData.coverImage?.substring(0, 50),
-                                )
-                              }
-                            />
-                            <div className="text-xs text-muted-foreground mt-2">
-                              Image loaded from draft:{' '}
-                              {imageUploadData.coverImage?.substring(0, 50)}...
-                            </div>
-                          </div>
-                          {draftImageLoaded && (
-                            <div className="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                              ✓ Image restored from draft
-                            </div>
-                          )}
-                          <ImageUploadDialog
-                            imageUploadData={imageUploadData}
-                            setImageUploadData={handleImageUploadDataChange}
-                            clearAll={clearAll}
-                            placeholder="Change Image"
-                          />
+                      {draftImageLoaded && imageUploadData.coverImage && (
+                        <div className="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded mb-2">
+                          ✓ Image restored from draft
                         </div>
-                      ) : (
-                        <ImageUploadDialog
-                          imageUploadData={imageUploadData}
-                          setImageUploadData={handleImageUploadDataChange}
-                          clearAll={clearAll}
-                          placeholder="Upload Image"
-                        />
                       )}
+                      <ImageUploadDialog
+                        imageUploadData={imageUploadData}
+                        setImageUploadData={handleImageUploadDataChange}
+                        clearAll={clearAll}
+                        placeholder={
+                          imageUploadData.coverImage ? 'Change Image' : 'Upload Image'
+                        }
+                      />
                     </div>
                   </div>
 
@@ -1543,7 +1514,7 @@ export function CreatePostForm() {
                               <span
                                 className={
                                   seoValidation.metrics.keywordDensity.rest90Percent >= 1.5 &&
-                                  seoValidation.metrics.keywordDensity.rest90Percent <= 2.5
+                                    seoValidation.metrics.keywordDensity.rest90Percent <= 2.5
                                     ? 'text-green-600'
                                     : 'text-amber-600'
                                 }

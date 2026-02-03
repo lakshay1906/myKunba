@@ -3,7 +3,6 @@
 import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -279,7 +278,7 @@ export default function EditBlogPage({
 
       // Extract Cloudflare R2 images from updated content
       const newContentImages = extractImageUrlsFromHtml(processedContent)
-      
+
       // Find removed images (images that were in original but not in new content)
       const removedImages = originalContentImagesRef.current.filter(
         (originalUrl) => !newContentImages.includes(originalUrl)
@@ -571,41 +570,16 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label>Featured Image</Label>
                 <div className="border rounded-md p-4">
-                  {/* NEW: Cloudflare R2 storage - ACTIVE */}
-                  {imageUploadData.coverImage || (blog.media && typeof blog.media === 'string') ? (
-                    <div className="space-y-4">
-                      <div className="relative h-64 w-full overflow-hidden rounded-md">
-                        <Image
-                          src={imageUploadData.coverImage || blog.media || '/placeholder.svg'}
-                          alt={blog.title || 'Blog cover image'}
-                          fill
-                          className="object-cover"
-                          unoptimized={
-                            ((imageUploadData.coverImage || blog.media) &&
-                              !(imageUploadData.coverImage || blog.media)?.startsWith('/') &&
-                              !(imageUploadData.coverImage || blog.media)?.startsWith('data:')) ||
-                            undefined
-                          }
-                        />
-                      </div>
-                      <div className="text-sm text-muted-foreground break-all">
-                        Image URL: {imageUploadData.coverImage || blog.media}
-                      </div>
-                      <ImageUploadDialog
-                        imageUploadData={imageUploadData}
-                        setImageUploadData={setImageUploadData}
-                        clearAll={clearImageUpload}
-                        placeholder="Change Image"
-                      />
-                    </div>
-                  ) : (
-                    <ImageUploadDialog
-                      imageUploadData={imageUploadData}
-                      setImageUploadData={setImageUploadData}
-                      clearAll={clearImageUpload}
-                      placeholder="Upload Image"
-                    />
-                  )}
+                  <ImageUploadDialog
+                    imageUploadData={imageUploadData}
+                    setImageUploadData={setImageUploadData}
+                    clearAll={clearImageUpload}
+                    placeholder={
+                      imageUploadData.coverImage || (blog.media && typeof blog.media === 'string')
+                        ? 'Change Image'
+                        : 'Upload Image'
+                    }
+                  />
                 </div>
               </div>
               <div className="space-y-2">
