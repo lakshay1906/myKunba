@@ -101,46 +101,12 @@ export default function BlogContent({
 
   return (
     <div className="max-w-4xl mx-auto mt-4 md:mt-6 lg:mt-8">
-      {/* Featured Image */}
-      {blog.media && (
-        <div className="relative w-full aspect-video mb-5 rounded-lg overflow-hidden">
-          <Image
-            // OLD: Database storage - COMMENTED OUT
-            // src={blog.media.url || '/placeholder.svg'} // OLD: Media object with url property
-            // alt={blog.media.alt || blog.title} // OLD: Media object with alt property
-            // NEW: Cloudflare R2 storage - ACTIVE
-            src={blog.media || '/placeholder.svg'} // NEW: Media is now a URL string
-            alt={blog.imageAltText || blog.title} // NEW: Using imageAltText if available, fallback to title
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 1024px) 100vw, 896px"
-          />
-        </div>
-      )}
-
-      {/* Categories - Internal Linking for Topical Authority */}
-      {blog.categories.length > 0 && (
-        <nav className="mb-4 flex flex-wrap gap-2">
-          {blog.categories.map((category) => (
-            <Link
-              href={`/category/${category.slug}`}
-              key={category.id}
-              className="inline-block"
-            >
-              <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
-                {category.name}
-              </Badge>
-            </Link>
-          ))}
-        </nav>
-      )}
 
       {/* Title */}
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
 
       {/* Author and Date - E-E-A-T Signals */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 lg:gap-6 mb-6 text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 lg:gap-6 mb-4 text-muted-foreground">
         <div className="flex items-center gap-2">
           <Avatar className="size-8">
             <AvatarImage src={blog.author.profileImage || ''} alt={blog.author.displayName} />
@@ -155,7 +121,11 @@ export default function BlogContent({
           </Link>
           {blog.author.role && (
             <span className="text-xs bg-muted px-2 py-1 rounded">
-              {blog.author.role === 'admin' ? 'Administrator' : blog.author.role === 'author' ? 'Author' : 'User'}
+              {blog.author.role === 'admin'
+                ? 'Administrator'
+                : blog.author.role === 'author'
+                  ? 'Author'
+                  : 'User'}
             </span>
           )}
         </div>
@@ -182,6 +152,37 @@ export default function BlogContent({
           <span>Comments</span>
         </a>
       </div>
+
+      {/* Categories - Internal Linking for Topical Authority */}
+      {blog.categories.length > 0 && (
+        <nav className="mb-4 flex flex-wrap gap-2">
+          {blog.categories.map((category) => (
+            <Link href={`/category/${category.slug}`} key={category.id} className="inline-block">
+              <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
+                {category.name}
+              </Badge>
+            </Link>
+          ))}
+        </nav>
+      )}
+
+      {/* Featured Image */}
+      {blog.media && (
+        <div className="relative w-full aspect-video mb-5 rounded-lg overflow-hidden">
+          <Image
+            // OLD: Database storage - COMMENTED OUT
+            // src={blog.media.url || '/placeholder.svg'} // OLD: Media object with url property
+            // alt={blog.media.alt || blog.title} // OLD: Media object with alt property
+            // NEW: Cloudflare R2 storage - ACTIVE
+            src={blog.media || '/placeholder.svg'} // NEW: Media is now a URL string
+            alt={blog.imageAltText || blog.title} // NEW: Using imageAltText if available, fallback to title
+            fill
+            className="object-cover"
+            priority
+            sizes="(max-width: 1024px) 100vw, 896px"
+          />
+        </div>
+      )}
 
       {/* Blog Content */}
       <div className="mb-10">
