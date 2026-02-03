@@ -3,22 +3,25 @@
 import React, { useEffect, useRef, useCallback } from 'react'
 import { useState } from 'react'
 import BlogCard from './BlogCard'
-import { Badge } from '../ui/badge'
 import EmptyBlogState from './EmptyBlogState'
 import Spinner from '../Loading'
 import { motion } from 'framer-motion'
 import { useAppStore } from '@/lib/context/store'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
 import { Label } from '../ui/label'
+import { Input } from '../ui/input'
+import { Search } from 'lucide-react'
+import { MultiSelect } from './multi-select'
+import { Button } from '../ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip'
 
 const AUTHORS_CACHE_KEY = 'blog_authors_cache'
 const LIMIT = 24
+const SEARCH_DEBOUNCE_MS = 800
 
 type BlogProps = {
   posts: Record<string, unknown>
@@ -28,6 +31,24 @@ type BlogProps = {
   limit?: number
   hasMore?: boolean
   initialSelectedCategory?: number
+}
+
+function buildBlogQueryParams(opts: {
+  search?: string
+  categorySlugs: string[]
+  authorEmails: string[]
+  limit: number
+  offset: number
+}) {
+  const params = new URLSearchParams()
+  params.set('limit', String(opts.limit))
+  params.set('offset', String(opts.offset))
+  if (opts.search?.trim()) {
+    params.set('search', opts.search.trim())
+  }
+  opts.categorySlugs.forEach((slug) => params.append('category', slug))
+  opts.authorEmails.forEach((email) => params.append('author', email))
+  return params.toString()
 }
 
 export default function Blog({
@@ -42,10 +63,10 @@ export default function Blog({
     searchResults,
     setSearchResults,
     setSearchQuery,
-    blogCategorySlug,
-    setBlogCategorySlug,
-    blogAuthorEmail,
-    setBlogAuthorEmail,
+    blogCategorySlugs,
+    setBlogCategorySlugs,
+    blogAuthorEmails,
+    setBlogAuthorEmails,
     originalBlogData,
     setOriginalBlogData,
   } = useAppStore()
@@ -54,8 +75,8 @@ export default function Blog({
   const [data, setData] = useState<any[]>(Array.isArray(posts?.docs) ? posts.docs : [])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
   const [categories] = useState<Record<string, unknown>[]>([
-    { slug: 'all', name: 'All' },
     ...(Array.isArray(initialCategories) ? initialCategories : []),
   ])
   const [authors, setAuthors] = useState<Record<string, unknown>[]>(
@@ -65,14 +86,11 @@ export default function Blog({
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [offset, setOffset] = useState(initialLimit)
 
-  const selectedCat = blogCategorySlug
-  const selectedAuthor = blogAuthorEmail
   const limit = initialLimit
-
   const originalDataPersisted = useRef(false)
   const initialPostsApplied = useRef(false)
 
-  // Persist original data when not in search mode (run once to avoid update loops)
+  // Persist original data when not in search mode (run once)
   useEffect(() => {
     if (searchResults !== null || !posts?.docs) return
     if (originalDataPersisted.current) return
@@ -80,10 +98,9 @@ export default function Blog({
     if (docs.length === 0) return
     originalDataPersisted.current = true
     setOriginalBlogData(docs)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOriginalBlogData stable; ref guards re-run
-  }, [searchResults])
+  }, [searchResults, posts?.docs, setOriginalBlogData])
 
-  // When server posts change (e.g. initial load), show them unless we're in search mode (run once)
+  // Apply initial server posts when not in search mode (run once)
   useEffect(() => {
     if (searchResults !== null || !posts?.docs) return
     if (initialPostsApplied.current) return
@@ -95,7 +112,7 @@ export default function Blog({
     setOffset(initialLimit)
   }, [posts?.docs, posts?.totalDocs, posts?.hasNextPage, searchResults, initialTotal, initialHasMore, initialLimit])
 
-  // Search mode: show search results
+  // When in search mode, show search results
   useEffect(() => {
     if (searchResults !== null) {
       setData(searchResults)
@@ -103,7 +120,74 @@ export default function Blog({
     }
   }, [searchResults])
 
-  // Fetch authors only when not provided by server — run once on mount to avoid loop
+  // Fetch with current filters + optional search (single API)
+  const fetchBlogs = useCallback(
+    async (opts: { search?: string; resetOffset?: boolean }) => {
+      setLoading(true)
+      try {
+        const offsetVal = opts.resetOffset !== false ? 0 : offset
+        const qs = buildBlogQueryParams({
+          search: opts.search,
+          categorySlugs: blogCategorySlugs,
+          authorEmails: blogAuthorEmails,
+          limit,
+          offset: offsetVal,
+        })
+        const res = await fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
+        const result = await res.json()
+        if (!res.ok) return
+        const docs = result.docs || []
+        const totalDocs = result.totalDocs ?? 0
+        const nextPage = result.hasNextPage ?? false
+        if (opts.search?.trim()) {
+          setSearchResults(docs)
+          setSearchQuery(opts.search.trim())
+        } else {
+          setSearchResults(null)
+          setSearchQuery('')
+          setData(docs)
+          setTotal(totalDocs)
+          setHasMore(nextPage)
+          setOffset(opts.resetOffset !== false ? limit : offsetVal + docs.length)
+        }
+      } catch (e) {
+        console.error('Error fetching blogs:', e)
+        if (!opts.search?.trim()) setSearchResults(null)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [
+      blogCategorySlugs,
+      blogAuthorEmails,
+      limit,
+      offset,
+      setSearchResults,
+      setSearchQuery,
+    ],
+  )
+
+  // Search: debounce 800ms when has value; when empty, reset and show previously visible (filtered) list
+  const hadSearchValueRef = useRef(false)
+  useEffect(() => {
+    const trimmed = searchInput.trim()
+    if (!trimmed) {
+      setSearchResults(null)
+      setSearchQuery('')
+      if (hadSearchValueRef.current) {
+        hadSearchValueRef.current = false
+        fetchBlogs({ resetOffset: true })
+      }
+      return
+    }
+    hadSearchValueRef.current = true
+    const t = setTimeout(() => {
+      fetchBlogs({ search: trimmed, resetOffset: true })
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [searchInput, fetchBlogs, setSearchResults, setSearchQuery])
+
+  // Fetch authors on mount if not from server
   const authorsFetched = useRef(false)
   useEffect(() => {
     if (authorsFetched.current) return
@@ -124,29 +208,30 @@ export default function Blog({
       .then((res) => res.json())
       .then((result) => {
         if (!result?.docs) return
-        const sorted = result.docs.sort((a: { role?: string; displayName?: string }, b: { role?: string; displayName?: string }) => {
-          if (a.role === 'admin' && b.role !== 'admin') return -1
-          if (a.role !== 'admin' && b.role === 'admin') return 1
-          return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase())
-        })
-        const list = [{ email: 'all', displayName: 'All', role: '' }, ...sorted]
-        setAuthors(list)
-        if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(list))
+        const sorted = result.docs.sort(
+          (a: { role?: string; displayName?: string }, b: { role?: string; displayName?: string }) => {
+            if (a.role === 'admin' && b.role !== 'admin') return -1
+            if (a.role !== 'admin' && b.role === 'admin') return 1
+            return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase())
+          },
+        )
+        setAuthors(sorted)
+        if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(sorted))
       })
       .catch((e) => console.error('Error fetching authors:', e))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; initialAuthors default [] would retrigger every render
-  }, [])
+  }, [initialAuthors])
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return
+    if (loadingMore || !hasMore || searchResults !== null) return
     setLoadingMore(true)
     try {
-      const categoryParam = selectedCat === 'all' ? '' : `&category=${encodeURIComponent(selectedCat)}`
-      const authorParam = selectedAuthor === 'all' ? '' : `&author=${encodeURIComponent(selectedAuthor)}`
-      const res = await fetch(
-        `/api/user/blog?limit=${limit}&offset=${offset}${categoryParam}${authorParam}`,
-        { cache: 'no-store' }
-      )
+      const qs = buildBlogQueryParams({
+        categorySlugs: blogCategorySlugs,
+        authorEmails: blogAuthorEmails,
+        limit,
+        offset,
+      })
+      const res = await fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
       const result = await res.json()
       if (res.ok && result?.docs) {
         setData((prev) => [...prev, ...result.docs])
@@ -159,7 +244,7 @@ export default function Blog({
     } finally {
       setLoadingMore(false)
     }
-  }, [loadingMore, hasMore, limit, offset, selectedCat, selectedAuthor])
+  }, [loadingMore, hasMore, limit, offset, blogCategorySlugs, blogAuthorEmails, searchResults])
 
   useEffect(() => {
     const el = observerRef.current
@@ -168,42 +253,118 @@ export default function Blog({
       (entries) => {
         if (entries[0]?.isIntersecting && hasMore && !loadingMore) loadMore()
       },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '100px' },
     )
     observer.observe(el)
     return () => observer.unobserve(el)
   }, [hasMore, loadingMore, loadMore])
 
-  const handleFilterChange = async (type: 'category' | 'author', value: string) => {
-    const newCat = type === 'category' ? value : selectedCat
-    const newAuthor = type === 'author' ? value : selectedAuthor
+  const handleCategoryChange = (selected: string[]) => {
+    setBlogCategorySlugs(selected)
+    setLoading(true)
+    const searchTerm = searchInput.trim()
+    const qs = buildBlogQueryParams({
+      search: searchTerm || undefined,
+      categorySlugs: selected,
+      authorEmails: blogAuthorEmails,
+      limit,
+      offset: 0,
+    })
+    fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => {
+        if (result == null) return
+        const docs = result.docs || []
+        const totalDocs = result.totalDocs ?? 0
+        const hasNextPage = result.hasNextPage ?? false
+        if (searchTerm) {
+          setSearchResults(docs)
+          setSearchQuery(searchTerm)
+        } else {
+          setSearchResults(null)
+          setSearchQuery('')
+          setData(docs)
+        }
+        setTotal(totalDocs)
+        setHasMore(hasNextPage)
+        setOffset(limit)
+      })
+      .catch((e) => console.error('Error fetching blogs:', e))
+      .finally(() => setLoading(false))
+  }
 
-    if (type === 'category') setBlogCategorySlug(value)
-    else setBlogAuthorEmail(value)
-
+  const handleResetFilters = () => {
+    setSearchInput('')
+    setBlogCategorySlugs([])
+    setBlogAuthorEmails([])
     setSearchResults(null)
     setSearchQuery('')
     setLoading(true)
-    try {
-      const categoryParam = newCat === 'all' ? '' : `&category=${encodeURIComponent(newCat)}`
-      const authorParam = newAuthor === 'all' ? '' : `&author=${encodeURIComponent(newAuthor)}`
-      const res = await fetch(
-        `/api/user/blog?limit=${limit}&offset=0${categoryParam}${authorParam}`,
-        { cache: 'no-store' }
-      )
-      const result = await res.json()
-      if (res.ok) {
+    const qs = buildBlogQueryParams({
+      categorySlugs: [],
+      authorEmails: [],
+      limit,
+      offset: 0,
+    })
+    fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => {
+        if (result == null) return
         setData(result.docs || [])
         setTotal(result.totalDocs ?? 0)
         setHasMore(result.hasNextPage ?? false)
         setOffset(limit)
-      }
-    } catch (e) {
-      console.error('Error fetching blogs:', e)
-    } finally {
-      setLoading(false)
-    }
+      })
+      .catch((e) => console.error('Error fetching blogs:', e))
+      .finally(() => setLoading(false))
   }
+
+  const handleAuthorChange = (selected: string[]) => {
+    setBlogAuthorEmails(selected)
+    setLoading(true)
+    const searchTerm = searchInput.trim()
+    const qs = buildBlogQueryParams({
+      search: searchTerm || undefined,
+      categorySlugs: blogCategorySlugs,
+      authorEmails: selected,
+      limit,
+      offset: 0,
+    })
+    fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => {
+        if (result == null) return
+        const docs = result.docs || []
+        const totalDocs = result.totalDocs ?? 0
+        const hasNextPage = result.hasNextPage ?? false
+        if (searchTerm) {
+          setSearchResults(docs)
+          setSearchQuery(searchTerm)
+        } else {
+          setSearchResults(null)
+          setSearchQuery('')
+          setData(docs)
+        }
+        setTotal(totalDocs)
+        setHasMore(hasNextPage)
+        setOffset(limit)
+      })
+      .catch((e) => console.error('Error fetching blogs:', e))
+      .finally(() => setLoading(false))
+  }
+
+  const categoryOptions = categories
+    .filter((c) => c.slug && (c.slug as string) !== 'all')
+    .map((c) => ({
+      label: (c.name as string) || '',
+      value: (c.slug as string) || '',
+    }))
+  const authorOptions = authors
+    .filter((a) => a.email && (a.email as string) !== 'all')
+    .map((a) => ({
+      label: `${(a.displayName as string) || 'Unknown'}${a.role === 'admin' ? ' (Admin)' : ''}`,
+      value: (a.email as string) || '',
+    }))
 
   return (
     <div id="blog" className="container mx-auto! px-4!">
@@ -213,62 +374,65 @@ export default function Blog({
           Discover stories, insights, and updates from our community.
         </p>
       </div>
-      <div className="max-w-3xl flex flex-col sm:flex-row gap-4 mt-0 sm:mt-2 md:mt-4">
-        <div className="space-y-3 flex-1">
-          <Label htmlFor="category-select">Category</Label>
-          <Select
-            value={selectedCat}
-            onValueChange={(value) => handleFilterChange('category', value)}
-            disabled={loading}
-          >
-            <SelectTrigger id="category-select">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => {
-                const slug = typeof cat.slug === 'string' ? cat.slug : 'all'
-                const id = cat.id != null ? String(cat.id) : ''
-                const name = typeof cat.name === 'string' ? cat.name : ''
-                return (
-                  <SelectItem key={slug || id || `cat-${name}`} value={slug || 'all'}>
-                    {name}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-3 flex-1">
-          <Label htmlFor="author-select">Author</Label>
-          <Select
-            value={selectedAuthor}
-            onValueChange={(value) => handleFilterChange('author', value)}
-            disabled={loading}
-          >
-            <SelectTrigger id="author-select">
-              <SelectValue placeholder="Select an author" />
-            </SelectTrigger>
-            <SelectContent>
-              {authors.map((author) => {
-                const email = typeof author.email === 'string' ? author.email : 'all'
-                const id = author.id != null ? String(author.id) : ''
-                const displayName = typeof author.displayName === 'string' ? author.displayName : 'Unknown'
-                const role = author.role
-                return (
-                  <SelectItem key={email || id || `author-${displayName}`} value={email || 'all'}>
-                    <div className="flex items-center gap-2">
-                      <span>{displayName}</span>
-                      {role === 'admin' && (
-                        <Badge variant="default" className="text-xs">
-                          Admin
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col gap-4 mt-0 sm:mt-2 md:mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div className="space-y-2">
+            <Label htmlFor="blog-search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="blog-search"
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search posts..."
+                className="pl-9 h-10"
+                disabled={loading}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <MultiSelect
+              options={categoryOptions}
+              selected={blogCategorySlugs}
+              onChange={handleCategoryChange}
+              placeholder="All categories"
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Author</Label>
+            <MultiSelect
+              options={authorOptions}
+              selected={blogAuthorEmails}
+              onChange={handleAuthorChange}
+              placeholder="All authors"
+              disabled={loading}
+            />
+          </div>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleResetFilters}
+                  disabled={loading}
+                  aria-label="Reset all filters"
+                  className="size-10 cursor-pointer shrink-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-brush-cleaning-icon lucide-brush-cleaning size-4"><path d="m16 22-1-4" /><path d="M19 14a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1" /><path d="M19 14H5l-1.973 6.767A1 1 0 0 0 4 22h16a1 1 0 0 0 .973-1.233z" /><path d="m8 22 1-4" /></svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reset filters</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
         </div>
       </div>
       {loading ? (

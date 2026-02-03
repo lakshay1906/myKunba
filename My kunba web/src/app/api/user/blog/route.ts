@@ -8,8 +8,6 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get('slug')
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
-    const category = req.nextUrl.searchParams.get('category')
-    const author = req.nextUrl.searchParams.get('author')
     const search = req.nextUrl.searchParams.get('search')
     let data: any
     if (slug) {
@@ -80,84 +78,80 @@ export async function GET(req: NextRequest) {
       const offsetNum = offset ? Number(offset) : 0
       const page = limitNum ? Math.floor(offsetNum / limitNum) + 1 : 1
 
-      // Build where clause
-      const whereClause: any = {
-        deleted_at: {
-          equals: null,
-        },
-        status: {
-          equals: 'published',
-        },
-      }
+      // Multiple categories: ?category=slug1&category=slug2 or ?category=slug1,slug2
+      const categoryParamList = req.nextUrl.searchParams.getAll('category')
+      const categorySlugs = categoryParamList.length
+        ? categoryParamList.flatMap((p) => p.split(',').map((s) => s.trim()).filter((s) => s && s !== 'all' && s !== '0'))
+        : []
 
-      // Add category filter if provided (using slug)
-      if (category && category !== '0' && category !== 'all') {
-        // First, find the category by slug
+      // Multiple authors: ?author=email1&author=email2 or ?author=email1,email2
+      const authorParamList = req.nextUrl.searchParams.getAll('author')
+      const authorEmails = authorParamList.length
+        ? authorParamList.flatMap((p) => p.split(',').map((s) => s.trim()).filter((s) => s && s !== 'all' && s !== '0'))
+        : []
+
+      const searchTrim = search && search.trim() ? search.trim() : ''
+
+      // Resolve category slugs to IDs
+      let categoryIds: number[] = []
+      if (categorySlugs.length > 0) {
         const categoryResult = await payload.find({
           collection: 'categories',
           where: {
-            slug: {
-              equals: category,
-            },
-            deleted_at: {
-              equals: null,
-            },
-            isVisible: {
-              equals: true,
-            },
+            and: [
+              {
+                or: categorySlugs.map((slug) => ({ slug: { equals: slug } })),
+              },
+              { deleted_at: { equals: null } },
+              { isVisible: { equals: true } },
+            ],
           },
-          limit: 1,
+          limit: 100,
         })
-        
-        if (categoryResult.docs.length > 0) {
-          whereClause.categories = {
-            in: [categoryResult.docs[0].id],
-          }
-        }
+        categoryIds = categoryResult.docs.map((c: { id: number }) => c.id)
       }
 
-      // Add author filter if provided (using email)
-      if (author && author !== '0' && author !== 'all') {
-        // First, find the author by email
+      // Resolve author emails to user IDs
+      let authorIds: number[] = []
+      if (authorEmails.length > 0) {
         const authorResult = await payload.find({
           collection: 'users',
           where: {
-            email: {
-              equals: author,
-            },
-            deleted_at: {
-              equals: null,
-            },
-            role: {
-              in: ['admin', 'author'],
-            },
+            and: [
+              {
+                or: authorEmails.map((email) => ({ email: { equals: email } })),
+              },
+              { deleted_at: { equals: null } },
+              { role: { in: ['admin', 'author'] } },
+            ],
           },
-          limit: 1,
+          limit: 100,
         })
-        
-        if (authorResult.docs.length > 0) {
-          whereClause.author = {
-            equals: authorResult.docs[0].id,
-          }
-        }
+        authorIds = authorResult.docs.map((u: { id: number }) => u.id)
       }
 
-      // Add search filter if provided
-      if (search && search.trim()) {
-        const searchTerm = search.trim()
-        whereClause.or = [
-          {
-            title: {
-              contains: searchTerm,
-            },
-          },
-          {
-            excerpt: {
-              contains: searchTerm,
-            },
-          },
-        ]
+      // Build where as AND of: base, categories, authors, search (all combined)
+      const andConditions: any[] = [
+        { deleted_at: { equals: null }, status: { equals: 'published' } },
+      ]
+      if (categoryIds.length > 0) {
+        andConditions.push({ categories: { in: categoryIds } })
       }
+      if (authorIds.length > 0) {
+        andConditions.push({
+          or: authorIds.map((id) => ({ author: { equals: id } })),
+        })
+      }
+      if (searchTrim) {
+        andConditions.push({
+          or: [
+            { title: { contains: searchTrim } },
+            { excerpt: { contains: searchTrim } },
+          ],
+        })
+      }
+
+      const whereClause = andConditions.length === 1 ? andConditions[0] : { and: andConditions }
 
       data = await payload.find({
         collection: 'posts',

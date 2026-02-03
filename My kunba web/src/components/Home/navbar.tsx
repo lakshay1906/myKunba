@@ -6,7 +6,6 @@ import {
   Menu,
   MessageCircleQuestion,
   Newspaper,
-  Search,
   Send,
   UserCircle,
   Zap,
@@ -26,8 +25,7 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Input } from '@/components/ui/input'
-import { JSX, useState, useEffect, useRef } from 'react'
+import { JSX } from 'react'
 import { useAppStore } from '@/lib/context/store'
 import { motion } from 'framer-motion'
 import { RotateCcw } from 'lucide-react'
@@ -142,89 +140,8 @@ export default function Navbar({
     },
   ],
 }: NavbarProps) {
-  const { loginDetail, logout, searchQuery, setSearchQuery, setSearchResults } = useAppStore()
+  const { loginDetail, logout } = useAppStore()
   const pathname = usePathname()
-  const isBlogPage = pathname === '/'
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
-  const [isSmallScreen, setIsSmallScreen] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-
-  // Check screen size for responsive search layout
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsSmallScreen(window.innerWidth < 640)
-    }
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
-
-  // Debounced search function
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults(null)
-      return
-    }
-
-    const timeoutId = setTimeout(async () => {
-      setIsSearching(true)
-      try {
-        const response = await fetch(
-          `/api/user/blog?search=${encodeURIComponent(
-            searchQuery.trim(),
-          )}&limit=100&offset=0`,
-          { cache: 'no-store' },
-        )
-        const result = await response.json()
-        if (response.ok && result.docs) {
-          setSearchResults(result.docs || [])
-        } else {
-          setSearchResults([])
-        }
-      } catch (error) {
-        console.error('Error searching blogs:', error)
-        setSearchResults([])
-      } finally {
-        setIsSearching(false)
-      }
-    }, 800) // 800ms debounce
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, setSearchResults])
-
-  const handleSearchClick = () => {
-    setIsSearchExpanded(true)
-    setTimeout(() => {
-      searchInputRef.current?.focus()
-    }, 100)
-  }
-
-  const handleSearchBlur = () => {
-    // Don't collapse if user is clicking on search results or typing
-    setTimeout(() => {
-      if (!searchQuery.trim()) {
-        setIsSearchExpanded(false)
-      }
-    }, 200)
-  }
-
-  const handleReset = () => {
-    setSearchQuery('')
-    setSearchResults(null)
-    setIsSearchExpanded(false)
-    // Scroll to blog section when reset
-    setTimeout(() => {
-      const blogSection = document.getElementById('blog')
-      if (blogSection) {
-        blogSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 100)
-  }
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-  }
 
   return (
     <div className='w-full border-b fixed top-0 z-50'>
@@ -254,54 +171,6 @@ export default function Navbar({
             </div>
           </div>
           <div className="flex gap-5 justify-center items-center">
-            {isBlogPage && (
-              <div className="flex gap-2 items-center">
-                {!isSearchExpanded ? (
-                  <button
-                    onClick={handleSearchClick}
-                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                    aria-label="Search"
-                  >
-                    <Search className="h-5 w-5 text-foreground opacity-100" />
-                  </button>
-                ) : (
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      width: '200px',
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                    className="relative h-10"
-                  >
-                    <div className="relative h-10 flex items-center">
-                      <Input
-                        ref={searchInputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        onBlur={handleSearchBlur}
-                        placeholder="Search..."
-                        className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <Search className="absolute pointer-events-none left-3 h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </motion.div>
-                )}
-                {isSearchExpanded && (
-                  <button
-                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                    onClick={handleReset}
-                    aria-label="Reset search"
-                  >
-                    <RotateCcw className="h-5 w-5 text-foreground" />
-                  </button>
-                )}
-              </div>
-            )}
             <ThemeToggle />
             {loginDetail ? (
               <div className="flex gap-2 justify-center items-center">
@@ -346,10 +215,7 @@ export default function Navbar({
 
         {/* Mobile Navbar */}
         <div className="block lg:hidden w-full container mx-auto">
-          <div
-            className={`flex ${isSearchExpanded && isSmallScreen ? 'flex-col gap-3' : 'items-center justify-between'
-              }`}
-          >
+          <div className="flex items-center justify-between">
             <div className="flex items-center justify-between flex-1 min-w-0">
               <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
                 <Image
@@ -362,63 +228,6 @@ export default function Navbar({
                 <span className="text-lg font-semibold truncate">{logo.title}</span>
               </a>
               <div className="flex gap-5 justify-center items-center shrink-0">
-                {isBlogPage && isSmallScreen && !isSearchExpanded && (
-                  <button
-                    onClick={handleSearchClick}
-                    className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                    aria-label="Search"
-                  >
-                    <Search className="h-5 w-5 text-foreground opacity-100" />
-                  </button>
-                )}
-                {isBlogPage && !isSmallScreen && (
-                  <div className="flex gap-2 items-center">
-                    {!isSearchExpanded ? (
-                      <button
-                        onClick={handleSearchClick}
-                        className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                        aria-label="Search"
-                      >
-                        <Search className="h-5 w-5 text-foreground opacity-100" />
-                      </button>
-                    ) : (
-                      <motion.div
-                        initial={false}
-                        animate={{
-                          width: '160px',
-                        }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 300,
-                          damping: 30,
-                        }}
-                        className="relative h-10"
-                      >
-                        <div className="relative h-10 flex items-center">
-                          <Input
-                            ref={searchInputRef}
-                            type="text"
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            onBlur={handleSearchBlur}
-                            placeholder="Search..."
-                            className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                          />
-                          <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </motion.div>
-                    )}
-                    {isSearchExpanded && (
-                      <button
-                        className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                        onClick={handleReset}
-                        aria-label="Reset search"
-                      >
-                        <RotateCcw className="h-5 w-5 text-foreground" />
-                      </button>
-                    )}
-                  </div>
-                )}
                 <ThemeToggle />
                 <Sheet>
                   <SheetTrigger asChild>
@@ -483,42 +292,6 @@ export default function Navbar({
                 </Sheet>
               </div>
             </div>
-            {isBlogPage && isSearchExpanded && isSmallScreen && (
-              <div className="flex gap-2 items-center w-full">
-                <motion.div
-                  initial={false}
-                  animate={{
-                    width: '100%',
-                  }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 300,
-                    damping: 30,
-                  }}
-                  className="relative"
-                >
-                  <div className="relative h-10 flex items-center">
-                    <Input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      onBlur={handleSearchBlur}
-                      placeholder="Search..."
-                      className="w-full h-full pl-10 pr-3 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                    />
-                    <Search className="absolute pointer-events-none left-2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </motion.div>
-                <button
-                  className="h-10 w-10 p-2 rounded-lg bg-muted hover:bg-muted/80 border border-border flex items-center justify-center shrink-0 transition-colors"
-                  onClick={handleReset}
-                  aria-label="Reset search"
-                >
-                  <RotateCcw className="h-5 w-5 text-foreground" />
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </section>
