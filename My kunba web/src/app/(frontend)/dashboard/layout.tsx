@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/sidebar/app-sidebar'
-import { SiteHeader } from '@/components/sidebar/site-header'
 import { cookies } from 'next/headers'
+import { DashboardLayoutProvider } from '@/lib/context/dashboard-layout-context'
+import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client'
 import { redirect } from 'next/navigation'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
@@ -83,12 +82,8 @@ export default async function RootLayout({
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar variant="inset" />
-      <SidebarInset className="flex-1 overflow-y-auto">
-        <SiteHeader />
-        <div className="p-4">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <DashboardLayoutProvider>
+      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+    </DashboardLayoutProvider>
   )
 }

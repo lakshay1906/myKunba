@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { CalendarIcon, X, Save, ArrowLeft, ImagePlus } from 'lucide-react'
+import { CalendarIcon, X, Save, ArrowLeft, ImagePlus, BarChart3 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import CategorySelector from '../../components/Blog/category-selector'
@@ -36,6 +36,9 @@ import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
 import { processContentImages } from '@/utils/process-content-images'
 import { extractImageUrlsFromHtml } from '@/utils/cleanup-orphaned-images'
+import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
+import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
+import { cn } from '@/lib/utils'
 
 // const templates = [
 //   { id: 'standard', name: 'Standard' },
@@ -83,6 +86,54 @@ export default function EditBlogPage({
   })
   const isUploadingRef = useRef(false)
   const originalContentImagesRef = useRef<string[]>([]) // Track original Cloudflare R2 images in content
+  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
+  const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+
+  // Sync SEO result to layout context so the right sidebar (rendered in layout) can show it
+  useEffect(() => {
+    setContextSeoResult(seoScoreResult)
+    return () => setContextSeoResult(null)
+  }, [seoScoreResult, setContextSeoResult])
+
+  // SEO score and checks for Rank Math sidebar (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const metaTitle = blog.metaTitle || blog.title || ''
+      const metaDesc = blog.metaDescription || blog.excerpt || ''
+      const content = blog.content || ''
+      const result = getSEOScoreAndChecks(
+        metaTitle,
+        blog.slug || '',
+        metaDesc,
+        content,
+        blog.focusKeyword || '',
+        {
+          imageAltText: blog.imageAltText || imageUploadData.alt,
+          externalLinksCount: (blog.externalLinks || []).length,
+          internalLinksCount: (blog.internalLinks || []).length,
+        },
+      )
+      setSeoScoreResult(result)
+    }, 500)
+    return () => clearTimeout(timeoutId)
+  }, [
+    blog.title,
+    blog.slug,
+    blog.excerpt,
+    blog.content,
+    blog.metaTitle,
+    blog.metaDescription,
+    blog.focusKeyword,
+    blog.imageAltText,
+    blog.externalLinks,
+    blog.internalLinks,
+    imageUploadData.alt,
+  ])
+
+  // Reset right sidebar when leaving edit page
+  useEffect(() => {
+    return () => setRightSidebarOpen(false)
+  }, [setRightSidebarOpen])
 
   // Initialize blog data from prop
   useEffect(() => {
@@ -491,8 +542,14 @@ export default function EditBlogPage({
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
+    <div className="container mx-auto py-6 px-4 relative">
+      {/* Rank Math trigger bar */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 flex items-center justify-end gap-2 bg-background/95 border-b shadow-sm">
+
+      </div>
+
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4 lg:gap-0">
+
         <div className="flex items-center space-x-2">
           <Link href={'/dashboard/blog'}>
             <Button variant="ghost" size="sm">
@@ -503,6 +560,27 @@ export default function EditBlogPage({
           <h1 className="text-2xl font-bold">Edit Blog</h1>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setRightSidebarOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+            aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
+          >
+            <BarChart3 className="h-4 w-4" />
+            <span>Rank Math</span>
+            {seoScoreResult != null && (
+              <span
+                className={cn(
+                  'rounded px-1.5 py-0.5 text-xs font-medium',
+                  seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                  seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                  seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                )}
+              >
+                {seoScoreResult.score} / 100
+              </span>
+            )}
+          </button>
           <Button variant="outline" onClick={() => router.push(`/${blog.slug}`)}>
             Preview
           </Button>
@@ -541,7 +619,7 @@ export default function EditBlogPage({
                 <Input
                   id="title"
                   name="title"
-                  value={blog.title}
+                  value={blog.title ?? ''}
                   onChange={handleInputChange}
                   placeholder="Enter blog title"
                 />
@@ -551,7 +629,7 @@ export default function EditBlogPage({
                 <Input
                   id="slug"
                   name="slug"
-                  value={blog.slug}
+                  value={blog.slug ?? ''}
                   onChange={handleInputChange}
                   placeholder="Enter blog slug"
                 />
@@ -561,7 +639,7 @@ export default function EditBlogPage({
                 <Textarea
                   id="excerpt"
                   name="excerpt"
-                  value={blog.excerpt}
+                  value={blog.excerpt ?? ''}
                   onChange={handleInputChange}
                   placeholder="Enter blog excerpt"
                   rows={3}
@@ -603,7 +681,7 @@ export default function EditBlogPage({
                 <Input
                   id="metaTitle"
                   name="metaTitle"
-                  value={blog.metaTitle || blog.title || ''}
+                  value={blog.metaTitle ?? blog.title ?? ''}
                   onChange={handleInputChange}
                   onBlur={(e) => {
                     // If empty on blur, fill with title
@@ -623,7 +701,7 @@ export default function EditBlogPage({
                 <Textarea
                   id="metaDescription"
                   name="metaDescription"
-                  value={blog.metaDescription || blog.excerpt || ''}
+                  value={blog.metaDescription ?? blog.excerpt ?? ''}
                   onChange={handleInputChange}
                   onBlur={(e) => {
                     // If empty on blur, fill with excerpt
@@ -644,7 +722,7 @@ export default function EditBlogPage({
                 <Input
                   id="focusKeyword"
                   name="focusKeyword"
-                  value={blog.focusKeyword || ''}
+                  value={blog.focusKeyword ?? ''}
                   onChange={handleInputChange}
                   placeholder="e.g., web development, react tutorial"
                 />
@@ -658,7 +736,7 @@ export default function EditBlogPage({
                 <Input
                   id="imageAltText"
                   name="imageAltText"
-                  value={blog.imageAltText || ''}
+                  value={blog.imageAltText ?? ''}
                   onChange={handleInputChange}
                   placeholder="Descriptive alt text for the cover image"
                 />
@@ -676,7 +754,7 @@ export default function EditBlogPage({
                   <div key={index} className="flex gap-2 mb-2">
                     <Input
                       placeholder="URL"
-                      value={link.url || ''}
+                      value={link?.url ?? ''}
                       onChange={(e) => {
                         const newLinks = [...(blog.externalLinks || [])]
                         newLinks[index] = { ...newLinks[index], url: e.target.value }
@@ -685,7 +763,7 @@ export default function EditBlogPage({
                     />
                     <Input
                       placeholder="Anchor Text"
-                      value={link.anchorText || ''}
+                      value={link?.anchorText ?? ''}
                       onChange={(e) => {
                         const newLinks = [...(blog.externalLinks || [])]
                         newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
@@ -728,7 +806,7 @@ export default function EditBlogPage({
                   <div key={index} className="flex gap-2 mb-2">
                     <Input
                       placeholder="/post-slug or /page"
-                      value={link.url || ''}
+                      value={link?.url ?? ''}
                       onChange={(e) => {
                         const newLinks = [...(blog.internalLinks || [])]
                         newLinks[index] = { ...newLinks[index], url: e.target.value }
@@ -737,7 +815,7 @@ export default function EditBlogPage({
                     />
                     <Input
                       placeholder="Anchor Text"
-                      value={link.anchorText || ''}
+                      value={link?.anchorText ?? ''}
                       onChange={(e) => {
                         const newLinks = [...(blog.internalLinks || [])]
                         newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
@@ -798,7 +876,7 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
-                  value={blog.status}
+                  value={blog.status ?? 'draft'}
                   onValueChange={(value) => handleSelectChange('status', value)}
                 >
                   <SelectTrigger>
@@ -841,7 +919,7 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label htmlFor="template">Template</Label>
                 <Select
-                  value={blog.template}
+                  value={blog.template ?? 'standard'}
                   onValueChange={(value) => handleSelectChange('template', value)}
                 >
                   <SelectTrigger>

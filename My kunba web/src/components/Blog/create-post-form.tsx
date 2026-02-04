@@ -48,9 +48,10 @@ import {
   hasDraftDataAsync,
   type BlogDraftData,
 } from '@/lib/utils/cookies'
-import { validateSEO } from '@/lib/utils/seo-validation'
+import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, BarChart3 } from 'lucide-react'
+import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
 import { processContentImages } from '@/utils/process-content-images'
 
 // Define the form schema with Zod
@@ -111,7 +112,14 @@ export function CreatePostForm() {
   const hasShownLeaveToastRef = useRef(false)
   const isSubmittingRef = useRef(false)
   const saveDraftRef = useRef<((immediate?: boolean) => void) | null>(null)
-  const [seoValidation, setSeoValidation] = useState<any>(null)
+  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
+  const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+
+  // Sync SEO result to layout context so the right sidebar (rendered in layout) can show it
+  useEffect(() => {
+    setContextSeoResult(seoScoreResult)
+    return () => setContextSeoResult(null)
+  }, [seoScoreResult, setContextSeoResult])
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -137,17 +145,23 @@ export function CreatePostForm() {
 
   // Run SEO validation when relevant fields change (debounced for performance)
   useEffect(() => {
-    // Debounce validation to avoid running on every keystroke
     const timeoutId = setTimeout(() => {
-      const validation = validateSEO(
-        watchedValues.metaTitle || watchedValues.title,
+      const metaTitle = watchedValues.metaTitle || watchedValues.title
+      const metaDesc = watchedValues.metaDescription || watchedValues.excerpt
+      const scoreResult = getSEOScoreAndChecks(
+        metaTitle,
         watchedValues.slug,
-        watchedValues.metaDescription || watchedValues.excerpt,
+        metaDesc,
         watchedValues.content,
         watchedValues.focusKeyword || '',
+        {
+          imageAltText: imageUploadData.alt || watchedValues.imageAltText,
+          externalLinksCount: watchedValues.externalLinks?.length ?? 0,
+          internalLinksCount: watchedValues.internalLinks?.length ?? 0,
+        },
       )
-      setSeoValidation(validation)
-    }, 500) // Wait 500ms after user stops typing
+      setSeoScoreResult(scoreResult)
+    }, 500)
 
     return () => clearTimeout(timeoutId)
   }, [
@@ -158,6 +172,10 @@ export function CreatePostForm() {
     watchedValues.excerpt,
     watchedValues.content,
     watchedValues.focusKeyword,
+    watchedValues.imageAltText,
+    watchedValues.externalLinks,
+    watchedValues.internalLinks,
+    imageUploadData.alt,
   ])
 
   // Wrapper for setImageUploadData that triggers save when coverImage changes
@@ -995,6 +1013,13 @@ export function CreatePostForm() {
     }
   }, [])
 
+  // Reset right sidebar when leaving blog create so left sidebar shows again
+  useEffect(() => {
+    return () => {
+      setRightSidebarOpen(false)
+    }
+  }, [setRightSidebarOpen])
+
   // Fetch categories on mount
   useEffect(() => {
     refreshCategories()
@@ -1013,7 +1038,32 @@ export function CreatePostForm() {
   )
 
   return (
-    <div className="container mx-auto pt-3 pb-6">
+    <div className="container mx-auto pt-3 pb-6 relative">
+      {/* Rank Math trigger bar: score + open sidebar button */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 flex items-center justify-end gap-2 bg-background/95 border-b shadow-sm">
+        <button
+          type="button"
+          onClick={() => setRightSidebarOpen((o) => !o)}
+          className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+          aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
+        >
+          <BarChart3 className="h-4 w-4" />
+          <span>Rank Math</span>
+          {seoScoreResult != null && (
+            <span
+              className={cn(
+                'rounded px-1.5 py-0.5 text-xs font-medium',
+                seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+              )}
+            >
+              {seoScoreResult.score} / 100
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Clear Draft Button - Show when draft data exists */}
       {hasDraftData && (
         <div className="mb-4 flex items-center justify-between p-4 border rounded-md bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
@@ -1155,7 +1205,7 @@ export function CreatePostForm() {
                         <FormLabel>Content</FormLabel>
                         <FormControl>
                           <RichTextEditor
-                            value={field.value}
+                            value={field.value ?? ''}
                             onChange={(value) => {
                               field.onChange(value)
                               // Trigger save immediately for content changes
@@ -1201,16 +1251,6 @@ export function CreatePostForm() {
                         </FormControl>
                         <FormDescription>
                           Title used for SEO purposes. Defaults to post title if left empty.
-                          {seoValidation && seoValidation.metrics.metaTitleLength > 60 && (
-                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                              ⚠️ {seoValidation.metrics.metaTitleLength}/60 characters (recommended)
-                            </span>
-                          )}
-                          {seoValidation && seoValidation.metrics.metaTitleLength <= 60 && (
-                            <span className="block mt-1 text-green-600 dark:text-green-400">
-                              ✓ {seoValidation.metrics.metaTitleLength}/60 characters
-                            </span>
-                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1234,16 +1274,6 @@ export function CreatePostForm() {
                         </FormControl>
                         <FormDescription>
                           The URL-friendly version of the title.
-                          {seoValidation && seoValidation.metrics.slugLength > 75 && (
-                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                              ⚠️ {seoValidation.metrics.slugLength}/75 characters (recommended)
-                            </span>
-                          )}
-                          {seoValidation && seoValidation.metrics.slugLength <= 75 && (
-                            <span className="block mt-1 text-green-600 dark:text-green-400">
-                              ✓ {seoValidation.metrics.slugLength}/75 characters
-                            </span>
-                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1266,11 +1296,6 @@ export function CreatePostForm() {
                         </FormControl>
                         <FormDescription>
                           Description used for SEO purposes. Defaults to excerpt if left empty.
-                          {seoValidation && seoValidation.metrics.descriptionLength > 160 && (
-                            <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                              ⚠️ {seoValidation.metrics.descriptionLength}/160 characters
-                            </span>
-                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1315,7 +1340,7 @@ export function CreatePostForm() {
                           <div key={index} className="flex gap-2 mb-2">
                             <Input
                               placeholder="URL"
-                              value={link.url}
+                              value={link?.url ?? ''}
                               onChange={(e) => {
                                 const newLinks = [...(field.value || [])]
                                 newLinks[index] = { ...newLinks[index], url: e.target.value }
@@ -1325,7 +1350,7 @@ export function CreatePostForm() {
                             />
                             <Input
                               placeholder="Anchor Text"
-                              value={link.anchorText}
+                              value={link?.anchorText ?? ''}
                               onChange={(e) => {
                                 const newLinks = [...(field.value || [])]
                                 newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
@@ -1376,7 +1401,7 @@ export function CreatePostForm() {
                           <div key={index} className="flex gap-2 mb-2">
                             <Input
                               placeholder="/post-slug or /page"
-                              value={link.url}
+                              value={link?.url ?? ''}
                               onChange={(e) => {
                                 const newLinks = [...(field.value || [])]
                                 newLinks[index] = { ...newLinks[index], url: e.target.value }
@@ -1386,7 +1411,7 @@ export function CreatePostForm() {
                             />
                             <Input
                               placeholder="Anchor Text"
-                              value={link.anchorText}
+                              value={link?.anchorText ?? ''}
                               onChange={(e) => {
                                 const newLinks = [...(field.value || [])]
                                 newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
@@ -1421,113 +1446,6 @@ export function CreatePostForm() {
                       </FormItem>
                     )}
                   />
-
-                  {/* SEO Validation Warnings */}
-                  {seoValidation && seoValidation.warnings.length > 0 && (
-                    <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <AlertTitle className="text-amber-800 dark:text-amber-200">
-                        SEO Recommendations
-                      </AlertTitle>
-                      <AlertDescription className="text-amber-700 dark:text-amber-300">
-                        <ul className="list-disc list-inside space-y-1 mt-2">
-                          {seoValidation.warnings.map((warning: string, index: number) => (
-                            <li key={index} className="text-sm">
-                              {warning}
-                            </li>
-                          ))}
-                        </ul>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* SEO Metrics Display */}
-                  {seoValidation && (
-                    <div className="p-4 border rounded-md bg-muted/50">
-                      <h3 className="font-medium text-sm mb-3">SEO Metrics</h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Meta Title:</span>{' '}
-                          <span
-                            className={
-                              seoValidation.metrics.metaTitleLength > 60
-                                ? 'text-amber-600'
-                                : 'text-green-600'
-                            }
-                          >
-                            {seoValidation.metrics.metaTitleLength}/60
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Slug:</span>{' '}
-                          <span
-                            className={
-                              seoValidation.metrics.slugLength > 75
-                                ? 'text-amber-600'
-                                : 'text-green-600'
-                            }
-                          >
-                            {seoValidation.metrics.slugLength}/75
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Description:</span>{' '}
-                          <span
-                            className={
-                              seoValidation.metrics.descriptionLength > 160
-                                ? 'text-amber-600'
-                                : 'text-green-600'
-                            }
-                          >
-                            {seoValidation.metrics.descriptionLength}/160
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Word Count:</span>{' '}
-                          <span
-                            className={
-                              seoValidation.metrics.wordCount < 600
-                                ? 'text-amber-600'
-                                : 'text-green-600'
-                            }
-                          >
-                            {seoValidation.metrics.wordCount}{' '}
-                            {seoValidation.metrics.wordCount < 600 ? '(recommended: 600+)' : '✓'}
-                          </span>
-                        </div>
-                        {watchedValues.focusKeyword && (
-                          <>
-                            <div>
-                              <span className="text-muted-foreground">Keyword (First 10%):</span>{' '}
-                              <span
-                                className={
-                                  seoValidation.metrics.keywordDensity.first10Percent > 0
-                                    ? 'text-green-600'
-                                    : 'text-amber-600'
-                                }
-                              >
-                                {seoValidation.metrics.keywordDensity.first10Percent.toFixed(2)}%
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Keyword (Rest 90%):</span>{' '}
-                              <span
-                                className={
-                                  seoValidation.metrics.keywordDensity.rest90Percent >= 1.5 &&
-                                    seoValidation.metrics.keywordDensity.rest90Percent <= 2.5
-                                    ? 'text-green-600'
-                                    : 'text-amber-600'
-                                }
-                              >
-                                {seoValidation.metrics.keywordDensity.rest90Percent.toFixed(2)}%
-                                (target: 1.5-2%)
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="p-4 border rounded-md bg-muted/50">
                     <h3 className="font-medium text-sm mb-2">Search Preview</h3>
