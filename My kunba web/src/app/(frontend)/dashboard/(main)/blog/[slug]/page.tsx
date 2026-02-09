@@ -1,7 +1,6 @@
 import BlogDetailPage from '@/components/Blog/BlogDetailPage'
 import { fetchDashboardBlogBySlug } from '@/app/actions/dashboard-actions'
 import { redirect } from 'next/navigation'
-import React from 'react'
 
 // Mark this route as dynamic since it uses cookies() for authentication
 export const dynamic = 'force-dynamic'

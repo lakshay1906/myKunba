@@ -3,6 +3,7 @@
 ## ✅ What Has Been Implemented
 
 ### 1. Pre-Validation Endpoint
+
 **File:** `src/app/api/dashboard/blog/validate/route.ts`
 
 - Validates unique fields (title, slug) **before** any image uploads
@@ -11,9 +12,11 @@
 - Supports both create and update operations (excludes current post ID for updates)
 
 ### 2. Updated Submission Flow
+
 **File:** `src/components/Blog/create-post-form.tsx`
 
 **New Flow:**
+
 ```
 1. User clicks Submit
    ↓
@@ -31,12 +34,14 @@
 ```
 
 **Key Changes:**
+
 - Validation happens **first** (Phase 1)
 - Image uploads happen **only after** validation passes (Phase 2)
 - Image tracking for cleanup on failure
 - Automatic cleanup of orphaned images if blog creation fails
 
 ### 3. Cleanup Utility
+
 **File:** `src/utils/cleanup-orphaned-images.ts`
 
 - Utility functions for cleaning up orphaned images
@@ -45,6 +50,7 @@
 - Handles batch cleanup operations
 
 ### 4. Image Deletion Endpoint
+
 **File:** `src/app/api/image/delete/route.ts`
 
 - Secure endpoint for deleting images from Cloudflare R2
@@ -54,16 +60,19 @@
 ## 🎯 Benefits Achieved
 
 ### Cost Optimization
+
 - ✅ **Zero orphaned images** from validation failures
 - ✅ **Reduced bandwidth costs** - no uploads for invalid submissions
 - ✅ **Reduced API calls** - validation is lightweight vs. image upload
 
 ### User Experience
+
 - ✅ **Fast feedback** - validation errors shown immediately (no wait for uploads)
 - ✅ **Clear error messages** - specific field-level validation errors
 - ✅ **No wasted uploads** - users see errors before any uploads happen
 
 ### Scalability
+
 - ✅ **Lightweight validation** - fast database queries
 - ✅ **Parallel image uploads** - all images uploaded simultaneously after validation
 - ✅ **Non-blocking cleanup** - orphaned image cleanup doesn't block error response
@@ -71,32 +80,32 @@
 ## 📊 Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐
 │ CLIENT: Form Submission                                      │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
                           ↓
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐
 │ PHASE 1: Pre-Validation                                      │
 │  POST /api/dashboard/blog/validate                           │
 │  ├─ Check title uniqueness                                   │
 │  ├─ Check slug uniqueness                                    │
-│  └─ Return: { valid: true/false, errors?: {...} }           │
-└─────────────────────────────────────────────────────────────┘
+│  └─ Return: { valid: true/false, errors?: {...} }            │
+└──────────────────────────────────────────────────────────────┘
                           ↓ (if valid)
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐
 │ PHASE 2: Image Upload                                        │
 │  ├─ Upload cover image → Track URL                           │
 │  ├─ Upload content images → Track URLs                       │
 │  └─ All uploads tracked in uploadedImages[] array            │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
                           ↓
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐
 │ PHASE 3: Blog Creation                                       │
 │  POST /api/dashboard/blog                                    │
 │  ├─ Create blog post with image URLs                         │
 │  ├─ If success → Return blog data                            │
 │  └─ If failure → Trigger cleanup (delete uploaded images)    │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ## 🔒 Security Considerations
@@ -109,11 +118,13 @@
 ## 🚀 Performance Metrics
 
 ### Before (Old Flow)
+
 - Average submission time: ~3-5 seconds (includes image uploads even for invalid submissions)
 - Failed submissions: All images uploaded → orphaned (cost accumulation)
 - Validation feedback: After uploads complete (~2-3 seconds delay)
 
 ### After (New Flow)
+
 - Average validation time: ~100-300ms (fast database queries)
 - Failed submissions: Zero images uploaded → zero cost
 - Validation feedback: Immediate (~100-300ms)
@@ -122,11 +133,13 @@
 ## 📝 Next Steps (Optional Enhancements)
 
 ### Phase 2 (Short-term)
+
 1. ⚠️ **Monitoring:** Add analytics to track validation failure rates
 2. ⚠️ **Caching:** Cache validation results for frequently checked slugs/titles
 3. ⚠️ **Retry Logic:** Add exponential backoff for upload failures
 
 ### Phase 3 (Long-term)
+
 1. ⚠️ **Async Cleanup Queue:** Queue-based cleanup system for better scalability
 2. ⚠️ **Batch Operations:** Support batch image uploads/deletions
 3. ⚠️ **Image Lifecycle Management:** Track image usage across blogs for better cleanup
@@ -135,12 +148,14 @@
 ## 🧪 Testing Recommendations
 
 1. **Validation Tests:**
+
    - Test duplicate title detection
    - Test duplicate slug detection
    - Test validation with existing blog (update scenario)
    - Test validation with invalid auth token
 
 2. **Submission Tests:**
+
    - Test successful submission flow
    - Test submission failure after image upload (verify cleanup)
    - Test submission with multiple content images
@@ -155,10 +170,12 @@
 ## 🐛 Known Limitations
 
 1. **Content Images:** Still uploaded immediately when added to editor (not during submission)
+
    - **Mitigation:** Images in content are tracked and cleaned up if submission fails
    - **Future:** Could implement lazy upload for content images too
 
 2. **Network Failures:** If cleanup API fails, images remain orphaned
+
    - **Mitigation:** Cleanup is logged for manual intervention
    - **Future:** Implement retry queue for failed cleanups
 

@@ -6,6 +6,7 @@ import {
   CameraIcon,
   FileCodeIcon,
   FileTextIcon,
+  ImageIcon,
   LayoutDashboardIcon,
   MessageCircleHeart,
   Reply,
@@ -146,11 +147,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: '/dashboard/category',
         icon: Shapes,
       },
-      // {
-      //   name: 'Tag',
-      //   url: '/dashboard/tags',
-      //   icon: Bookmark,
-      // },
+      ...(loginDetail?.role === 'admin'
+        ? [{ name: 'Media', url: '/dashboard/media', icon: ImageIcon }]
+        : []),
     ],
   }
   return (

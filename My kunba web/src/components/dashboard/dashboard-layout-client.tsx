@@ -47,7 +47,7 @@ export function DashboardLayoutClient({
       <SidebarInset className="flex flex-row flex-1 min-w-0 overflow-hidden">
         <div className="flex-1 min-w-0 overflow-y-auto flex flex-col">
           <SiteHeader />
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 p-4">{children}</div>
         </div>
         {rightSidebarOpen && (
           <SEOSidebar

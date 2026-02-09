@@ -1,4 +1,10 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 
 // Validate required environment variables
@@ -33,6 +39,66 @@ function getS3Client(): S3Client {
     })
   }
   return s3Client
+}
+
+export type MediaListItem = {
+  key: string
+  url: string
+  size?: number
+  lastModified?: Date
+}
+
+/**
+ * List all objects in the R2 bucket. Returns key, public URL, size, and lastModified.
+ * ListObjectsV2 does not return ContentType; use getMediaDetails(key) for that.
+ */
+export async function getMediaList(): Promise<MediaListItem[]> {
+  const bucket = process.env.CLOUDFLARE_BUCKET_NAME || 'my-kunba-blog-images'
+  const s3 = getS3Client()
+  const command = new ListObjectsV2Command({
+    Bucket: bucket,
+  })
+
+  const { Contents } = await s3.send(command)
+  const baseUrl = (process.env.CLOUDFLARE_PUBLIC_URL || '').replace(/\/$/, '')
+  return (Contents ?? [])
+    .filter((item): item is typeof item & { Key: string } => Boolean(item.Key))
+    .map((item) => ({
+      key: item.Key,
+      url: baseUrl ? `${baseUrl}/${item.Key}` : '',
+      size: item.Size,
+      lastModified: item.LastModified,
+    }))
+}
+
+export type MediaDetails = {
+  key: string
+  url: string
+  contentType: string
+  lastModified: Date
+  sizeBytes: number
+}
+
+/**
+ * Get full metadata for one object (ContentType, Size, LastModified). Uses HeadObject.
+ */
+export async function getMediaDetails(key: string): Promise<MediaDetails | null> {
+  const bucket = process.env.CLOUDFLARE_BUCKET_NAME || 'my-kunba-blog-images'
+  const baseUrl = (process.env.CLOUDFLARE_PUBLIC_URL || '').replace(/\/$/, '')
+  const s3 = getS3Client()
+  try {
+    const command = new HeadObjectCommand({ Bucket: bucket, Key: key })
+    const head = await s3.send(command)
+    return {
+      key,
+      url: baseUrl ? `${baseUrl}/${key}` : '',
+      contentType: head.ContentType ?? 'application/octet-stream',
+      lastModified: head.LastModified ?? new Date(),
+      sizeBytes: head.ContentLength ?? 0,
+    }
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -104,9 +170,7 @@ export async function convertToWebP(
 
     // Convert to WebP with 100% quality
     // Using quality: 100 for maximum quality preservation
-    const webpBuffer = await sharp(buffer)
-      .webp({ quality: 100, effort: 6 })
-      .toBuffer()
+    const webpBuffer = await sharp(buffer).webp({ quality: 100, effort: 6 }).toBuffer()
 
     // Update filename to have .webp extension
     const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '')
@@ -217,8 +281,11 @@ export async function uploadFromUrlToCloudflareR2(imageUrl: string, alt?: string
   const finalFilename = filename.includes('.') ? filename : `${filename}.${extension}`
 
   // Convert to WebP if not already WebP (with 100% quality)
-  const { buffer: processedBuffer, fileName: processedFileName, contentType: processedContentType } =
-    await convertToWebP(buffer, contentType, finalFilename)
+  const {
+    buffer: processedBuffer,
+    fileName: processedFileName,
+    contentType: processedContentType,
+  } = await convertToWebP(buffer, contentType, finalFilename)
 
   // Upload to R2
   return uploadToCloudflareR2(processedBuffer, processedFileName, processedContentType)

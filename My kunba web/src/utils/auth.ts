@@ -6,6 +6,40 @@ import { payload } from '@/payload-client'
 import type { JwtPayload } from '@/lib/types'
 
 /**
+ * Get current dashboard user from cookies (for server components).
+ * Returns user with role or null if not authenticated.
+ */
+export async function getCurrentUserFromCookies(): Promise<{
+  id: number
+  email: string
+  role: string
+  displayName?: string
+} | null> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  if (!token) return null
+  const userData = verifyToken(token)
+  if (!userData) return null
+  const userQuery = await payload.find({
+    collection: 'users',
+    where: {
+      email: { equals: userData.email },
+      uid: { equals: userData.uid },
+      deleted_at: { equals: null },
+    },
+    limit: 1,
+  })
+  const doc = userQuery.docs[0]
+  if (!doc) return null
+  return {
+    id: doc.id,
+    email: doc.email,
+    role: doc.role,
+    displayName: doc.displayName,
+  }
+}
+
+/**
  * Extract JWT token from request
  * Supports both web (cookies) and mobile (Authorization header) authentication
  * 

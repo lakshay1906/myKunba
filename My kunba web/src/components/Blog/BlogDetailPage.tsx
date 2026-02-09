@@ -542,18 +542,13 @@ export default function EditBlogPage({
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 relative">
-      {/* Rank Math trigger bar */}
-      <div className="sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 flex items-center justify-end gap-2 bg-background/95 border-b shadow-sm">
-
-      </div>
-
+    <div className="container mx-auto relative">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4 lg:gap-0">
 
         <div className="flex items-center space-x-2">
           <Link href={'/dashboard/blog'}>
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="size-4 mr-2" />
               Back to Blogs
             </Button>
           </Link>
@@ -566,7 +561,7 @@ export default function EditBlogPage({
             className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
             aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
           >
-            <BarChart3 className="h-4 w-4" />
+            <BarChart3 className="size-4" />
             <span>Rank Math</span>
             {seoScoreResult != null && (
               <span
@@ -592,7 +587,7 @@ export default function EditBlogPage({
               </>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="size-4 mr-2" />
                 Save Changes
               </>
             )}
