@@ -33,6 +33,7 @@ type Blog = {
   focusKeyword: string | null
   externalLinks: Array<{ url: string; anchorText: string }> | null
   internalLinks: Array<{ url: string; anchorText: string }> | null
+  faq?: Array<{ question: string; answer: string }> | null
   author: {
     id: number
     displayName: string

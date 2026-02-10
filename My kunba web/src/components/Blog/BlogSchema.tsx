@@ -101,7 +101,7 @@ export default function BlogSchema({
     }),
     ...(post.focusKeyword && {
       keywords: [
-        post.focusKeyword,
+        ...post.focusKeyword.split(',').map((k) => k.trim()).filter(Boolean),
         ...(post.categories ? post.categories.map((c) => c.name) : []),
       ].join(', '),
     }),

@@ -83,40 +83,26 @@ export const Posts: CollectionConfig = {
     },
     {
       name: 'externalLinks',
-      type: 'array',
-      fields: [
-        {
-          name: 'url',
-          type: 'text',
-          required: true,
-        },
-        {
-          name: 'anchorText',
-          type: 'text',
-          required: true,
-        },
-      ],
+      type: 'text',
       admin: {
-        description: 'External links to include in the blog post for SEO',
+        description:
+          'JSON array of { url, anchorText }. Stored as string to avoid extra DB tables.',
       },
     },
     {
       name: 'internalLinks',
-      type: 'array',
-      fields: [
-        {
-          name: 'url',
-          type: 'text',
-          required: true,
-        },
-        {
-          name: 'anchorText',
-          type: 'text',
-          required: true,
-        },
-      ],
+      type: 'text',
       admin: {
-        description: 'Internal links to other blog posts or pages for SEO',
+        description:
+          'JSON array of { url, anchorText }. Stored as string to avoid extra DB tables.',
+      },
+    },
+    {
+      name: 'faq',
+      type: 'text',
+      admin: {
+        description:
+          'JSON array of { question, answer }. Stored as string to avoid extra DB tables.',
       },
     },
     // {

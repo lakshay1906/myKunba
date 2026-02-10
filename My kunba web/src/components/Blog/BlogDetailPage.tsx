@@ -351,6 +351,7 @@ export default function EditBlogPage({
         imageAltText: blog.imageAltText || '',
         externalLinks: blog.externalLinks || [],
         internalLinks: blog.internalLinks || [],
+        faq: blog.faq || [],
       }
 
       // Add categories if selected
@@ -842,6 +843,59 @@ export default function EditBlogPage({
                   }}
                 >
                   Add Internal Link
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>FAQ</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add FAQ items. They will be shown in an accordion beside the blog content.
+                </p>
+                {(blog.faq || []).map((item: any, index: number) => (
+                  <div key={index} className="flex flex-col gap-2 mb-2 p-3 border rounded-md">
+                    <Input
+                      placeholder="Question"
+                      value={item?.question ?? ''}
+                      onChange={(e) => {
+                        const newFaq = [...(blog.faq || [])]
+                        newFaq[index] = { ...newFaq[index], question: e.target.value }
+                        setBlog({ ...blog, faq: newFaq })
+                      }}
+                    />
+                    <Textarea
+                      placeholder="Answer"
+                      value={item?.answer ?? ''}
+                      onChange={(e) => {
+                        const newFaq = [...(blog.faq || [])]
+                        newFaq[index] = { ...newFaq[index], answer: e.target.value }
+                        setBlog({ ...blog, faq: newFaq })
+                      }}
+                      rows={3}
+                      className="resize-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newFaq = (blog.faq || []).filter((_: any, i: number) => i !== index)
+                        setBlog({ ...blog, faq: newFaq })
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBlog({
+                      ...blog,
+                      faq: [...(blog.faq || []), { question: '', answer: '' }],
+                    })
+                  }}
+                >
+                  Add FAQ
                 </Button>
               </div>
               <div className="p-4 border rounded-md bg-muted/50">

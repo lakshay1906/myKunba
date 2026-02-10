@@ -82,6 +82,14 @@ const formSchema = z.object({
       }),
     )
     .optional(),
+  faq: z
+    .array(
+      z.object({
+        question: z.string().min(1, 'Question is required'),
+        answer: z.string().min(1, 'Answer is required'),
+      }),
+    )
+    .optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -136,6 +144,7 @@ export function CreatePostForm() {
       imageAltText: '',
       externalLinks: [],
       internalLinks: [],
+      faq: [],
       status: 'draft',
     },
   })
@@ -588,6 +597,7 @@ export function CreatePostForm() {
           imageAltText: '',
           externalLinks: [],
           internalLinks: [],
+          faq: [],
           status: 'draft',
         },
         { keepDefaultValues: false },
@@ -836,6 +846,7 @@ export function CreatePostForm() {
             data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
           internalLinks:
             data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
+          faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
         }),
       })
 
@@ -900,6 +911,7 @@ export function CreatePostForm() {
             imageAltText: '',
             externalLinks: [],
             internalLinks: [],
+            faq: [],
             status: 'draft',
           },
           { keepDefaultValues: false },
@@ -1040,29 +1052,9 @@ export function CreatePostForm() {
   return (
     <div className="container mx-auto pt-3 pb-6 relative">
       {/* Rank Math trigger bar: score + open sidebar button */}
-      <div className="sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 flex items-center justify-end gap-2 bg-background/95 border-b shadow-sm">
-        <button
-          type="button"
-          onClick={() => setRightSidebarOpen((o) => !o)}
-          className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-          aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
-        >
-          <BarChart3 className="h-4 w-4" />
-          <span>Rank Math</span>
-          {seoScoreResult != null && (
-            <span
-              className={cn(
-                'rounded px-1.5 py-0.5 text-xs font-medium',
-                seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-                seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-                seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-              )}
-            >
-              {seoScoreResult.score} / 100
-            </span>
-          )}
-        </button>
-      </div>
+      {/* <div className="sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 flex items-center justify-end gap-2 bg-background/95 border-b shadow-sm">
+
+      </div> */}
 
       {/* Clear Draft Button - Show when draft data exists */}
       {hasDraftData && (
@@ -1114,11 +1106,35 @@ export function CreatePostForm() {
           className="space-y-8"
         >
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between">
+
+              <TabsList className="mb-4">
+                <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
+              <button
+                type="button"
+                onClick={() => setRightSidebarOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+                aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>Rank Math</span>
+                {seoScoreResult != null && (
+                  <span
+                    className={cn(
+                      'rounded px-1.5 py-0.5 text-xs font-medium',
+                      seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                      seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                      seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                    )}
+                  >
+                    {seoScoreResult.score} / 100
+                  </span>
+                )}
+              </button>
+            </div>
 
             <TabsContent value="content" className="space-y-6">
               <div>
@@ -1441,6 +1457,68 @@ export function CreatePostForm() {
                           disabled={isLoading}
                         >
                           Add Internal Link
+                        </Button>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* FAQ */}
+                  <FormField
+                    control={form.control}
+                    name="faq"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>FAQ</FormLabel>
+                        <FormDescription className="mb-2">
+                          Add FAQ items. They will be shown in an accordion beside the blog content.
+                        </FormDescription>
+                        {field.value?.map((item, index) => (
+                          <div key={index} className="flex flex-col gap-2 mb-2 p-3 border rounded-md">
+                            <Input
+                              placeholder="Question"
+                              value={item?.question ?? ''}
+                              onChange={(e) => {
+                                const newFaq = [...(field.value || [])]
+                                newFaq[index] = { ...newFaq[index], question: e.target.value }
+                                field.onChange(newFaq)
+                              }}
+                              disabled={isLoading}
+                            />
+                            <textarea
+                              placeholder="Answer"
+                              value={item?.answer ?? ''}
+                              onChange={(e) => {
+                                const newFaq = [...(field.value || [])]
+                                newFaq[index] = { ...newFaq[index], answer: e.target.value }
+                                field.onChange(newFaq)
+                              }}
+                              disabled={isLoading}
+                              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newFaq = field.value?.filter((_, i) => i !== index) || []
+                                field.onChange(newFaq)
+                              }}
+                              disabled={isLoading}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            field.onChange([...(field.value || []), { question: '', answer: '' }])
+                          }}
+                          disabled={isLoading}
+                        >
+                          Add FAQ
                         </Button>
                         <FormMessage />
                       </FormItem>

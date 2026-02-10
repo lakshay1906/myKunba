@@ -1,10 +1,24 @@
 import { payload } from '@/payload-client'
+import {
+  normalizePostJsonFields,
+  type ExternalLinkItem,
+  type InternalLinkItem,
+  type FAQItem,
+} from '@/lib/utils/posts-json-fields'
+import type { Post } from '@/payload-types'
 
 /**
  * Fetch a single published blog post by slug (server-side).
  * Use this in /[slug] (blog post page) so the page works without calling the API (avoids URL/reachability issues).
+ * Returns post with externalLinks, internalLinks, and faq as parsed arrays (not JSON strings).
  */
-export async function fetchBlogPostBySlug(slug: string) {
+export async function fetchBlogPostBySlug(
+  slug: string,
+): Promise<(Omit<Post, 'externalLinks' | 'internalLinks' | 'faq'> & {
+  externalLinks: ExternalLinkItem[]
+  internalLinks: InternalLinkItem[]
+  faq: FAQItem[]
+}) | null> {
   try {
     const result = await payload.find({
       collection: 'posts',
@@ -31,11 +45,13 @@ export async function fetchBlogPostBySlug(slug: string) {
         focusKeyword: true,
         externalLinks: true,
         internalLinks: true,
+        faq: true,
       },
       depth: 2,
       limit: 1,
     })
-    return result.docs[0] ?? null
+    const doc = result.docs[0] ?? null
+    return doc ? normalizePostJsonFields(doc) : null
   } catch (error) {
     console.error('Error fetching blog post by slug:', error)
     return null

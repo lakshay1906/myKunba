@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
+import { normalizePostJsonFields } from '@/lib/utils/posts-json-fields'
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
           focusKeyword: true,
           externalLinks: true,
           internalLinks: true,
+          faq: true,
         },
         where: {
           slug: {
@@ -45,7 +47,8 @@ export async function GET(req: NextRequest) {
         },
         depth: 2,
       })
-      data = blogResult.docs[0]
+      const raw = blogResult.docs[0]
+      data = raw ? normalizePostJsonFields(raw) : raw
 
       // Increment impressions counter (async, don't block response)
       if (data && (data as any).id) {

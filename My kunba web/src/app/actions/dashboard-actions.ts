@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import { normalizePostJsonFields } from '@/lib/utils/posts-json-fields'
 
 /**
  * Get authenticated user from token
@@ -126,6 +127,11 @@ export async function fetchDashboardBlogBySlug(slug: string) {
         publishDate: true,
         metaTitle: true,
         metaDescription: true,
+        focusKeyword: true,
+        imageAltText: true,
+        externalLinks: true,
+        internalLinks: true,
+        faq: true,
         commentsEnabled: true,
         isFeatured: true,
         author: true,
@@ -154,7 +160,7 @@ export async function fetchDashboardBlogBySlug(slug: string) {
       throw new Error('You are not authorized to view this blog post')
     }
 
-    return blogPost
+    return normalizePostJsonFields(blogPost)
   } catch (error: any) {
     console.error('Error fetching dashboard blog by slug:', error)
     throw error

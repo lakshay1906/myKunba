@@ -226,8 +226,23 @@ function titleHasPowerWord(title: string): boolean {
   return POWER_WORDS.some((w) => lower.includes(w))
 }
 
+/** Parse focus keyword string into multiple keywords (comma-separated). */
+export function parseFocusKeywords(focusKeyword: string): string[] {
+  return (focusKeyword || '')
+    .split(',')
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+/** True if any of the keywords appears in text (case-insensitive). */
+function anyKeywordInText(text: string, keywords: string[]): boolean {
+  const lower = text.toLowerCase()
+  return keywords.some((k) => lower.includes(k))
+}
+
 /**
  * Get SEO score (0-100) and Basic SEO / Additional checks for Rank Math-style sidebar.
+ * Focus keyword can be comma-separated; a check passes if any keyword satisfies it.
  * Does not modify content; suggestions only.
  */
 export function getSEOScoreAndChecks(
@@ -246,63 +261,63 @@ export function getSEOScoreAndChecks(
   const desc = metaDescription || ''
   const plainText = extractPlainText(content)
   const wordCount = countWords(plainText)
-  const keyword = (focusKeyword || '').trim().toLowerCase()
-  const hasKeyword = keyword.length > 0
+  const keywords = parseFocusKeywords(focusKeyword)
+  const hasKeyword = keywords.length > 0
 
   const basicSEO: SEOCheckItem[] = []
   const additional: SEOCheckItem[] = []
 
-  // --- Basic SEO (primary focus keyword) ---
+  // --- Basic SEO (any focus keyword) ---
   const titleLower = title.toLowerCase()
   const slugLower = (slug || '').toLowerCase().replace(/-/g, ' ')
   const descLower = desc.toLowerCase()
 
-  // Basic SEO — wording matches WordPress Rank Math sidebar
+  const keywordInTitle = hasKeyword && anyKeywordInText(title, keywords)
   basicSEO.push({
     id: 'keyword-in-title',
-    passed: hasKeyword && titleLower.includes(keyword),
-    message:
-      hasKeyword && titleLower.includes(keyword)
-        ? 'Focus Keyword in the SEO title.'
-        : 'Add Focus Keyword to the SEO title.',
+    passed: keywordInTitle,
+    message: keywordInTitle
+      ? 'Focus Keyword in the SEO title.'
+      : 'Add Focus Keyword to the SEO title.',
   })
 
+  const keywordInMeta = hasKeyword && anyKeywordInText(desc, keywords)
   basicSEO.push({
     id: 'keyword-in-meta',
-    passed: hasKeyword && descLower.includes(keyword),
-    message:
-      hasKeyword && descLower.includes(keyword)
-        ? 'Focus Keyword in your SEO Meta Description.'
-        : 'Add Focus Keyword to your SEO Meta Description.',
+    passed: keywordInMeta,
+    message: keywordInMeta
+      ? 'Focus Keyword in your SEO Meta Description.'
+      : 'Add Focus Keyword to your SEO Meta Description.',
   })
 
+  const keywordInUrl = hasKeyword && anyKeywordInText(slugLower, keywords)
   basicSEO.push({
     id: 'keyword-in-url',
-    passed: hasKeyword && slugLower.includes(keyword),
-    message:
-      hasKeyword && slugLower.includes(keyword)
-        ? 'Use Focus Keyword in the URL.'
-        : 'Use Focus Keyword in the URL.',
+    passed: keywordInUrl,
+    message: keywordInUrl
+      ? 'Use Focus Keyword in the URL.'
+      : 'Use Focus Keyword in the URL.',
   })
 
   const first10PercentWords = Math.min(Math.ceil(wordCount * 0.1), 300)
   const firstPart = plainText.split(/\s+/).slice(0, first10PercentWords).join(' ').toLowerCase()
+  const keywordBeginning = hasKeyword && keywords.some((k) => firstPart.includes(k))
   basicSEO.push({
     id: 'keyword-beginning',
-    passed: hasKeyword && firstPart.includes(keyword),
-    message:
-      hasKeyword && firstPart.includes(keyword)
-        ? 'Use Focus Keyword at the beginning of your content.'
-        : 'Use Focus Keyword at the beginning of your content.',
+    passed: keywordBeginning,
+    message: keywordBeginning
+      ? 'Use Focus Keyword at the beginning of your content.'
+      : 'Use Focus Keyword at the beginning of your content.',
   })
 
+  const plainLower = plainText.toLowerCase()
+  const keywordInContent = hasKeyword && keywords.some((k) => plainLower.includes(k))
   basicSEO.push({
     id: 'keyword-in-content',
-    passed: hasKeyword && plainText.toLowerCase().includes(keyword),
-    message:
-      hasKeyword && plainText.toLowerCase().includes(keyword)
-        ? 'Use Focus Keyword in the content.'
-        : 'Use Focus Keyword in the content.',
+    passed: keywordInContent,
+    message: keywordInContent
+      ? 'Use Focus Keyword in the content.'
+      : 'Use Focus Keyword in the content.',
   })
 
   const contentLengthOk = wordCount >= 600 && wordCount <= 2500
@@ -316,7 +331,9 @@ export function getSEOScoreAndChecks(
 
   // --- Additional (wording matches WordPress Rank Math sidebar) ---
   const headings = extractHeadingTexts(content)
-  const keywordInHeadings = hasKeyword && headings.some((h) => h.toLowerCase().includes(keyword))
+  const keywordInHeadings =
+    hasKeyword &&
+    headings.some((h) => keywords.some((k) => h.toLowerCase().includes(k)))
   additional.push({
     id: 'keyword-subheadings',
     passed: keywordInHeadings,
@@ -326,7 +343,7 @@ export function getSEOScoreAndChecks(
   })
 
   const altText = (options?.imageAltText || '').toLowerCase()
-  const altHasKeyword = hasKeyword && altText.includes(keyword)
+  const altHasKeyword = hasKeyword && keywords.some((k) => altText.includes(k))
   additional.push({
     id: 'keyword-image-alt',
     passed: altHasKeyword,
@@ -335,14 +352,18 @@ export function getSEOScoreAndChecks(
       : 'Add an image with your Focus Keyword as alt text.',
   })
 
-  const density = hasKeyword && wordCount > 0 ? calculateKeywordDensity(plainText, keyword) : 0
-  const densityOk = hasKeyword && density >= 0.5 && density <= 2
+  const densities =
+    hasKeyword && wordCount > 0
+      ? keywords.map((k) => calculateKeywordDensity(plainText, k))
+      : []
+  const bestDensity = densities.length ? Math.max(...densities) : 0
+  const densityOk = hasKeyword && bestDensity >= 0.5 && bestDensity <= 2
   additional.push({
     id: 'keyword-density',
     passed: densityOk,
     message: densityOk
-      ? `Keyword Density is ${density.toFixed(1)}%. Aim for around 1% Keyword Density.`
-      : `Keyword Density is ${density.toFixed(1)}%. Aim for around 1% Keyword Density.`,
+      ? `Keyword Density is ${bestDensity.toFixed(1)}%. Aim for around 1% Keyword Density.`
+      : `Keyword Density is ${bestDensity.toFixed(1)}%. Aim for around 1% Keyword Density.`,
   })
 
   const slugVal = slug || ''
@@ -388,10 +409,9 @@ export function getSEOScoreAndChecks(
 
   // --- Title Readability (wording matches WordPress Rank Math sidebar) ---
   const titleReadability: SEOCheckItem[] = []
+  const firstHalfTitle = title.length > 0 ? titleLower.slice(0, Math.ceil(title.length / 2)) : ''
   const keywordInFirstHalf =
-    hasKeyword &&
-    title.length > 0 &&
-    titleLower.slice(0, Math.ceil(title.length / 2)).includes(keyword)
+    hasKeyword && firstHalfTitle.length > 0 && keywords.some((k) => firstHalfTitle.includes(k))
   titleReadability.push({
     id: 'keyword-beginning-title',
     passed: keywordInFirstHalf,
@@ -553,24 +573,27 @@ export function validateSEO(
   let first10PercentDensity = 0
   let rest90PercentDensity = 0
 
-  if (focusKeyword && focusKeyword.trim()) {
-    const keyword = focusKeyword.trim()
+  const keywords = parseFocusKeywords(focusKeyword)
+  if (keywords.length > 0) {
     const words = plainText.split(/\s+/)
     const first10PercentWords = Math.ceil(words.length * 0.1)
     const first10PercentText = words.slice(0, first10PercentWords).join(' ')
     const rest90PercentText = words.slice(first10PercentWords).join(' ')
 
-    first10PercentDensity = calculateKeywordDensity(first10PercentText, keyword)
-    rest90PercentDensity = calculateKeywordDensity(rest90PercentText, keyword)
+    const first10Densities = keywords.map((k) =>
+      calculateKeywordDensity(first10PercentText, k),
+    )
+    const rest90Densities = keywords.map((k) =>
+      calculateKeywordDensity(rest90PercentText, k),
+    )
+    first10PercentDensity = Math.max(...first10Densities)
+    rest90PercentDensity = Math.max(...rest90Densities)
 
-    // Check if keyword is in first 10%
     if (first10PercentDensity === 0) {
       warnings.push(
-        `Focus keyword "${keyword}" not found in the first 10% of content. Include it early for better SEO.`,
+        `Focus keyword(s) not found in the first 10% of content. Include them early for better SEO.`,
       )
     }
-
-    // Check keyword density in rest 90% (should be 1.5-2%)
     if (rest90PercentDensity < 1.5) {
       warnings.push(
         `Focus keyword density in rest 90% of content is ${rest90PercentDensity.toFixed(

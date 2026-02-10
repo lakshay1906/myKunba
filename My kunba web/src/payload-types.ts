@@ -268,25 +268,17 @@ export interface Post {
    */
   imageAltText?: string | null;
   /**
-   * External links to include in the blog post for SEO
+   * JSON array of { url, anchorText }. Stored as string to avoid extra DB tables.
    */
-  externalLinks?:
-    | {
-        url: string;
-        anchorText: string;
-        id?: string | null;
-      }[]
-    | null;
+  externalLinks?: string | null;
   /**
-   * Internal links to other blog posts or pages for SEO
+   * JSON array of { url, anchorText }. Stored as string to avoid extra DB tables.
    */
-  internalLinks?:
-    | {
-        url: string;
-        anchorText: string;
-        id?: string | null;
-      }[]
-    | null;
+  internalLinks?: string | null;
+  /**
+   * JSON array of { question, answer }. Stored as string to avoid extra DB tables.
+   */
+  faq?: string | null;
   author: number | User;
   categories?: (number | Category)[] | null;
   deleted_at?: string | null;
@@ -616,20 +608,9 @@ export interface PostsSelect<T extends boolean = true> {
   metaDescription?: T;
   focusKeyword?: T;
   imageAltText?: T;
-  externalLinks?:
-    | T
-    | {
-        url?: T;
-        anchorText?: T;
-        id?: T;
-      };
-  internalLinks?:
-    | T
-    | {
-        url?: T;
-        anchorText?: T;
-        id?: T;
-      };
+  externalLinks?: T;
+  internalLinks?: T;
+  faq?: T;
   author?: T;
   categories?: T;
   deleted_at?: T;

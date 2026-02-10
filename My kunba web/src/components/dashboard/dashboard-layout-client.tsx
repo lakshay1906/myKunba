@@ -22,16 +22,13 @@ export function DashboardLayoutClient({
   const [leftOpen, setLeftOpen] = useState(true)
   const prevLeftOpenRef = useRef<boolean | null>(null)
 
-  // When right sidebar opens, collapse the left sidebar (don't hide it)
+  // When right sidebar opens, collapse the left sidebar; when user opens left, close the right
   useEffect(() => {
     if (rightSidebarOpen) {
-      // Remember current state so we can restore on close (unless user changes it)
       prevLeftOpenRef.current = leftOpen
       setLeftOpen(false)
       return
     }
-
-    // Restore previous state when right sidebar closes (only if still collapsed)
     if (prevLeftOpenRef.current != null) {
       if (leftOpen === false) {
         setLeftOpen(prevLeftOpenRef.current)
@@ -40,8 +37,13 @@ export function DashboardLayoutClient({
     }
   }, [rightSidebarOpen, leftOpen])
 
+  const handleLeftOpenChange = (open: boolean) => {
+    if (open) setRightSidebarOpen(false)
+    setLeftOpen(open)
+  }
+
   return (
-    <SidebarProvider open={leftOpen} onOpenChange={setLeftOpen}>
+    <SidebarProvider open={leftOpen} onOpenChange={handleLeftOpenChange}>
       <AppSidebar variant="inset" />
       {/* SidebarInset defaults to flex-col; force row layout when Rank Math is open */}
       <SidebarInset className="flex flex-row flex-1 min-w-0 overflow-hidden">

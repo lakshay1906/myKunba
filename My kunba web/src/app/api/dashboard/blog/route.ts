@@ -7,6 +7,11 @@ import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
 import { authenticateUser } from '@/utils/auth'
 import { revalidateBlogPost } from '@/lib/revalidate-website'
+import {
+  stringifyExternalLinks,
+  stringifyInternalLinks,
+  stringifyFaq,
+} from '@/lib/utils/posts-json-fields'
 
 export async function GET(req: NextRequest) {
   try {
@@ -135,6 +140,7 @@ export async function POST(req: NextRequest) {
       imageAltText,
       externalLinks,
       internalLinks,
+      faq,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -142,10 +148,6 @@ export async function POST(req: NextRequest) {
       requireRole: null, // Allow admin and author roles
       fetchUser: true,
     })
-
-    if (!authResult) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
 
     const { user: authorData } = authResult
 
@@ -230,12 +232,12 @@ export async function POST(req: NextRequest) {
     if (imageAltText) {
       postData.imageAltText = imageAltText
     }
-    if (externalLinks && Array.isArray(externalLinks) && externalLinks.length > 0) {
-      postData.externalLinks = externalLinks
-    }
-    if (internalLinks && Array.isArray(internalLinks) && internalLinks.length > 0) {
-      postData.internalLinks = internalLinks
-    }
+    const externalLinksStr = stringifyExternalLinks(externalLinks)
+    if (externalLinksStr != null) postData.externalLinks = externalLinksStr
+    const internalLinksStr = stringifyInternalLinks(internalLinks)
+    if (internalLinksStr != null) postData.internalLinks = internalLinksStr
+    const faqStr = stringifyFaq(faq)
+    if (faqStr != null) postData.faq = faqStr
 
     // Add categories - Payload accepts array of numbers for hasMany relationships
     // Include empty array if no categories to ensure field is set
@@ -310,6 +312,7 @@ export async function PUT(req: NextRequest) {
       imageAltText,
       externalLinks,
       internalLinks,
+      faq,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -440,10 +443,15 @@ export async function PUT(req: NextRequest) {
       updateData.imageAltText = imageAltText || null
     }
     if (externalLinks !== undefined) {
-      updateData.externalLinks = Array.isArray(externalLinks) && externalLinks.length > 0 ? externalLinks : []
+      updateData.externalLinks =
+        stringifyExternalLinks(externalLinks) ?? null
     }
     if (internalLinks !== undefined) {
-      updateData.internalLinks = Array.isArray(internalLinks) && internalLinks.length > 0 ? internalLinks : []
+      updateData.internalLinks =
+        stringifyInternalLinks(internalLinks) ?? null
+    }
+    if (faq !== undefined) {
+      updateData.faq = stringifyFaq(faq) ?? null
     }
 
     // Update the blog post
