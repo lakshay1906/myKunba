@@ -120,6 +120,7 @@ export function CreatePostForm() {
   const hasShownLeaveToastRef = useRef(false)
   const isSubmittingRef = useRef(false)
   const saveDraftRef = useRef<((immediate?: boolean) => void) | null>(null)
+  const lastAutoAltRef = useRef<string>('')
   const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
 
@@ -151,6 +152,20 @@ export function CreatePostForm() {
 
   // Watch form values for SEO validation
   const watchedValues = form.watch()
+
+  // Default image alt text to the title on new posts (without overriding user edits)
+  useEffect(() => {
+    const title = (watchedValues.title || '').trim()
+    if (!title) return
+
+    setImageUploadData((prev) => {
+      const currentAlt = (prev.alt || '').trim()
+      const shouldAutoSet = currentAlt === '' || currentAlt === lastAutoAltRef.current
+      if (!shouldAutoSet) return prev
+      lastAutoAltRef.current = title
+      return { ...prev, alt: title }
+    })
+  }, [watchedValues.title])
 
   // Run SEO validation when relevant fields change (debounced for performance)
   useEffect(() => {

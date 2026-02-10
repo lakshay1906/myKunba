@@ -99,15 +99,8 @@ export async function processContentImages(
           alt: image.alt,
         })
 
-        // Replace the data URL with the uploaded URL in the content
-        // Preserve all other attributes including alt text
-        const escapedSrc = image.src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const escapedAlt = image.alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        // Build replacement that preserves alt and other attributes
-        let newImgTag = image.fullTag.replace(
-          new RegExp(`src=["']${escapedSrc}["']`, 'i'),
-          `src="${uploadedUrl}"`,
-        )
+        // Replace the data URL with the uploaded URL in the content (avoid RegExp with huge data URL)
+        let newImgTag = image.fullTag.replace(/src=["'][^"']*["']/i, `src="${uploadedUrl}"`)
         // Ensure alt attribute is present and preserved
         if (image.alt && !newImgTag.includes('alt=')) {
           // If alt was missing from original tag but we have it, add it

@@ -108,7 +108,7 @@ export default function EditBlogPage({
         content,
         blog.focusKeyword || '',
         {
-          imageAltText: blog.imageAltText || imageUploadData.alt,
+          imageAltText: imageUploadData.alt,
           externalLinksCount: (blog.externalLinks || []).length,
           internalLinksCount: (blog.internalLinks || []).length,
         },
@@ -124,7 +124,6 @@ export default function EditBlogPage({
     blog.metaTitle,
     blog.metaDescription,
     blog.focusKeyword,
-    blog.imageAltText,
     blog.externalLinks,
     blog.internalLinks,
     imageUploadData.alt,
@@ -168,6 +167,15 @@ export default function EditBlogPage({
         setImageUploadData((prev) => ({
           ...prev,
           coverImage: blogData.media,
+          alt: (blogData.imageAltText ?? blogData.title ?? '').toString(),
+        }))
+      }
+
+      // Ensure alt text is available in the image dialog even if no media is set
+      if (!blogData.media) {
+        setImageUploadData((prev) => ({
+          ...prev,
+          alt: (blogData.imageAltText ?? blogData.title ?? '').toString(),
         }))
       }
 
@@ -309,22 +317,25 @@ export default function EditBlogPage({
         }
       }
 
-      // Process content HTML to upload any pending images (data URLs) to Cloudflare R2
+      // Process content HTML to upload any pending images (data URLs) to Cloudflare R2.
+      // Only run when there are actual <img> tags with data: URLs (not just "data:image" in text/JSON).
       let processedContent = blog.content
-      try {
-        // Only process if there are data URLs in content (pending uploads)
-        if (blog.content && blog.content.includes('data:image')) {
+      const hasDataUrlImages =
+        blog.content && /<img[^>]+src=["']data:image\b/i.test(blog.content)
+      if (hasDataUrlImages) {
+        try {
           toast.info('Processing images...', {
             description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
           })
           const contentProcessingResult = await processContentImages(blog.content)
           processedContent = contentProcessingResult.processedContent
+        } catch (error: any) {
+          console.error('Error processing content images:', error)
+          toast.warning('Some images failed to upload', {
+            description:
+              'The blog will be saved, but some images may need to be re-uploaded.',
+          })
         }
-      } catch (error: any) {
-        console.error('Error processing content images:', error)
-        toast.warning('Some images failed to upload', {
-          description: 'The blog will be saved, but some images may need to be re-uploaded.',
-        })
       }
 
       // Extract Cloudflare R2 images from updated content
@@ -348,7 +359,7 @@ export default function EditBlogPage({
         commentsEnabled: blog.commentsEnabled !== false,
         isFeatured: blog.isFeatured === true,
         focusKeyword: blog.focusKeyword || '',
-        imageAltText: blog.imageAltText || '',
+        imageAltText: imageUploadData.alt || '',
         externalLinks: blog.externalLinks || [],
         internalLinks: blog.internalLinks || [],
         faq: blog.faq || [],
@@ -732,8 +743,10 @@ export default function EditBlogPage({
                 <Input
                   id="imageAltText"
                   name="imageAltText"
-                  value={blog.imageAltText ?? ''}
-                  onChange={handleInputChange}
+                  value={imageUploadData.alt ?? ''}
+                  onChange={(e) =>
+                    setImageUploadData((prev) => ({ ...prev, alt: e.target.value }))
+                  }
                   placeholder="Descriptive alt text for the cover image"
                 />
                 <p className="text-sm text-muted-foreground">

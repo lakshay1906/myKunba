@@ -157,75 +157,6 @@ function titleHasNumber(title: string): boolean {
   return /\d/.test(title)
 }
 
-/** Simple sentiment word check (positive/negative emotion words) */
-const SENTIMENT_WORDS = [
-  'best',
-  'great',
-  'easy',
-  'simple',
-  'amazing',
-  'perfect',
-  'free',
-  'quick',
-  'proven',
-  'ultimate',
-  'worst',
-  'avoid',
-  'never',
-  "don't",
-  'mistake',
-  'fail',
-  'bad',
-  'wrong',
-  'secret',
-  'hidden',
-  'awesome',
-  'incredible',
-  'essential',
-  'critical',
-  'powerful',
-  'effective',
-  'success',
-  'win',
-]
-function titleHasSentiment(title: string): boolean {
-  const lower = title.toLowerCase()
-  return SENTIMENT_WORDS.some((w) =>
-    new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(lower),
-  )
-}
-
-/** Simple power word check for titles */
-const POWER_WORDS = [
-  'secret',
-  'discover',
-  'proven',
-  'instant',
-  'guaranteed',
-  'ultimate',
-  'essential',
-  'critical',
-  'powerful',
-  'effortless',
-  'breakthrough',
-  'exclusive',
-  'insider',
-  'master',
-  'complete',
-  'step-by-step',
-  'how to',
-  'guide',
-  'tips',
-  'tricks',
-  'hacks',
-  'strategies',
-  'methods',
-]
-function titleHasPowerWord(title: string): boolean {
-  const lower = title.toLowerCase()
-  return POWER_WORDS.some((w) => lower.includes(w))
-}
-
 /** Parse focus keyword string into multiple keywords (comma-separated). */
 export function parseFocusKeywords(focusKeyword: string): string[] {
   return (focusKeyword || '')
@@ -418,22 +349,6 @@ export function getSEOScoreAndChecks(
     message: keywordInFirstHalf
       ? 'Use the Focus Keyword near the beginning of SEO title.'
       : 'Use the Focus Keyword near the beginning of SEO title.',
-  })
-  const sentimentOk = titleHasSentiment(title)
-  titleReadability.push({
-    id: 'sentiment-title',
-    passed: sentimentOk,
-    message: sentimentOk
-      ? 'Your title contains a positive or a negative sentiment word.'
-      : "Your title doesn't contain a positive or a negative sentiment word.",
-  })
-  const powerOk = titleHasPowerWord(title)
-  titleReadability.push({
-    id: 'power-word-title',
-    passed: powerOk,
-    message: powerOk
-      ? 'Your title contains a power word.'
-      : "Your title doesn't contain a power word. Add at least one.",
   })
   const numberOk = titleHasNumber(title)
   titleReadability.push({
