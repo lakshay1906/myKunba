@@ -157,6 +157,10 @@ export interface Admin {
 export interface User {
   id: number;
   displayName?: string | null;
+  /**
+   * Unique public username used in author URLs (e.g. /author/username)
+   */
+  username: string;
   bio?: string | null;
   verified: boolean;
   profileImage?: (number | null) | Media;
@@ -505,6 +509,7 @@ export interface AdminSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   displayName?: T;
+  username?: T;
   bio?: T;
   verified?: T;
   profileImage?: T;

@@ -37,7 +37,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { MoreHorizontal, Edit, LogOut, Mail, Calendar, Globe, User, Save, X } from 'lucide-react'
+import { MoreHorizontal, Edit, LogOut, Mail, Calendar, Globe, User, Save, X, Trash2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { useRouter } from 'next/navigation'
+import { useAppStore } from '@/lib/context/store'
+import { toast } from 'sonner'
 
 // Mock user data based on your schema
 // const mockUser = {
@@ -72,12 +84,51 @@ const getRoleConfig = (role: string) => {
 export default function Profile({ user }: { user: Record<string, any> }) {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
   const [editData, setEditData] = useState(user)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const router = useRouter()
+  const { logout } = useAppStore()
 
   const handleEditProfile = () => {
     setIsEditSheetOpen(true)
   }
 
-  const handleSignOut = () => {}
+  const handleSignOut = () => {
+    logout()
+  }
+
+  const getDeleteWarningMessage = () => {
+    const role = user.role
+    if (role === 'admin') {
+      return 'If you are the only admin, deletion will be restricted. Your account will be moved to the recycle bin.'
+    }
+    if (role === 'author' || role === 'admin') {
+      return 'By deleting your account, all your blogs will be deleted. This action cannot be undone.'
+    }
+    return 'Your account will be deleted. This action cannot be undone.'
+  }
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/profile/delete', { method: 'DELETE', credentials: 'include' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error('Cannot delete account', { description: data.message || 'Failed to delete' })
+        setIsDeleting(false)
+        return
+      }
+      setDeleteDialogOpen(false)
+      await fetch('/api/user/auth/jwt/delete', { method: 'DELETE', credentials: 'include' })
+      logout()
+      toast.success('Account deleted', { description: 'You have been signed out.' })
+      router.push('/')
+    } catch (e: any) {
+      toast.error('Error', { description: e.message || 'Failed to delete account' })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleSaveProfile = () => {
     setIsEditSheetOpen(false)
@@ -106,7 +157,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
 
   const roleConfig = getRoleConfig(user.role)
 
-  useEffect(() => {}, [editData])
+  useEffect(() => { }, [editData])
 
   return (
     // <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -138,13 +189,21 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                 <LogOut className="mr-2 size-4" />
                 Sign Out
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setDeleteDialogOpen(true)}
+                className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              >
+                <Trash2 className="mr-2 size-4" />
+                Delete account
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {/* Main Profile Card */}
-        <Card className="border-none shadow-none">
-          <CardContent className="p-8 border-none shadow-none">
+        <Card className="p-0 border-none shadow-none">
+          <CardContent className="border-none shadow-none">
             {/* Centered Profile Section */}
             <div className="text-center mb-8">
               <div className="relative inline-block mb-6">
@@ -221,26 +280,26 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                       (
                         link: {
                           platform:
+                          | string
+                          | number
+                          | bigint
+                          | boolean
+                          | ReactElement<unknown, string | JSXElementConstructor<any>>
+                          | Iterable<ReactNode>
+                          | ReactPortal
+                          | Promise<
                             | string
                             | number
                             | bigint
                             | boolean
+                            | ReactPortal
                             | ReactElement<unknown, string | JSXElementConstructor<any>>
                             | Iterable<ReactNode>
-                            | ReactPortal
-                            | Promise<
-                                | string
-                                | number
-                                | bigint
-                                | boolean
-                                | ReactPortal
-                                | ReactElement<unknown, string | JSXElementConstructor<any>>
-                                | Iterable<ReactNode>
-                                | null
-                                | undefined
-                              >
                             | null
                             | undefined
+                          >
+                          | null
+                          | undefined
                           url: string | undefined
                         },
                         index: number,
@@ -399,6 +458,27 @@ export default function Profile({ user }: { user: Record<string, any> }) {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete your account?</DialogTitle>
+            <DialogDescription>{getDeleteWarningMessage()}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isDeleting}>Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting…' : 'Delete my account'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

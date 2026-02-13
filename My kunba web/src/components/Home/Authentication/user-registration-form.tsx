@@ -1,6 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -16,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
-import { PlusCircle, Trash2 } from 'lucide-react'
+import { PlusCircle, Trash2, CircleX, CircleCheckBig } from 'lucide-react'
 import Toast from '@/components/Toast'
 import {
   Select,
@@ -35,6 +36,11 @@ interface UserRegistrationFormProps {
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters').max(50),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be at most 30 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
   bio: z.string().optional(),
   role: z.enum(['admin', 'author', 'user']),
   email: z.string().email('Please enter a valid email address'),
@@ -56,10 +62,16 @@ export function UserRegistrationForm({
   onInComplete,
 }: UserRegistrationFormProps) {
   // const { setLoginDetail } = useAppStore()
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>(
+    'idle',
+  )
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([])
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       displayName: userDetails ? userDetails.name : '',
+      username: '',
       bio: '',
       role: 'user',
       email: userDetails?.email,
@@ -70,6 +82,77 @@ export function UserRegistrationForm({
     control: form.control,
     name: 'socialLinks',
   })
+
+  const displayName = form.watch('displayName')
+  const usernameValue = form.watch('username')
+
+  // Fetch username suggestions when displayName changes (debounced inside API)
+  useEffect(() => {
+    let ignore = false
+    async function fetchSuggestions(base: string) {
+      if (!base || base.trim().length < 2) {
+        setUsernameSuggestions([])
+        return
+      }
+      try {
+        const res = await fetch(
+          `/api/user/username/suggestions?base=${encodeURIComponent(base)}&count=3`,
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        if (!ignore && Array.isArray(data.suggestions)) {
+          setUsernameSuggestions(data.suggestions)
+          // If username is empty, prefill with the first suggestion
+          if (!form.getValues('username') && data.suggestions[0]) {
+            form.setValue('username', data.suggestions[0], { shouldValidate: true })
+          }
+        }
+      } catch {
+        // silently ignore
+      }
+    }
+    fetchSuggestions(displayName || '')
+    return () => {
+      ignore = true
+    }
+  }, [displayName, form])
+
+  // Debounced username availability check (1s)
+  useEffect(() => {
+    if (!usernameValue || usernameValue.trim().length < 3) {
+      setUsernameStatus('idle')
+      form.clearErrors('username')
+      return
+    }
+
+    setUsernameStatus('checking')
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/user/username/check?username=${encodeURIComponent(usernameValue.trim())}`,
+        )
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || typeof data.available !== 'boolean') {
+          setUsernameStatus('idle')
+          return
+        }
+        if (!data.available) {
+          setUsernameStatus('taken')
+          form.setError('username', {
+            type: 'manual',
+            message: 'This username is taken. You may look into suggestions or try something else',
+          })
+        } else {
+          setUsernameStatus('available')
+          form.clearErrors('username')
+        }
+      } catch {
+        setUsernameStatus('idle')
+      }
+    }, 1000)
+
+    return () => clearTimeout(handle)
+  }, [usernameValue, form])
 
   async function onSubmit(values: FormValues) {
     // Here you would typically send the form data to your backend
@@ -95,6 +178,7 @@ export function UserRegistrationForm({
         role: userDetails.emailVerified ? values.role : 'user',
         socialLinks: values.socialLinks,
         name: values.displayName,
+        username: values.username,
       }),
     })
     if (rawRes.status !== 201) onInComplete()
@@ -114,6 +198,48 @@ export function UserRegistrationForm({
                 <Input placeholder="Your Name" {...field} />
               </FormControl>
               <FormDescription>This is how your name will appear publicly.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input placeholder="your-unique-username" className="pr-9" {...field} />
+                  {usernameStatus === 'taken' && (
+                    <CircleX className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
+                  )}
+                  {usernameStatus === 'available' && (
+                    <CircleCheckBig className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+                  )}
+                </div>
+              </FormControl>
+              <FormDescription>
+                This will be your public handle and author URL slug (e.g. /author/username).
+              </FormDescription>
+              {usernameSuggestions.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="text-xs text-muted-foreground">Suggestions:</span>
+                  {usernameSuggestions.map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs px-2 py-0 h-6"
+                      onClick={() => form.setValue('username', suggestion, { shouldValidate: true })}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}

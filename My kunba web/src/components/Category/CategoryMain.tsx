@@ -6,6 +6,19 @@ import Create from './Create'
 import { Category } from '@/lib/types'
 import { popoverEllipsis, type CategoryRow } from './categoryEdit'
 import { useAppStore } from '@/lib/context/store'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface CategoryMainProps {
   initialCategories?: Category[]
@@ -30,7 +43,44 @@ export default function CategoryMain({
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
   const [limit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
   const { loginDetail } = useAppStore()
+
+  async function deleteCategory(id: number, silent = false) {
+    try {
+      const rawRes = await fetch(`/api/dashboard/category?id=${id}`, {
+        method: 'DELETE',
+        headers: loginDetail?.token ? { Authorization: `bearer ${loginDetail.token}` } : undefined,
+      })
+      if (!rawRes.ok) {
+        const err = await rawRes.json().catch(() => ({}))
+        throw new Error(err.message || 'Failed to delete category')
+      }
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      setTotal((prev) => Math.max(0, prev - 1))
+      setTotalPages((prev) => {
+        const newTotal = total - 1
+        return newTotal <= 0 ? 1 : Math.ceil(newTotal / limit)
+      })
+      if (!silent) toast.success('Category deleted and moved to recycle bin')
+      if (categories.length === 1 && currentPage > 1) {
+        fetchCategories(limit, (currentPage - 2) * limit, false, currentPage - 1)
+      }
+    } catch (e: any) {
+      if (!silent) toast.error('Error', { description: e.message })
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedCategories.length === 0) return
+    const count = selectedCategories.length
+    for (const cat of selectedCategories) {
+      await deleteCategory(Number(cat.id), true)
+    }
+    setSelectedCategories([])
+    fetchCategories(limit, (currentPage - 1) * limit, false, currentPage)
+    toast.success('Success', { description: `${count} categor(y/ies) deleted and moved to recycle bin` })
+  }
 
   // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
   const fetchCategories = async (
@@ -68,7 +118,35 @@ export default function CategoryMain({
       tableTitle="Categories"
       tableSubTitle="Explore blog categories"
       AddProductButton={
-        <Create
+        <div className="flex items-center gap-2">
+          {selectedCategories.length > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedCategories.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Delete categories</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete {selectedCategories.length}{' '}
+                    {selectedCategories.length === 1 ? 'category' : 'categories'}? They will be moved to the recycle bin.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button variant="destructive" onClick={handleBulkDelete}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Create
           onCategoryCreated={(newCategory) => {
             // Add new category to state instead of refetching
             if (newCategory) {
@@ -94,9 +172,10 @@ export default function CategoryMain({
             }
           }}
         />
+        </div>
       }
       detailPageLink={'/dashboard/category'}
-      selectedProductsState={{ selectedProducts: [], setSelectedProducts: () => {} }}
+      selectedProductsState={{ selectedProducts: selectedCategories, setSelectedProducts: setSelectedCategories }}
       total={total}
       currentPage={currentPage}
       limit={limit}
@@ -128,7 +207,7 @@ export default function CategoryMain({
           },
         })
       }
-      isCheckBoxRequired={false}
+      isCheckBoxRequired={true}
       isEllipsisRequired={true}
       fetchDataFunction={fetchCategories}
       loading={loading}

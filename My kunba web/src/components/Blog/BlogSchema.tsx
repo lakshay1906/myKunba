@@ -17,6 +17,7 @@ type PostForSchema = {
   focusKeyword?: string | null
   author?: {
     id?: number
+    username?: string
     displayName?: string
     profileImage?: string | null
     bio?: string | null
@@ -52,7 +53,11 @@ export default function BlogSchema({
   const blogUrl = `${siteUrl}/${post.slug}`
   const authorName =
     (post.author && typeof post.author === 'object' && post.author.displayName) || 'Author'
-  const authorUrl = post.author?.id ? `${siteUrl}/author/${post.author.id}` : undefined
+  const authorSlug =
+    (post.author && typeof post.author === 'object' && (post.author as any).username) ||
+    (post.author && typeof post.author === 'object' && post.author.id) ||
+    undefined
+  const authorUrl = authorSlug ? `${siteUrl}/author/${authorSlug}` : undefined
   const imageUrl = ensureAbsoluteUrl(post.media, siteUrl)
   const logoUrl = ensureAbsoluteUrl('/full_logo.png', siteUrl)
   const datePublished = toISO8601(post.publishDate)

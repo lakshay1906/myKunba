@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -47,6 +47,42 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
     confirmPassword: '',
   })
   const [user, setUser] = useState<User | null>(null)
+  const incompleteCleanupDoneRef = useRef(false)
+
+  const cleanupIncompleteRegistration = useCallback(() => {
+    if (incompleteCleanupDoneRef.current || !user) return
+    incompleteCleanupDoneRef.current = true
+    deleteUser(user)
+      .then(() => {
+        setIsAuthenticated(false)
+        setuserDetails({})
+        setUser(null)
+        setLoginForm({ email: '', password: '', confirmPassword: '' })
+        setLoginDetail(null)
+      })
+      .catch((err) => {
+        console.error('Failed to delete incomplete Firebase user:', err)
+        setIsAuthenticated(false)
+        setuserDetails({})
+        setUser(null)
+        setLoginForm({ email: '', password: '', confirmPassword: '' })
+        setLoginDetail(null)
+      })
+  }, [user, setLoginDetail])
+
+  // When sheet closes (X, overlay, Escape): if still in "Complete your profile", delete Firebase user
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open && isAuthenticated && user) {
+        cleanupIncompleteRegistration()
+      }
+      if (open) {
+        incompleteCleanupDoneRef.current = false
+      }
+      onOpenChange(open)
+    },
+    [isAuthenticated, user, onOpenChange, cleanupIncompleteRegistration],
+  )
 
   async function handleAuthSuccess(loginText: 'emailPass' | 'google') {
     try {
@@ -208,7 +244,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="sm:max-w-md md:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{isAuthenticated ? 'Complete Your Profile' : btnText}</SheetTitle>
@@ -235,15 +271,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 onOpenChange(false)
               }}
               onInComplete={() => {
-                if (user) deleteUser(user)
-                setIsAuthenticated(false)
-                setuserDetails({})
-                setLoginForm({
-                  email: '',
-                  password: '',
-                  confirmPassword: '',
-                })
-                setLoginDetail(null)
+                cleanupIncompleteRegistration()
                 onOpenChange(false)
               }}
             />

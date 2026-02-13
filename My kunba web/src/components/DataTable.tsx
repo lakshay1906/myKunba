@@ -24,7 +24,7 @@ import {
 import CurrentPageComponent from '@/components/CurrentPageComponent'
 import { Checkbox } from '@/components/ui/checkbox'
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import StatusTag from './StatusTag'
 import { motion } from 'framer-motion'
 
@@ -65,7 +65,6 @@ export default function DataTable({
   loading: boolean
   cardStyle?: string
 }) {
-  const route = useRouter()
   const headers = Object.keys(data[0] ?? {}).filter(
     (key) => !endsWithId(key) && !startsWithLowercase(key),
   )
@@ -190,14 +189,7 @@ export default function DataTable({
                     //   }}
                     //   className="cursor-pointer"
                     //   >
-                    <TableRow
-                      key={col.id}
-                      onClick={() => {
-                        if (detailPageLink && detailPageLink !== '')
-                          route.push(`${detailPageLink}/${slug ? col.Slug || col.slug : col.id}`)
-                      }}
-                      className="cursor-pointer"
-                    >
+                    <TableRow key={col.id} className={detailPageLink && detailPageLink !== '' ? 'cursor-pointer' : ''}>
                       {isCheckBoxRequired && (
                         <TableCell
                           className="font-medium flex items-center"
@@ -215,12 +207,29 @@ export default function DataTable({
                         </TableCell>
                       )}
                       {headers.map((header, idx) => {
+                        const cellContent =
+                          (String(col[header]).trim().length > 15
+                            ? `${String(col[header]).substring(0, 15)}...`
+                            : col[header]) || '-'
+                        const detailHref =
+                          detailPageLink && detailPageLink !== ''
+                            ? `${detailPageLink}/${slug ? String(col.Slug ?? col.slug ?? '').replace(/^\//, '') : col.id}`
+                            : null
+                        const isFirstContentColumn = idx === 0
                         if (header !== 'Status') {
                           return (
                             <TableCell key={idx} className="text-nowrap">
-                              {(String(col[header]).trim().length > 15
-                                ? `${String(col[header]).substring(0, 15)}...`
-                                : col[header]) || '-'}
+                              {detailHref && isFirstContentColumn ? (
+                                <Link
+                                  href={detailHref}
+                                  className="block hover:underline focus:underline outline-none"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {cellContent}
+                                </Link>
+                              ) : (
+                                cellContent
+                              )}
                             </TableCell>
                           )
                         } else {

@@ -128,10 +128,15 @@ export function getRateLimitConfig(pathname: string): RateLimitConfig {
   // Stricter limits for authentication endpoints
   if (
     pathname.includes('/auth/sign-in') ||
-    pathname.includes('/auth/login') ||
-    pathname.includes('/auth/jwt/new')
+    pathname.includes('/auth/login')
   ) {
     return AUTH_RATE_LIMIT
+  }
+
+  // JWT issue endpoint is called as part of login/signup flow but can be hit more frequently
+  // Allow it to use the default (more generous) rate limit instead of strict auth limits.
+  if (pathname.includes('/auth/jwt/new')) {
+    return DEFAULT_RATE_LIMIT
   }
 
   // Stricter limits for image upload endpoints

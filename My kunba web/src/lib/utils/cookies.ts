@@ -47,6 +47,11 @@ export interface BlogDraftData {
   publishDate?: string
   metaTitle?: string
   metaDescription?: string
+  focusKeyword?: string
+  imageAltText?: string
+  externalLinks?: Array<{ url: string; anchorText: string }>
+  internalLinks?: Array<{ url: string; anchorText: string }>
+  faq?: Array<{ question: string; answer: string }>
   categories?: number[]
   coverImage?: string
   // Metadata properties (not part of actual draft data)
@@ -141,12 +146,25 @@ export async function saveDraftToCookie(data: BlogDraftData) {
     const imageSize = processedData.coverImage?.length || 0
     const testJsonSize = JSON.stringify(processedData).length
 
+    // When SEO/links/FAQ have data, always use IndexedDB so they are never truncated by cookie size
+    const hasSeoOrLinksOrFaq =
+      (processedData.focusKeyword && processedData.focusKeyword.trim().length > 0) ||
+      (processedData.externalLinks && processedData.externalLinks.length > 0) ||
+      (processedData.internalLinks && processedData.internalLinks.length > 0) ||
+      (processedData.faq && processedData.faq.length > 0)
+
     // Decision: Use IndexedDB if:
     // 1. Has image (data URL) - ALWAYS use IndexedDB for images
     // 2. Content is larger than 1KB
     // 3. Total JSON would be larger than 2KB (cookie safety margin)
     // 4. Image size is larger than 1KB (even if not data URL, might be large)
-    useIndexedDB = hasImage || contentSize > 1000 || testJsonSize > 2000 || imageSize > 1000
+    // 5. Has focusKeyword / externalLinks / internalLinks / faq (avoid cookie truncation)
+    useIndexedDB =
+      hasImage ||
+      contentSize > 1000 ||
+      testJsonSize > 2000 ||
+      imageSize > 1000 ||
+      hasSeoOrLinksOrFaq
 
     if (useIndexedDB) {
       console.log('Using IndexedDB for draft storage:', {
@@ -290,8 +308,21 @@ export async function loadDraftFromCookie(): Promise<BlogDraftData | null> {
           return null
         }
 
-        // Return actual draft data from cookie
-        if (parsed.title || parsed.content || parsed.coverImage) {
+        // Return actual draft data from cookie (any meaningful field)
+        const hasDraftContent =
+          parsed.title ||
+          parsed.content ||
+          parsed.coverImage ||
+          parsed.excerpt ||
+          parsed.metaTitle ||
+          parsed.metaDescription ||
+          parsed.focusKeyword ||
+          parsed.imageAltText ||
+          (parsed.externalLinks && parsed.externalLinks.length > 0) ||
+          (parsed.internalLinks && parsed.internalLinks.length > 0) ||
+          (parsed.faq && parsed.faq.length > 0) ||
+          (parsed.categories && parsed.categories.length > 0)
+        if (hasDraftContent) {
           console.log('✅ Draft loaded from cookie, size:', cookieData.length, 'chars')
           return parsed
         }
@@ -597,7 +628,20 @@ export async function hasDraftDataAsync(): Promise<boolean> {
       try {
         const parsed = JSON.parse(cookieData) as BlogDraftData
         // Only return true if it's actual data, not just metadata
-        return !!(parsed.title || parsed.content || parsed.coverImage)
+        return !!(
+          parsed.title ||
+          parsed.content ||
+          parsed.coverImage ||
+          parsed.excerpt ||
+          parsed.metaTitle ||
+          parsed.metaDescription ||
+          parsed.focusKeyword ||
+          parsed.imageAltText ||
+          (parsed.externalLinks && parsed.externalLinks.length > 0) ||
+          (parsed.internalLinks && parsed.internalLinks.length > 0) ||
+          (parsed.faq && parsed.faq.length > 0) ||
+          (parsed.categories && parsed.categories.length > 0)
+        )
       } catch (error) {
         return false
       }

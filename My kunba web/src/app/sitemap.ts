@@ -113,15 +113,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             in: ['admin', 'author'],
           },
         },
+        // We want username for author URLs; fallback to id if missing
         select: {
           id: true,
           updatedAt: true,
+          username: true,
         },
         limit: 1000,
         pagination: false,
       })
       authorRoutes = authors.docs.map((author) => ({
-        url: `${baseUrl}/author/${author.id}`,
+        url: `${baseUrl}/author/${(author as any).username || author.id}`,
         lastModified: author.updatedAt ? new Date(author.updatedAt) : new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.6,

@@ -1,0 +1,588 @@
+'use client'
+
+import React, { useState, useCallback } from 'react'
+import DataTable from '@/components/DataTable'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { EllipsisVertical, Trash2, RotateCcw } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useAppStore } from '@/lib/context/store'
+import { toast } from 'sonner'
+import CurrentPageComponent from '@/components/CurrentPageComponent'
+
+type TabType = 'blogs' | 'categories' | 'users'
+
+const LIMIT = 10
+
+export default function RecycleBinPage() {
+  const { loginDetail } = useAppStore()
+  const [activeTab, setActiveTab] = useState<TabType>('blogs')
+  const [blogs, setBlogs] = useState<Record<string, any>[]>([])
+  const [categories, setCategories] = useState<Record<string, any>[]>([])
+  const [users, setUsers] = useState<Record<string, any>[]>([])
+  const [total, setTotal] = useState({ blogs: 0, categories: 0, users: 0 })
+  const [totalPages, setTotalPages] = useState({ blogs: 1, categories: 1, users: 1 })
+  const [currentPage, setCurrentPage] = useState({ blogs: 1, categories: 1, users: 1 })
+  const [loading, setLoading] = useState(false)
+  const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
+  const [selectedUsers, setSelectedUsers] = useState<Record<string, any>[]>([])
+
+  const fetchRecycle = useCallback(
+    async (type: TabType, page: number) => {
+      if (!loginDetail?.token) return
+      setLoading(true)
+      try {
+        const res = await fetch(
+          `/api/dashboard/recycle-bin?type=${type}&page=${page}&limit=${LIMIT}`,
+          { headers: { Authorization: `Bearer ${loginDetail.token}` } },
+        )
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.message || 'Failed to fetch')
+        if (type === 'blogs') {
+          setBlogs(json.data || [])
+          setTotal((t) => ({ ...t, blogs: json.total ?? 0 }))
+          setTotalPages((t) => ({ ...t, blogs: json.totalPages ?? 1 }))
+          setCurrentPage((t) => ({ ...t, blogs: json.currentPage ?? page }))
+        } else if (type === 'categories') {
+          setCategories(json.data || [])
+          setTotal((t) => ({ ...t, categories: json.total ?? 0 }))
+          setTotalPages((t) => ({ ...t, categories: json.totalPages ?? 1 }))
+          setCurrentPage((t) => ({ ...t, categories: json.currentPage ?? page }))
+        } else {
+          setUsers(json.data || [])
+          setTotal((t) => ({ ...t, users: json.total ?? 0 }))
+          setTotalPages((t) => ({ ...t, users: json.totalPages ?? 1 }))
+          setCurrentPage((t) => ({ ...t, users: json.currentPage ?? page }))
+        }
+      } catch (e: any) {
+        toast.error('Error', { description: e.message })
+      } finally {
+        setLoading(false)
+      }
+    },
+    [loginDetail?.token],
+  )
+
+  const fetchCurrent = useCallback(
+    (limitParam: number, _offset: number, _skipScroll: boolean, page: number) => {
+      fetchRecycle(activeTab, page)
+    },
+    [activeTab, fetchRecycle],
+  )
+
+  const handleEmptyRecycleBin = async () => {
+    if (!loginDetail?.token) {
+      toast.error('Unauthorized')
+      return
+    }
+    try {
+      const res = await fetch('/api/dashboard/recycle-bin', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({ type: activeTab, empty: true }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Failed to empty recycle bin')
+      toast.success('Recycle bin emptied')
+      fetchRecycle(activeTab, 1)
+      if (activeTab === 'blogs') setSelectedBlogs([])
+      else if (activeTab === 'categories') setSelectedCategories([])
+      else setSelectedUsers([])
+    } catch (e: any) {
+      toast.error('Error', { description: e.message })
+    }
+  }
+
+  const handleRestore = async (type: TabType, id: number) => {
+    if (!loginDetail?.token) {
+      toast.error('Unauthorized')
+      return
+    }
+    try {
+      const res = await fetch('/api/dashboard/recycle-bin', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({ type, ids: [id] }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Failed to restore')
+      toast.success('Restored')
+      fetchRecycle(activeTab, currentPage[activeTab])
+    } catch (e: any) {
+      toast.error('Error', { description: e.message })
+    }
+  }
+
+  const handleDeletePermanently = async (type: TabType, id: number) => {
+    if (!loginDetail?.token) {
+      toast.error('Unauthorized')
+      return
+    }
+    try {
+      const res = await fetch('/api/dashboard/recycle-bin', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({ type, ids: [id] }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Failed to delete')
+      toast.success('Permanently deleted')
+      fetchRecycle(activeTab, currentPage[activeTab])
+    } catch (e: any) {
+      toast.error('Error', { description: e.message })
+    }
+  }
+
+  const handleBulkRestore = async (type: TabType, items: Record<string, any>[]) => {
+    if (!loginDetail?.token || items.length === 0) return
+    try {
+      const res = await fetch('/api/dashboard/recycle-bin', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({ type, ids: items.map((i) => i.id) }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Failed to restore')
+      toast.success(`Restored ${items.length} item(s)`)
+      if (type === 'blogs') setSelectedBlogs([])
+      else if (type === 'categories') setSelectedCategories([])
+      else setSelectedUsers([])
+      fetchRecycle(type, currentPage[type])
+    } catch (e: any) {
+      toast.error('Error', { description: e.message })
+    }
+  }
+
+  const handleBulkDeletePermanently = async (type: TabType, items: Record<string, any>[]) => {
+    if (!loginDetail?.token || items.length === 0) return
+    try {
+      const res = await fetch('/api/dashboard/recycle-bin', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({ type, ids: items.map((i) => i.id) }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Failed to delete')
+      toast.success(`Permanently deleted ${items.length} item(s)`)
+      if (type === 'blogs') setSelectedBlogs([])
+      else if (type === 'categories') setSelectedCategories([])
+      else setSelectedUsers([])
+      fetchRecycle(type, currentPage[type])
+    } catch (e: any) {
+      toast.error('Error', { description: e.message })
+    }
+  }
+
+  const emptyButton = (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Trash2 className="h-4 w-4 mr-2" />
+          Empty recycle bin
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Empty recycle bin</DialogTitle>
+          <DialogDescription>
+            Permanently delete all {activeTab} in the recycle bin? This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              await handleEmptyRecycleBin()
+            }}
+          >
+            Empty
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
+  const blogData = blogs.map((b) => ({
+    id: b.id,
+    Title: b.Title,
+    Slug: b.Slug,
+    Status: b.Status,
+    Deleted_at: b.Deleted_at ? new Date(b.Deleted_at).toLocaleDateString() : '-',
+  }))
+
+  const categoryData = categories.map((c) => ({
+    id: c.id,
+    Name: c.Name,
+    Slug: c.Slug,
+    Deleted_at: c.Deleted_at ? new Date(c.Deleted_at).toLocaleDateString() : '-',
+  }))
+
+  const userData = users.map((u) => ({
+    id: u.id,
+    DisplayName: u.DisplayName ?? '-',
+    Email: u.Email ?? '-',
+    Role: u.Role ?? '-',
+    Deleted_at: u.Deleted_at ? new Date(u.Deleted_at).toLocaleDateString() : '-',
+  }))
+
+  React.useEffect(() => {
+    if (loginDetail?.token) fetchRecycle(activeTab, 1)
+  }, [activeTab, loginDetail?.token])
+
+  return (
+    <div className="p-4 md:p-6">
+      <h1 className="text-2xl font-semibold mb-4">Recycle bin</h1>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+        <TabsList>
+          <TabsTrigger value="blogs">Blogs</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+        </TabsList>
+        <TabsContent value="blogs" className="mt-4">
+          <DataTable
+            tableTitle="Deleted blogs"
+            tableSubTitle="Permanently delete or empty"
+            AddProductButton={
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedBlogs.length > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkRestore('blogs', selectedBlogs)}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restore
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete permanently</DialogTitle>
+                          <DialogDescription>
+                            {selectedBlogs.length} blog(s) will be removed forever, including images from storage. This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleBulkDeletePermanently('blogs', selectedBlogs)}
+                          >
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+                {emptyButton}
+              </div>
+            }
+            detailPageLink=""
+            slug={false}
+            selectedProductsState={{ selectedProducts: selectedBlogs, setSelectedProducts: setSelectedBlogs }}
+            total={total.blogs}
+            currentPage={currentPage.blogs}
+            limit={LIMIT}
+            totalPages={totalPages.blogs}
+            data={blogData}
+            isCheckBoxRequired={true}
+            isEllipsisRequired={true}
+            fetchDataFunction={fetchCurrent}
+            EllipsisComponent={({ value }: { value: Record<string, any> }) => (
+              <Popover>
+                <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                  <EllipsisVertical size="1rem" />
+                </PopoverTrigger>
+                <PopoverContent className="p-1 flex flex-col w-fit">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start py-1.5 h-fit gap-2"
+                    onClick={() => handleRestore('blogs', value.id)}
+                  >
+                    <RotateCcw size="0.875rem" />
+                    Restore
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start py-1.5 h-fit text-destructive">
+                        Delete permanently
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete permanently</DialogTitle>
+                        <DialogDescription>
+                          This blog will be removed forever, including its images from storage. This cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeletePermanently('blogs', value.id)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </PopoverContent>
+              </Popover>
+            )}
+            loading={loading}
+          />
+        </TabsContent>
+        <TabsContent value="categories" className="mt-4">
+          <DataTable
+            tableTitle="Deleted categories"
+            tableSubTitle="Permanently delete or empty"
+            AddProductButton={
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedCategories.length > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkRestore('categories', selectedCategories)}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restore
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete permanently</DialogTitle>
+                          <DialogDescription>
+                            {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'} will be removed forever. This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleBulkDeletePermanently('categories', selectedCategories)}
+                          >
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+                {emptyButton}
+              </div>
+            }
+            detailPageLink=""
+            slug={false}
+            selectedProductsState={{ selectedProducts: selectedCategories, setSelectedProducts: setSelectedCategories }}
+            total={total.categories}
+            currentPage={currentPage.categories}
+            limit={LIMIT}
+            totalPages={totalPages.categories}
+            data={categoryData}
+            isCheckBoxRequired={true}
+            isEllipsisRequired={true}
+            fetchDataFunction={fetchCurrent}
+            EllipsisComponent={({ value }: { value: Record<string, any> }) => (
+              <Popover>
+                <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                  <EllipsisVertical size="1rem" />
+                </PopoverTrigger>
+                <PopoverContent className="p-1 flex flex-col w-fit">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start py-1.5 h-fit gap-2"
+                    onClick={() => handleRestore('categories', value.id)}
+                  >
+                    <RotateCcw size="0.875rem" />
+                    Restore
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start py-1.5 h-fit text-destructive">
+                        Delete permanently
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete permanently</DialogTitle>
+                        <DialogDescription>
+                          This category will be removed forever. This cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeletePermanently('categories', value.id)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </PopoverContent>
+              </Popover>
+            )}
+            loading={loading}
+          />
+        </TabsContent>
+        <TabsContent value="users" className="mt-4">
+          <DataTable
+            tableTitle="Deleted users"
+            tableSubTitle="Permanently delete or empty (admin only)"
+            AddProductButton={
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedUsers.length > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkRestore('users', selectedUsers)}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restore
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete permanently</DialogTitle>
+                          <DialogDescription>
+                            {selectedUsers.length} user(s) will be removed forever. This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleBulkDeletePermanently('users', selectedUsers)}
+                          >
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+                {emptyButton}
+              </div>
+            }
+            detailPageLink=""
+            slug={false}
+            selectedProductsState={{ selectedProducts: selectedUsers, setSelectedProducts: setSelectedUsers }}
+            total={total.users}
+            currentPage={currentPage.users}
+            limit={LIMIT}
+            totalPages={totalPages.users}
+            data={userData}
+            isCheckBoxRequired={true}
+            isEllipsisRequired={true}
+            fetchDataFunction={fetchCurrent}
+            EllipsisComponent={({ value }: { value: Record<string, any> }) => (
+              <Popover>
+                <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                  <EllipsisVertical size="1rem" />
+                </PopoverTrigger>
+                <PopoverContent className="p-1 flex flex-col w-fit">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start py-1.5 h-fit gap-2"
+                    onClick={() => handleRestore('users', value.id)}
+                  >
+                    <RotateCcw size="0.875rem" />
+                    Restore
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start py-1.5 h-fit text-destructive">
+                        Delete permanently
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete permanently</DialogTitle>
+                        <DialogDescription>
+                          This user will be removed forever. This cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeletePermanently('users', value.id)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </PopoverContent>
+              </Popover>
+            )}
+            loading={loading}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

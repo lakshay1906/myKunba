@@ -121,6 +121,9 @@ export function CreatePostForm() {
   const isSubmittingRef = useRef(false)
   const saveDraftRef = useRef<((immediate?: boolean) => void) | null>(null)
   const lastAutoAltRef = useRef<string>('')
+  const slugManuallyEditedRef = useRef(false)
+  const metaTitleManuallyEditedRef = useRef(false)
+  const metaDescriptionManuallyEditedRef = useRef(false)
   const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
 
@@ -158,13 +161,13 @@ export function CreatePostForm() {
     const title = (watchedValues.title || '').trim()
     if (!title) return
 
-    setImageUploadData((prev) => {
-      const currentAlt = (prev.alt || '').trim()
-      const shouldAutoSet = currentAlt === '' || currentAlt === lastAutoAltRef.current
-      if (!shouldAutoSet) return prev
-      lastAutoAltRef.current = title
-      return { ...prev, alt: title }
-    })
+    const currentAlt = (imageUploadData.alt || '').trim()
+    const shouldAutoSet = currentAlt === '' || currentAlt === lastAutoAltRef.current
+    if (!shouldAutoSet) return
+
+    lastAutoAltRef.current = title
+    setImageUploadData((prev) => ({ ...prev, alt: title }))
+    form.setValue('imageAltText', title, { shouldDirty: false })
   }, [watchedValues.title])
 
   // Run SEO validation when relevant fields change (debounced for performance)
@@ -244,6 +247,16 @@ export function CreatePostForm() {
         // Temporarily disable draft saving while loading
         setIsDraftLoaded(false)
 
+        // Normalize array fields so they have the expected shape (url/anchorText or question/answer)
+        const normalizeLinks = (arr: BlogDraftData['externalLinks']) =>
+          Array.isArray(arr) && arr.length > 0
+            ? arr.map((l) => ({ url: (l as any)?.url ?? '', anchorText: (l as any)?.anchorText ?? '' }))
+            : []
+        const normalizeFaq = (arr: BlogDraftData['faq']) =>
+          Array.isArray(arr) && arr.length > 0
+            ? arr.map((f) => ({ question: (f as any)?.question ?? '', answer: (f as any)?.answer ?? '' }))
+            : []
+
         // Reset form with draft data (this won't trigger watch during reset)
         form.reset(
           {
@@ -254,6 +267,11 @@ export function CreatePostForm() {
             publishDate: draftData.publishDate ? new Date(draftData.publishDate) : new Date(),
             metaTitle: draftData.metaTitle || '',
             metaDescription: draftData.metaDescription || '',
+            focusKeyword: (draftData.focusKeyword ?? '').toString(),
+            imageAltText: (draftData.imageAltText ?? '').toString(),
+            externalLinks: normalizeLinks(draftData.externalLinks),
+            internalLinks: normalizeLinks(draftData.internalLinks as BlogDraftData['internalLinks']),
+            faq: normalizeFaq(draftData.faq),
             status: draftData.status || 'draft',
           },
           { keepDefaultValues: false },
@@ -302,6 +320,10 @@ export function CreatePostForm() {
           if ((draftData as any).imageAltText) {
             form.setValue('imageAltText', (draftData as any).imageAltText, { shouldDirty: false })
           }
+        } else if (draftData.imageAltText) {
+          // No cover image but alt text was saved (e.g. from SEO tab)
+          form.setValue('imageAltText', draftData.imageAltText, { shouldDirty: false })
+          handleImageUploadDataChange((prev) => ({ ...prev, alt: draftData.imageAltText || '' }))
         }
 
         console.log('Form reset with draft data, content:', draftData.content)
@@ -338,6 +360,20 @@ export function CreatePostForm() {
           content: formValues.content || undefined, // Don't trim HTML content
           metaTitle: formValues.metaTitle?.trim() || undefined,
           metaDescription: formValues.metaDescription?.trim() || undefined,
+          focusKeyword: formValues.focusKeyword?.trim() || undefined,
+          imageAltText: (imageUploadData.alt || formValues.imageAltText)?.trim() || undefined,
+          externalLinks:
+            formValues.externalLinks?.length && formValues.externalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
+              ? formValues.externalLinks.map((l) => ({ url: l?.url?.trim() || '', anchorText: l?.anchorText?.trim() || '' }))
+              : undefined,
+          internalLinks:
+            formValues.internalLinks?.length && formValues.internalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
+              ? formValues.internalLinks.map((l) => ({ url: l?.url?.trim() || '', anchorText: l?.anchorText?.trim() || '' }))
+              : undefined,
+          faq:
+            formValues.faq?.length && formValues.faq.some((f) => f?.question?.trim() || f?.answer?.trim())
+              ? formValues.faq.map((f) => ({ question: f?.question?.trim() || '', answer: f?.answer?.trim() || '' }))
+              : undefined,
           status: formValues.status,
           publishDate: formValues.publishDate ? formValues.publishDate.toISOString() : undefined,
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
@@ -353,14 +389,21 @@ export function CreatePostForm() {
           hasTitle: !!draftData.title,
         })
 
-        // Only save if there's at least some content
-        if (
+        // Only save if there's at least some content (any field)
+        const hasAnyContent =
           draftData.title ||
           draftData.content ||
           draftData.excerpt ||
           draftData.coverImage ||
-          (draftData.categories && draftData.categories.length > 0)
-        ) {
+          (draftData.categories && draftData.categories.length > 0) ||
+          draftData.metaTitle ||
+          draftData.metaDescription ||
+          draftData.focusKeyword ||
+          draftData.imageAltText ||
+          (draftData.externalLinks && draftData.externalLinks.length > 0) ||
+          (draftData.internalLinks && draftData.internalLinks.length > 0) ||
+          (draftData.faq && draftData.faq.length > 0)
+        if (hasAnyContent) {
           await saveDraftToCookie(draftData)
           setHasDraftData(true)
           console.log('Draft saved successfully')
@@ -408,7 +451,7 @@ export function CreatePostForm() {
       categoriesCount: selectedCategories.length,
     })
     // Save immediately when image, alt text, or categories change
-    saveDraft()
+    saveDraft(true)
   }, [
     selectedCategories,
     imageUploadData.coverImage,
@@ -416,6 +459,16 @@ export function CreatePostForm() {
     saveDraft,
     isDraftLoaded,
   ])
+
+  // Save immediately when SEO / links / FAQ fields change (so reload doesn't lose them)
+  const watchedFocusKeyword = form.watch('focusKeyword')
+  const watchedExternalLinks = form.watch('externalLinks')
+  const watchedInternalLinks = form.watch('internalLinks')
+  const watchedFaq = form.watch('faq')
+  useEffect(() => {
+    if (!isDraftLoaded) return
+    saveDraft(true)
+  }, [watchedFocusKeyword, watchedExternalLinks, watchedInternalLinks, watchedFaq, isDraftLoaded, saveDraft])
 
   // Watch content field specifically (RichTextEditor might not trigger form.watch properly)
   const contentValue = form.watch('content')
@@ -762,6 +815,36 @@ export function CreatePostForm() {
             return
           }
         }
+        // Draft-restored cover image: data URL present but no file (e.g. after page reload)
+        else if (
+          imageUploadData.coverImage.startsWith('data:') &&
+          !imageUploadData.file
+        ) {
+          try {
+            const res = await fetch(imageUploadData.coverImage)
+            const blob = await res.blob()
+            const file = new File([blob], `cover-${Date.now()}.png`, { type: blob.type })
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('alt', imageUploadData.alt?.trim() || 'Cover image')
+            const uploadRes = await fetch('/api/image/upload', { method: 'POST', body: formData })
+            const uploadJson = await uploadRes.json()
+            if (uploadRes.ok && uploadJson?.success && uploadJson?.data?.url) {
+              coverImageUrl = uploadJson.data.url
+              if (coverImageUrl) uploadedImages.push(coverImageUrl)
+            } else {
+              throw new Error(uploadJson?.error || uploadJson?.message || 'Upload failed')
+            }
+          } catch (err: any) {
+            console.error('Error uploading draft-restored cover image:', err)
+            isSubmittingRef.current = false
+            setIsLoading(false)
+            toast.error('Error', {
+              description: 'Failed to upload cover image. Please try again.',
+            })
+            return
+          }
+        }
         // If it's a URL (not data URL), validate it
         else if (
           !imageUploadData.coverImage.startsWith('data:') &&
@@ -978,50 +1061,47 @@ export function CreatePostForm() {
     }
   }
 
-  // Generate slug from title
+  // Generate slug from title (trims leading/trailing space so slug has no leading/trailing hyphens)
   const generateSlug = (title: string) => {
     return title
+      .trim()
       .toLowerCase()
       .replace(/[^\w\s]/gi, '')
       .replace(/\s+/g, '-')
+      .replace(/^-+|-+$/g, '') // remove any leading/trailing hyphens left after trim
   }
 
-  // Handle title change to auto-generate slug and metaTitle
+  // Handle title change: actively sync slug, metaTitle, and alt from title (unless user edited those fields)
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value
     form.setValue('title', title, { shouldDirty: true, shouldValidate: false })
 
-    // Only auto-generate slug if it hasn't been manually edited
-    if (!form.getValues('slug')) {
+    // Sync slug from title whenever the user hasn't manually edited the slug
+    if (!slugManuallyEditedRef.current) {
       form.setValue('slug', generateSlug(title), { shouldDirty: true, shouldValidate: false })
     }
 
-    // Auto-fill metaTitle if it's empty or matches the previous title
-    const currentMetaTitle = form.getValues('metaTitle')
-    const previousTitle = form.getValues('title')
-    if (!currentMetaTitle || currentMetaTitle === previousTitle) {
+    // Sync meta title from title whenever the user hasn't manually edited meta title
+    if (!metaTitleManuallyEditedRef.current) {
       form.setValue('metaTitle', title, { shouldDirty: true, shouldValidate: false })
     }
 
-    // Trigger save after a short delay
+    // Alt text is synced from title in the useEffect above (only when alt is empty or still matches last auto value)
+
     if (isDraftLoaded) {
       saveDraft()
     }
   }
 
-  // Handle excerpt change to auto-fill metaDescription
+  // Handle excerpt change: actively sync metaDescription from excerpt (unless user edited it)
   const handleExcerptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const excerpt = e.target.value
     form.setValue('excerpt', excerpt, { shouldDirty: true, shouldValidate: false })
 
-    // Auto-fill metaDescription if it's empty or matches the previous excerpt
-    const currentMetaDescription = form.getValues('metaDescription')
-    const previousExcerpt = form.getValues('excerpt')
-    if (!currentMetaDescription || currentMetaDescription === previousExcerpt) {
+    if (!metaDescriptionManuallyEditedRef.current) {
       form.setValue('metaDescription', excerpt, { shouldDirty: true, shouldValidate: false })
     }
 
-    // Trigger save after a short delay
     if (isDraftLoaded) {
       saveDraft()
     }
@@ -1276,6 +1356,10 @@ export function CreatePostForm() {
                           <Input
                             placeholder="SEO title (optional)"
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              metaTitleManuallyEditedRef.current = true
+                            }}
                             disabled={isLoading}
                             maxLength={100}
                           />
@@ -1299,6 +1383,10 @@ export function CreatePostForm() {
                           <Input
                             placeholder="enter-post-slug"
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              slugManuallyEditedRef.current = true
+                            }}
                             disabled={isLoading}
                             maxLength={100}
                           />
@@ -1322,6 +1410,10 @@ export function CreatePostForm() {
                           <Textarea
                             placeholder="SEO description (optional)"
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              metaDescriptionManuallyEditedRef.current = true
+                            }}
                             disabled={isLoading}
                           />
                         </FormControl>
@@ -1709,11 +1801,45 @@ export function CreatePostForm() {
                   e.stopPropagation()
 
                   // Only execute onSubmit when this specific button is clicked
-                  // Validate form and call onSubmit handler
-                  form.handleSubmit((data, event) => {
-                    // Ensure this is only called from the Submit button
-                    onSubmit(data, event)
-                  })(e)
+                  // Validate form and call onSubmit handler; on validation error switch to the tab with the error
+                  form.handleSubmit(
+                    (data, event) => {
+                      onSubmit(data, event)
+                    },
+                    (errors) => {
+                      const contentFields = ['title', 'slug', 'excerpt', 'content']
+                      const seoFields = ['metaTitle', 'metaDescription', 'focusKeyword', 'imageAltText', 'externalLinks', 'internalLinks', 'faq']
+                      const firstErrorKey = Object.keys(errors)[0] as string | undefined
+                      if (firstErrorKey) {
+                        const tab = contentFields.includes(firstErrorKey)
+                          ? 'content'
+                          : seoFields.includes(firstErrorKey)
+                            ? 'seo'
+                            : 'settings'
+                        setCurrentTab(tab)
+                        try {
+                          form.setFocus(firstErrorKey as Parameters<typeof form.setFocus>[0], { shouldSelect: true })
+                        } catch (_) {}
+                        // Get first error message (support nested e.g. externalLinks.0.url)
+                        const getMessage = (obj: any): string | undefined => {
+                          if (!obj || typeof obj !== 'object') return undefined
+                          if (typeof obj.message === 'string') return obj.message
+                          const sub = obj.root ?? obj[Object.keys(obj)[0]]
+                          return sub ? getMessage(sub) : undefined
+                        }
+                        const message = getMessage((errors as any)[firstErrorKey]) ?? 'Please fix the errors in the form and try again.'
+                        toast.error('Validation error', {
+                          description: message,
+                          duration: 6000,
+                        })
+                      } else {
+                        toast.error('Validation error', {
+                          description: 'Please fix the errors in the form and try again.',
+                          duration: 6000,
+                        })
+                      }
+                    },
+                  )(e)
                 }}
                 disabled={isLoading || isSubmittingRef.current}
               >

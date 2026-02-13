@@ -147,8 +147,23 @@ export async function fetchComments(postId: number, limit: number = 10) {
       return dateB - dateA
     })
 
+    // Show "Anonymous User" publicly when the commenter has deleted their profile.
+    // We don't delete comments; we only anonymize the user for the public blog.
+    function anonymizeDeletedUser(comment: any): any {
+      const c = { ...comment }
+      const user = c.user
+      if (user && (user.deleted_at != null || (typeof user === 'object' && user.deleted_at))) {
+        c.user = { ...user, displayName: 'Anonymous User', profileImage: null }
+      }
+      if (c.replies && Array.isArray(c.replies)) {
+        c.replies = c.replies.map(anonymizeDeletedUser)
+      }
+      return c
+    }
+    const commentsAnonymized = topLevelComments.map(anonymizeDeletedUser)
+
     return {
-      comments: topLevelComments,
+      comments: commentsAnonymized,
       total: initialComments.totalDocs,
       hasMore: initialComments.totalDocs > limit,
     }

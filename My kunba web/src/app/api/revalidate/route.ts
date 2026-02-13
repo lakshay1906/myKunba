@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ revalidated: true, path: normalizedPath })
     }
     if (normalizedPath.startsWith('/author/') && normalizedPath.length > 8) {
-      const id = parseInt(normalizedPath.slice('/author/'.length), 10)
-      if (!isNaN(id)) {
-        revalidateAuthor(id)
+      const slug = normalizedPath.slice('/author/'.length)
+      if (slug) {
+        revalidateAuthor(slug)
         return NextResponse.json({ revalidated: true, path: normalizedPath })
       }
     }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: 'Path not supported for revalidation. Use /slug, /category/slug, /author/id, or /' },
+      { message: 'Path not supported for revalidation. Use /slug, /category/slug, /author/slug, or /' },
       { status: 400 },
     )
   } catch (error) {

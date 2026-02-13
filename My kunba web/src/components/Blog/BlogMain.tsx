@@ -13,8 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '../ui/dialog'
-import { EllipsisVertical } from 'lucide-react'
+import { EllipsisVertical, Trash2 } from 'lucide-react'
 import Toast from '../Toast'
 import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
@@ -40,13 +41,12 @@ export default function BlogMain({
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
   const [limit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
+  const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const { loginDetail } = useAppStore()
 
-  async function deleteBlog(id: string) {
+  async function deleteBlog(id: string, silent = false) {
     if (!loginDetail || !loginDetail.token) {
-      toast.error('Unauthorized', {
-        description: 'You must be logged in to delete a blog',
-      })
+      if (!silent) toast.error('Unauthorized', { description: 'You must be logged in to delete a blog' })
       return
     }
 
@@ -65,20 +65,17 @@ export default function BlogMain({
 
       // Remove from state instead of refetching
       setBlogs((prev) => prev.filter((blog) => blog.id !== id))
-      // Update total count
       setTotal((prev) => Math.max(0, prev - 1))
-      // Update total pages if needed
       setTotalPages((prev) => {
         const newTotal = total - 1
         if (newTotal <= 0) return 1
         return Math.ceil(newTotal / limit)
       })
 
-      toast.success('Success', {
-        description: 'Blog deleted successfully',
-      })
+      if (!silent) {
+        toast.success('Success', { description: 'Blog deleted successfully' })
+      }
 
-      // If current page becomes empty and not page 1, go to previous page
       if (blogs.length === 1 && currentPage > 1) {
         const newPage = currentPage - 1
         const offset = (newPage - 1) * limit
@@ -86,9 +83,7 @@ export default function BlogMain({
       }
     } catch (error: any) {
       console.error('Error deleting blog:', error)
-      toast.error('Error', {
-        description: error.message || 'Failed to delete blog',
-      })
+      if (!silent) toast.error('Error', { description: error.message || 'Failed to delete blog' })
     }
   }
 
@@ -137,18 +132,57 @@ export default function BlogMain({
     }
   }
 
+  async function handleBulkDelete() {
+    if (!loginDetail?.token || selectedBlogs.length === 0) return
+    const count = selectedBlogs.length
+    for (const blog of selectedBlogs) {
+      await deleteBlog(String(blog.id), true)
+    }
+    setSelectedBlogs([])
+    fetchBlogs(limit, 0, false, currentPage)
+    toast.success('Success', { description: `${count} blog(s) deleted and moved to recycle bin` })
+  }
+
   return (
     <DataTable
       tableTitle="Blog"
       tableSubTitle="Explore all your blogs"
       AddProductButton={
-        <Link href="/dashboard/blog/create">
-          <Button variant={'outline'}>Create</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {selectedBlogs.length > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedBlogs.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Delete blogs</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete {selectedBlogs.length} blog(s)? They will be moved to the recycle bin.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button variant="destructive" onClick={handleBulkDelete}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Link href="/dashboard/blog/create">
+            <Button variant={'outline'}>Create</Button>
+          </Link>
+        </div>
       }
       detailPageLink={'/dashboard/blog'}
       slug={true}
-      selectedProductsState={{ selectedProducts: [], setSelectedProducts: () => {} }}
+      selectedProductsState={{ selectedProducts: selectedBlogs, setSelectedProducts: setSelectedBlogs }}
       total={total}
       currentPage={currentPage}
       limit={limit}
@@ -194,7 +228,7 @@ export default function BlogMain({
           </PopoverContent>
         </Popover>
       )}
-      isCheckBoxRequired={false}
+      isCheckBoxRequired={true}
       isEllipsisRequired={true}
       loading={loading}
     />

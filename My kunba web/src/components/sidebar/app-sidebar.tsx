@@ -10,9 +10,8 @@ import {
   LayoutDashboardIcon,
   MessageCircleHeart,
   Reply,
-  SearchIcon,
-  SettingsIcon,
   Shapes,
+  Trash2,
 } from 'lucide-react'
 import { NavDocuments } from '@/components/sidebar/nav-documents'
 import { NavMain } from '@/components/sidebar/nav-main'
@@ -121,20 +120,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     navSecondary: [
       {
-        title: 'Search',
-        url: '#',
-        icon: SearchIcon,
+        title: 'Recycle bin',
+        url: '/dashboard/recycle-bin',
+        icon: Trash2,
       },
-      {
-        title: 'Settings',
-        url: '#',
-        icon: SettingsIcon,
-      },
-      // {
-      //   title: 'Get Help',
-      //   url: '#',
-      //   icon: HelpCircleIcon,
-      // },
     ],
     documents: [
       {

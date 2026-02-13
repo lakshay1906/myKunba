@@ -7,6 +7,15 @@ export const Users: CollectionConfig = {
   timestamps: true,
   fields: [
     { name: 'displayName', type: 'text' },
+    {
+      name: 'username',
+      type: 'text',
+      required: true,
+      unique: true,
+      admin: {
+        description: 'Unique public username used in author URLs (e.g. /author/username)',
+      },
+    },
     { name: 'bio', type: 'textarea' },
     { name: 'verified', type: 'checkbox', required: true, defaultValue: false },
     { name: 'profileImage', type: 'relationship', relationTo: 'media' },

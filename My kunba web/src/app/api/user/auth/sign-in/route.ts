@@ -20,6 +20,35 @@ export async function POST(req: NextRequest) {
 
     if (!data) return NextResponse.json({ message: 'Missing required fields' }, { status: 400 })
 
+    // Helper to generate a unique, URL-safe username based on a base string
+    async function generateUniqueUsername(base: string): Promise<string> {
+      const normalized =
+        base
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9_]+/g, '-') // allow letters, numbers, underscore, hyphen
+          .replace(/^-+|-+$/g, '') || 'user'
+      let username = normalized
+      let suffix = 1
+      // Loop until we find a username that is not taken (including soft-deleted users, to avoid reuse)
+      // We intentionally do NOT filter by deleted_at here so usernames remain globally unique.
+      // If performance ever becomes a concern, this can be optimized.
+      while (true) {
+        const existing = await payload.find({
+          collection: 'users',
+          where: {
+            username: {
+              equals: username,
+            },
+          },
+          limit: 1,
+        })
+        if (existing.totalDocs === 0) return username
+        suffix += 1
+        username = `${normalized}-${suffix}`
+      }
+    }
+
     const isOldUser = await payload.find({
       collection: 'users',
       where: {
@@ -43,6 +72,14 @@ export async function POST(req: NextRequest) {
     // TODO: In the future, we could create a media entry from the URL if needed
     const profile_pic = null
 
+    // Derive a base username from display name or email, then ensure it is unique
+    const baseUsername =
+      (typeof data.username === 'string' && data.username.length > 0 && data.username) ||
+      (typeof data.name === 'string' && data.name.length > 0 && data.name) ||
+      (typeof userData.email === 'string' && userData.email.split('@')[0]) ||
+      'user'
+    const username = await generateUniqueUsername(baseUsername)
+
     await payload.create({
       collection: 'users',
       data: {
@@ -51,6 +88,7 @@ export async function POST(req: NextRequest) {
         uid: userData.uid,
         socialLinks: data.socialLinks || [],
         displayName: data.name,
+        username,
         bio: data.bio || null,
         role: data.role || 'user',
         verified: data.verified || false,

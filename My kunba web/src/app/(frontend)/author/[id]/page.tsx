@@ -18,23 +18,38 @@ export async function generateMetadata({
   const { id } = await params
 
   try {
-    const authorId = Number(id)
-    if (isNaN(authorId)) {
-      return {
-        title: 'Author Not Found',
-        robots: {
-          index: false,
-          follow: false,
-        },
+    // Treat the dynamic segment as the author's username slug (preferred),
+    // but fall back to numeric ID for backwards compatibility with old URLs.
+    let author:
+      | (Awaited<ReturnType<typeof payload.find>>['docs'][number] & { username?: string })
+      | null = null
+
+    // 1. Try to resolve by username
+    const byUsername = await payload.find({
+      collection: 'users',
+      where: {
+        username: { equals: id },
+        deleted_at: { equals: null },
+      },
+      limit: 1,
+    })
+    if (byUsername.docs.length > 0) {
+      author = byUsername.docs[0] as any
+    } else {
+      // 2. Fallback: treat segment as numeric ID (legacy /author/123 URLs)
+      const authorId = Number(id)
+      if (!isNaN(authorId)) {
+        const byId = await payload.findByID({
+          collection: 'users',
+          id: authorId,
+        })
+        if (byId && !byId.deleted_at) {
+          author = byId as any
+        }
       }
     }
 
-    const author = await payload.findByID({
-      collection: 'users',
-      id: authorId,
-    })
-
-    if (!author || author.deleted_at) {
+    if (!author) {
       return {
         title: 'Author Not Found',
         robots: {
@@ -45,7 +60,8 @@ export async function generateMetadata({
     }
 
     const siteUrl = getPublicUrl()
-    const authorUrl = `${siteUrl}/author/${id}`
+    const authorSlug = (author as any).username || String(author.id)
+    const authorUrl = `${siteUrl}/author/${authorSlug}`
 
     const displayName = author.displayName ?? 'Author'
     const bio = author.bio ?? undefined
@@ -110,19 +126,39 @@ export default async function AuthorPage({
   const page = params2.page ? Number(params2.page) : 1
 
   try {
-    const authorId = Number(id)
-    if (isNaN(authorId)) {
-      notFound()
-    }
+    // Resolve author by username first, then numeric ID for legacy URLs
+    let author:
+      | (Awaited<ReturnType<typeof payload.find>>['docs'][number] & { username?: string })
+      | null = null
 
-    const author = await payload.findByID({
+    const byUsername = await payload.find({
       collection: 'users',
-      id: authorId,
+      where: {
+        username: { equals: id },
+        deleted_at: { equals: null },
+      },
+      limit: 1,
     })
+    if (byUsername.docs.length > 0) {
+      author = byUsername.docs[0] as any
+    } else {
+      const authorId = Number(id)
+      if (!isNaN(authorId)) {
+        const byId = await payload.findByID({
+          collection: 'users',
+          id: authorId,
+        })
+        if (byId && !byId.deleted_at) {
+          author = byId as any
+        }
+      }
+    }
 
-    if (!author || author.deleted_at) {
+    if (!author) {
       notFound()
     }
+
+    const authorIdForPosts = author.id as number
 
     const limit = 12
     const pageNum = page
@@ -133,7 +169,7 @@ export default async function AuthorPage({
         collection: 'posts',
         where: {
           author: {
-            equals: authorId,
+            equals: authorIdForPosts,
           },
           deleted_at: {
             equals: null,
@@ -176,7 +212,8 @@ export default async function AuthorPage({
 
     // Generate structured data for author page (E-E-A-T)
     const siteUrl = getPublicUrl()
-    const authorUrl = `${siteUrl}/author/${id}`
+    const authorSlug = (author as any).username || String(author.id)
+    const authorUrl = `${siteUrl}/author/${authorSlug}`
 
     const personSchema = {
       '@context': 'https://schema.org',

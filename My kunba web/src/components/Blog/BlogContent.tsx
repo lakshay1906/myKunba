@@ -114,7 +114,7 @@ export default function BlogContent({
             <AvatarFallback>{getAuthorInitials(blog.author.displayName)}</AvatarFallback>
           </Avatar>
           <Link
-            href={`/author/${blog.author.id}`}
+            href={`/author/${blog.author.username || blog.author.id}`}
             className="hover:underline font-medium"
             rel="author"
           >

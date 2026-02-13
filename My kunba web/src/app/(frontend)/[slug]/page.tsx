@@ -148,6 +148,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             typeof blog.author === 'object' && blog.author !== null && 'displayName' in blog.author
               ? {
                   id: blog.author.id,
+                  username: (blog.author as any).username,
                   displayName: blog.author.displayName ?? undefined,
                   profileImage: undefined,
                   bio: blog.author.bio ?? undefined,
