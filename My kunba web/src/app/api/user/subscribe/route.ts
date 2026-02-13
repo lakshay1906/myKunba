@@ -77,6 +77,9 @@ export async function POST(req: NextRequest) {
           message: 'Successfully re-subscribed to our newsletter!',
           ...(emailError && {
             warning: 'Subscription successful, but confirmation email could not be sent. Please contact support if you don\'t receive updates.',
+            ...(process.env.NODE_ENV === 'development' && {
+              debug: (emailError as { message?: string })?.message || String(emailError),
+            }),
           }),
         },
         { status: 200 },
@@ -115,6 +118,9 @@ export async function POST(req: NextRequest) {
         message: 'Successfully subscribed to our newsletter! Please check your email for confirmation.',
         ...(emailError && {
           warning: 'Subscription successful, but confirmation email could not be sent. Please contact support if you don\'t receive updates.',
+          ...(process.env.NODE_ENV === 'development' && {
+            debug: (emailError as { message?: string })?.message || String(emailError),
+          }),
         }),
       },
       { status: 200 },

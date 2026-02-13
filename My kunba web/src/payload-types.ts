@@ -165,7 +165,9 @@ export interface User {
   verified: boolean;
   profileImage?: (number | null) | Media;
   role: 'admin' | 'author' | 'user';
-  /** JSON string of array of { platform, url }. Parse on frontend with parseSocialLinks(). */
+  /**
+   * JSON string of array of { platform, url }. e.g. [{"platform":"Twitter","url":"https://..."}]
+   */
   socialLinks?: string | null;
   email: string;
   /**

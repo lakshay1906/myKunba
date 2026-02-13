@@ -6,14 +6,32 @@ interface EmailOptions {
   html: string
 }
 
+// Prefer server-only env vars (SMTP_*) so secrets aren't exposed via NEXT_PUBLIC_; fall back to NEXT_PUBLIC_SMTP_*
+function getEnv(key: string, publicKey: string): string {
+  const server = process.env[key]
+  if (server != null && server !== '') return server
+  const pub = process.env[publicKey]
+  if (pub != null && pub !== '') return pub
+  return ''
+}
+
 export async function sendEmail({ to, subject, html }: EmailOptions): Promise<void> {
-  const smtpHost = process.env.NEXT_PUBLIC_SMTP_HOST
-  const smtpPort = process.env.NEXT_PUBLIC_SMTP_PORT
-  const smtpEmail = process.env.NEXT_PUBLIC_SMTP_EMAIL
-  const smtpPass = process.env.NEXT_PUBLIC_SMTP_PASS
+  const smtpHost = getEnv('SMTP_HOST', 'NEXT_PUBLIC_SMTP_HOST')
+  const smtpPort = getEnv('SMTP_PORT', 'NEXT_PUBLIC_SMTP_PORT')
+  const smtpEmail = getEnv('SMTP_EMAIL', 'NEXT_PUBLIC_SMTP_EMAIL')
+  const smtpPass = getEnv('SMTP_PASS', 'NEXT_PUBLIC_SMTP_PASS')
 
   if (!smtpHost || !smtpPort || !smtpEmail || !smtpPass) {
-    throw new Error('SMTP configuration is missing. Please check your environment variables.')
+    const missing = [
+      !smtpHost && 'SMTP_HOST or NEXT_PUBLIC_SMTP_HOST',
+      !smtpPort && 'SMTP_PORT or NEXT_PUBLIC_SMTP_PORT',
+      !smtpEmail && 'SMTP_EMAIL or NEXT_PUBLIC_SMTP_EMAIL',
+      !smtpPass && 'SMTP_PASS or NEXT_PUBLIC_SMTP_PASS',
+    ].filter(Boolean)
+    throw new Error(
+      `SMTP configuration is missing. Set in .env: ${missing.join(', ')}. ` +
+        'For Gmail use an App Password: https://support.google.com/accounts/answer/185833',
+    )
   }
 
   const portNumber = parseInt(smtpPort, 10)
