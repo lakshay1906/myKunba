@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         email: userData?.email,
         profileImage: profile_pic,
         uid: userData.uid,
-        socialLinks: data.socialLinks || [],
+        socialLinks: typeof data.socialLinks === 'string' ? data.socialLinks : JSON.stringify(data.socialLinks || []),
         displayName: data.name,
         username,
         bio: data.bio || null,

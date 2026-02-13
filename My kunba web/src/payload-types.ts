@@ -165,13 +165,8 @@ export interface User {
   verified: boolean;
   profileImage?: (number | null) | Media;
   role: 'admin' | 'author' | 'user';
-  socialLinks?:
-    | {
-        platform?: string | null;
-        url?: string | null;
-        id?: string | null;
-      }[]
-    | null;
+  /** JSON string of array of { platform, url }. Parse on frontend with parseSocialLinks(). */
+  socialLinks?: string | null;
   email: string;
   /**
    * This is the unique ID assigned by Firebase
@@ -514,13 +509,7 @@ export interface UsersSelect<T extends boolean = true> {
   verified?: T;
   profileImage?: T;
   role?: T;
-  socialLinks?:
-    | T
-    | {
-        platform?: T;
-        url?: T;
-        id?: T;
-      };
+  socialLinks?: T;
   email?: T;
   uid?: T;
   lastLogin?: T;

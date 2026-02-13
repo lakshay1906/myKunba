@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { payload } from '@/payload-client'
 import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'
+import { parseSocialLinks } from '@/lib/utils'
 
 export default async function Page() {
   const token = (await cookies()).get('access_token')?.value
@@ -31,7 +32,12 @@ export default async function Page() {
       redirect('/unauthorised')
     }
 
-    return <Profile user={data.docs[0]} />
+    const user = data.docs[0] as Record<string, unknown>
+    const normalizedUser = {
+      ...user,
+      socialLinks: parseSocialLinks(user.socialLinks as string | unknown),
+    }
+    return <Profile user={normalizedUser} />
   } catch (error) {
     redirect('/unauthorised')
   }

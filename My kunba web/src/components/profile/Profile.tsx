@@ -50,6 +50,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/lib/context/store'
 import { toast } from 'sonner'
+import { parseSocialLinks } from '@/lib/utils'
 
 // Mock user data based on your schema
 // const mockUser = {
@@ -83,7 +84,10 @@ const getRoleConfig = (role: string) => {
 
 export default function Profile({ user }: { user: Record<string, any> }) {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
-  const [editData, setEditData] = useState(user)
+  const [editData, setEditData] = useState(() => ({
+    ...user,
+    socialLinks: parseSocialLinks(user.socialLinks),
+  }))
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const router = useRouter()
@@ -269,14 +273,16 @@ export default function Profile({ user }: { user: Record<string, any> }) {
               </div>
 
               {/* Social Links */}
-              {user.socialLinks && user.socialLinks.length > 0 && (
+              {(() => {
+                const links = parseSocialLinks(user.socialLinks)
+                return links.length > 0 && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold flex items-center">
                     <Globe className="mr-2 size-5" />
                     Social Links
                   </h3>
                   <div className="space-y-3 pl-7">
-                    {user.socialLinks.map(
+                    {links.map(
                       (
                         link: {
                           platform:
@@ -324,7 +330,8 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                     )}
                   </div>
                 </div>
-              )}
+              )
+              })()}
             </div>
           </CardContent>
         </Card>

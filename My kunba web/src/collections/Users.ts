@@ -28,11 +28,10 @@ export const Users: CollectionConfig = {
     },
     {
       name: 'socialLinks',
-      type: 'array',
-      fields: [
-        { name: 'platform', type: 'text' },
-        { name: 'url', type: 'text' },
-      ],
+      type: 'text',
+      admin: {
+        description: 'JSON string of array of { platform, url }. e.g. [{"platform":"Twitter","url":"https://..."}]',
+      },
     },
     { name: 'email', type: 'email', required: true, unique: true },
     {
