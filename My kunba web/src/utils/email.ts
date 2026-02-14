@@ -163,6 +163,45 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
   }
 }
 
+/** OTP email HTML for email verification or role downgrade. OTP valid 15 minutes. */
+export function getOtpEmailHtml(
+  purpose: 'email_verification' | 'role_downgrade',
+  otp: string,
+  recipientEmail: string,
+): string {
+  const isVerification = purpose === 'email_verification'
+  const title = isVerification ? 'Verify your email' : 'Confirm role downgrade'
+  const heading = isVerification ? 'Your verification code' : 'Your confirmation code'
+  const bodyText = isVerification
+    ? 'Use the code below to verify your email address on My Kunba. You can then upgrade to Content Author if you wish.'
+    : 'Use the code below to confirm that you want to downgrade your account to a normal user. Your blogs will be moved to the recycle bin.'
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title} - My Kunba</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0;">My Kunba</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333; margin-top: 0;">${heading}</h2>
+          <p>${bodyText}</p>
+          <div style="background: white; padding: 24px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #667eea; text-align: center;">
+            <span style="font-size: 28px; font-weight: bold; letter-spacing: 6px;">${otp}</span>
+          </div>
+          <p style="font-size: 14px; color: #666;">This code expires in 15 minutes. You can request a new code after 1.5 minutes if needed.</p>
+          <p style="font-size: 12px; color: #999; margin-top: 30px;">If you didn't request this, please ignore this email or secure your account.</p>
+          <p style="margin-top: 24px;">Best regards,<br><strong>The My Kunba Team</strong></p>
+        </div>
+      </body>
+    </html>
+  `
+}
+
 export function getSubscriptionConfirmationEmail(email: string): string {
   return `
     <!DOCTYPE html>

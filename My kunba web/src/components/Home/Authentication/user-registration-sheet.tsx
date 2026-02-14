@@ -230,14 +230,26 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
             isSuccess: false,
           })
       }
-    } catch (error) {
-      console.error('Error signing in:', error)
+    } catch (error: any) {
       setLoginDetail(null)
-      Toast({
-        message: 'Error',
-        description: 'Something went wrong while signing in',
-        isSuccess: false,
-      })
+      if (error.code === 'auth/email-already-in-use')
+        Toast({
+          message: 'Error',
+          description: 'Email already in use. Please login',
+          isSuccess: false,
+        })
+      else if (error.code === 'auth/invalid-credential')
+        Toast({
+          message: 'Error',
+          description: 'Invalid credentials. Please try again',
+          isSuccess: false,
+        })
+      else
+        Toast({
+          message: 'Error',
+          description: 'Something went wrong while signing in',
+          isSuccess: false,
+        })
     } finally {
       setLoading(false)
     }
@@ -343,7 +355,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                     if (btnText === 'Login' || loginForm.password === loginForm.confirmPassword) {
                       handleAuthSuccess('emailPass')
                     } else {
-                      ;<Toast
+                      ; <Toast
                         isSuccess={false}
                         message="Error"
                         description="Confirm password doesn't match"

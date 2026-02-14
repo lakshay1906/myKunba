@@ -176,6 +176,12 @@ export interface User {
   uid: string;
   lastLogin?: string | null;
   deleted_at?: string | null;
+  /**
+   * SHA-256 hash of OTP
+   */
+  verificationOtpHash?: string | null;
+  verificationOtpExpiresAt?: string | null;
+  verificationOtpSentAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -516,6 +522,9 @@ export interface UsersSelect<T extends boolean = true> {
   uid?: T;
   lastLogin?: T;
   deleted_at?: T;
+  verificationOtpHash?: T;
+  verificationOtpExpiresAt?: T;
+  verificationOtpSentAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

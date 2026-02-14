@@ -82,35 +82,30 @@ function getClientId(request: NextRequest): string {
 }
 
 /**
- * Check if request should be rate limited
- * 
- * @param request - Next.js request object
- * @param config - Rate limit configuration
- * @returns Object with `allowed` boolean and `remaining` requests count
+ * Check if request should be rate limited.
+ * Uses clientId + bucket so auth endpoints have their own counter (e.g. first sign-in is not blocked by other API calls).
  */
 export function checkRateLimit(
   request: NextRequest,
-  config: RateLimitConfig = DEFAULT_RATE_LIMIT,
+  config: RateLimitConfig & { bucket?: RateLimitBucket } = { ...DEFAULT_RATE_LIMIT, bucket: 'default' },
 ): { allowed: boolean; remaining: number; resetTime: number } {
   const clientId = getClientId(request)
+  const bucket = config.bucket ?? 'default'
+  const storeKey = `${clientId}:${bucket}`
   const now = Date.now()
 
-  // Get or create rate limit entry
-  let entry = rateLimitStore.get(clientId)
+  let entry = rateLimitStore.get(storeKey)
 
-  // If no entry or entry expired, create new one
   if (!entry || now > entry.resetTime) {
     entry = {
       count: 0,
       resetTime: now + config.windowMs,
     }
-    rateLimitStore.set(clientId, entry)
+    rateLimitStore.set(storeKey, entry)
   }
 
-  // Increment count
   entry.count++
 
-  // Check if limit exceeded
   const allowed = entry.count <= config.maxRequests
   const remaining = Math.max(0, config.maxRequests - entry.count)
 
@@ -121,31 +116,31 @@ export function checkRateLimit(
   }
 }
 
+/** Bucket identifier so each endpoint group has its own counter (not shared with other APIs). */
+export type RateLimitBucket = 'auth' | 'image' | 'default'
+
 /**
- * Get rate limit configuration for a specific endpoint
+ * Get rate limit configuration and bucket for a specific endpoint.
+ * Bucket is used as part of the store key so sign-in is not blocked by other API calls.
  */
-export function getRateLimitConfig(pathname: string): RateLimitConfig {
-  // Stricter limits for authentication endpoints
+export function getRateLimitConfig(pathname: string): RateLimitConfig & { bucket: RateLimitBucket } {
+  // Stricter limits for authentication endpoints (own bucket so other API calls don't consume the limit)
   if (
     pathname.includes('/auth/sign-in') ||
     pathname.includes('/auth/login')
   ) {
-    return AUTH_RATE_LIMIT
+    return { ...AUTH_RATE_LIMIT, bucket: 'auth' }
   }
 
-  // JWT issue endpoint is called as part of login/signup flow but can be hit more frequently
-  // Allow it to use the default (more generous) rate limit instead of strict auth limits.
   if (pathname.includes('/auth/jwt/new')) {
-    return DEFAULT_RATE_LIMIT
+    return { ...DEFAULT_RATE_LIMIT, bucket: 'default' }
   }
 
-  // Stricter limits for image upload endpoints
   if (pathname.includes('/image/upload')) {
-    return IMAGE_UPLOAD_RATE_LIMIT
+    return { ...IMAGE_UPLOAD_RATE_LIMIT, bucket: 'image' }
   }
 
-  // Default rate limit for other endpoints
-  return DEFAULT_RATE_LIMIT
+  return { ...DEFAULT_RATE_LIMIT, bucket: 'default' }
 }
 
 /**

@@ -29,15 +29,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { MoreHorizontal, Edit, LogOut, Mail, Calendar, Globe, User, Save, X, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Edit, LogOut, Mail, Calendar, Globe, User, Save, X, Trash2, ShieldCheck, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -91,7 +84,49 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const router = useRouter()
-  const { logout } = useAppStore()
+  const { logout, setLoginDetail } = useAppStore()
+
+  // Email verification OTP
+  const [verifyOtpInput, setVerifyOtpInput] = useState('')
+  const [verifySendLoading, setVerifySendLoading] = useState(false)
+  const [verifySubmitLoading, setVerifySubmitLoading] = useState(false)
+  const [verifyOtpSentAt, setVerifyOtpSentAt] = useState<number | null>(
+    user.verificationOtpSentAt ? new Date(user.verificationOtpSentAt as string).getTime() : null,
+  )
+
+  // Upgrade to author
+  const [upgradeLoading, setUpgradeLoading] = useState(false)
+
+  // Downgrade to user
+  const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false)
+  const [downgradeOtpInput, setDowngradeOtpInput] = useState('')
+  const [downgradeSendLoading, setDowngradeSendLoading] = useState(false)
+  const [downgradeSubmitLoading, setDowngradeSubmitLoading] = useState(false)
+  const [downgradeOtpSentAt, setDowngradeOtpSentAt] = useState<number | null>(null)
+
+  const RESEND_COOLDOWN_MS = 90 * 1000
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [downgradeResendCooldown, setDowngradeResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (verifyOtpSentAt == null) return
+    const t = setInterval(() => {
+      const elapsed = Date.now() - verifyOtpSentAt
+      const remaining = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000)
+      setResendCooldown(remaining <= 0 ? 0 : remaining)
+    }, 1000)
+    return () => clearInterval(t)
+  }, [verifyOtpSentAt])
+
+  useEffect(() => {
+    if (downgradeOtpSentAt == null) return
+    const t = setInterval(() => {
+      const elapsed = Date.now() - downgradeOtpSentAt
+      const remaining = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000)
+      setDowngradeResendCooldown(remaining <= 0 ? 0 : remaining)
+    }, 1000)
+    return () => clearInterval(t)
+  }, [downgradeOtpSentAt])
 
   const handleEditProfile = () => {
     setIsEditSheetOpen(true)
@@ -160,6 +195,126 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   }
 
   const roleConfig = getRoleConfig(user.role)
+
+  const handleSendVerifyOtp = async () => {
+    setVerifySendLoading(true)
+    try {
+      const res = await fetch('/api/profile/verify-email/send-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purpose: 'email_verification' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Failed to send code')
+        return
+      }
+      setVerifyOtpSentAt(Date.now())
+      toast.success(data.message)
+    } finally {
+      setVerifySendLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!verifyOtpInput.trim()) {
+      toast.error('Enter the 6-digit code')
+      return
+    }
+    setVerifySubmitLoading(true)
+    try {
+      const res = await fetch('/api/profile/verify-email/verify-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp: verifyOtpInput.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Verification failed')
+        return
+      }
+      toast.success(data.message)
+      setVerifyOtpInput('')
+      setVerifyOtpSentAt(null)
+      router.refresh()
+    } finally {
+      setVerifySubmitLoading(false)
+    }
+  }
+
+  const handleUpgradeToAuthor = async () => {
+    setUpgradeLoading(true)
+    try {
+      const res = await fetch('/api/profile/role/upgrade', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetRole: 'author' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Upgrade failed')
+        return
+      }
+      toast.success(data.message)
+      setLoginDetail((prev) => (prev ? { ...prev, role: 'author' } : null))
+      router.refresh()
+    } finally {
+      setUpgradeLoading(false)
+    }
+  }
+
+  const handleSendDowngradeOtp = async () => {
+    setDowngradeSendLoading(true)
+    try {
+      const res = await fetch('/api/profile/verify-email/send-otp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purpose: 'role_downgrade' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Failed to send code')
+        return
+      }
+      setDowngradeOtpSentAt(Date.now())
+      toast.success(data.message)
+    } finally {
+      setDowngradeSendLoading(false)
+    }
+  }
+
+  const handleConfirmDowngrade = async () => {
+    if (!downgradeOtpInput.trim()) {
+      toast.error('Enter the 6-digit code from your email')
+      return
+    }
+    setDowngradeSubmitLoading(true)
+    try {
+      const res = await fetch('/api/profile/role/downgrade', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp: downgradeOtpInput.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Downgrade failed')
+        return
+      }
+      toast.success(data.message)
+      setLoginDetail((prev) => (prev ? { ...prev, role: 'user' } : null))
+      setDowngradeDialogOpen(false)
+      setDowngradeOtpInput('')
+      setDowngradeOtpSentAt(null)
+      router.refresh()
+    } finally {
+      setDowngradeSubmitLoading(false)
+    }
+  }
 
   useEffect(() => { }, [editData])
 
@@ -276,66 +431,198 @@ export default function Profile({ user }: { user: Record<string, any> }) {
               {(() => {
                 const links = parseSocialLinks(user.socialLinks)
                 return links.length > 0 && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold flex items-center">
-                    <Globe className="mr-2 size-5" />
-                    Social Links
-                  </h3>
-                  <div className="space-y-3 pl-7">
-                    {links.map(
-                      (
-                        link: {
-                          platform:
-                          | string
-                          | number
-                          | bigint
-                          | boolean
-                          | ReactElement<unknown, string | JSXElementConstructor<any>>
-                          | Iterable<ReactNode>
-                          | ReactPortal
-                          | Promise<
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Globe className="mr-2 size-5" />
+                      Social Links
+                    </h3>
+                    <div className="space-y-3 pl-7">
+                      {links.map(
+                        (
+                          link: {
+                            platform:
                             | string
                             | number
                             | bigint
                             | boolean
-                            | ReactPortal
                             | ReactElement<unknown, string | JSXElementConstructor<any>>
                             | Iterable<ReactNode>
+                            | ReactPortal
+                            | Promise<
+                              | string
+                              | number
+                              | bigint
+                              | boolean
+                              | ReactPortal
+                              | ReactElement<unknown, string | JSXElementConstructor<any>>
+                              | Iterable<ReactNode>
+                              | null
+                              | undefined
+                            >
                             | null
                             | undefined
-                          >
-                          | null
-                          | undefined
-                          url: string | undefined
-                        },
-                        index: number,
-                      ) => (
-                        <div key={index} className="flex items-center space-x-3">
-                          <div className="size-2 bg-blue-400 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium text-sm">{link.platform}</span>
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm hover:underline"
-                              >
-                                Visit →
-                              </a>
+                            url: string | undefined
+                          },
+                          index: number,
+                        ) => (
+                          <div key={index} className="flex items-center space-x-3">
+                            <div className="size-2 bg-blue-400 rounded-full"></div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-sm">{link.platform}</span>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 text-sm hover:underline"
+                                >
+                                  Visit →
+                                </a>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ),
-                    )}
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Account & role: verify email, upgrade, downgrade */}
+            <Separator className="my-8" />
+            <div className="space-y-8">
+              <h3 className="text-lg font-semibold flex items-center">
+                <ShieldCheck className="mr-2 size-5" />
+                Account & role
+              </h3>
+
+              {!user.verified && (
+                <div className="rounded-lg border border-amber-200 bg-white p-4 space-y-3">
+                  <p className="text-sm font-medium text-amber-800">Verify your email</p>
+                  <p className="text-sm text-amber-700">
+                    Verify your email to upgrade to Content Author. We'll send a 6-digit code to{' '}
+                    <strong>{user.email}</strong>. The code is valid for 15 minutes.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSendVerifyOtp}
+                      disabled={verifySendLoading || resendCooldown > 0}
+                    >
+                      {verifySendLoading ? 'Sending…' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Send code'}
+                    </Button>
+                    <Input
+                      placeholder="Enter 6-digit code"
+                      value={verifyOtpInput}
+                      onChange={(e) => setVerifyOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-36"
+                      maxLength={6}
+                    />
+                    <Button type="button" size="sm" onClick={handleVerifyOtp} disabled={verifySubmitLoading}>
+                      {verifySubmitLoading ? 'Verifying…' : 'Verify'}
+                    </Button>
                   </div>
                 </div>
-              )
-              })()}
+              )}
+
+              {user.verified && user.role === 'user' && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-2">
+                  <p className="text-sm font-medium text-blue-800">Upgrade to Content Author</p>
+                  <p className="text-sm text-blue-700">
+                    You can create and manage blog posts. Only verified users can upgrade.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleUpgradeToAuthor}
+                    disabled={upgradeLoading}
+                  >
+                    <ArrowUpCircle className="mr-2 size-4" />
+                    {upgradeLoading ? 'Upgrading…' : 'Upgrade to Content Author'}
+                  </Button>
+                </div>
+              )}
+
+              {(user.role === 'author' || user.role === 'admin') && (
+                <div className="rounded-lg border border-slate-200 bg-amber-100 p-4 space-y-2">
+                  <p className="text-sm font-medium text-slate-800">Downgrade to normal user</p>
+                  {user.role === 'author' && (
+                    <p className="text-sm text-amber-900">
+                      If you downgrade, <strong>all your blog posts will be deleted</strong>.
+                    </p>
+                  )}
+                  {user.role === 'admin' && (
+                    <p className="text-sm text-slate-600">
+                      You can only downgrade if there is at least one other admin. A confirmation code will be sent to
+                      your email.
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDowngradeDialogOpen(true)}
+                    className="text-slate-700"
+                  >
+                    <ArrowDownCircle className="mr-2 size-4" />
+                    Downgrade to normal user
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={downgradeDialogOpen} onOpenChange={setDowngradeDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm downgrade to normal user</DialogTitle>
+            <DialogDescription>
+              {user.role === 'author'
+                ? <p className='text-yellow-400'>Warning: All your blog posts will be deleted.</p>
+                : 'Enter the 6-digit code sent to your email to confirm.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSendDowngradeOtp}
+              disabled={downgradeSendLoading || downgradeResendCooldown > 0}
+            >
+              {downgradeSendLoading
+                ? 'Sending…'
+                : downgradeResendCooldown > 0
+                  ? `Resend code in ${downgradeResendCooldown}s`
+                  : 'Send code to my email'}
+            </Button>
+            <Input
+              placeholder="6-digit code"
+              value={downgradeOtpInput}
+              onChange={(e) => setDowngradeOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              maxLength={6}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDowngradeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDowngrade}
+              disabled={downgradeSubmitLoading || !downgradeOtpInput.trim()}
+            >
+              {downgradeSubmitLoading ? 'Confirming…' : 'Confirm downgrade'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Profile Sheet */}
       <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
@@ -378,21 +665,17 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                 <Label htmlFor="role" className="text-sm font-medium">
                   Role
                 </Label>
-                <Select
-                  value={editData.role}
-                  onValueChange={(value) => setEditData({ ...editData, role: value as any })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select a role" defaultValue={editData.role} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {user.verified && editData.role === 'admin' && (
-                      <SelectItem value="admin">Admin</SelectItem>
-                    )}
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="author">Author</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="role"
+                  value={getRoleConfig(editData.role).label}
+                  readOnly
+                  disabled
+                  className="mt-1 bg-muted"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  To change role, use the Account & role section on your profile (upgrade to author or downgrade to user).
+                  Admin can only be set from the dashboard.
+                </p>
               </div>
 
               <div>

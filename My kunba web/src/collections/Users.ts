@@ -43,5 +43,9 @@ export const Users: CollectionConfig = {
     },
     { name: 'lastLogin', type: 'date' },
     { name: 'deleted_at', type: 'date' },
+    // OTP for email verification and role downgrade (server-only; 15 min expiry, 1.5 min resend cooldown)
+    { name: 'verificationOtpHash', type: 'text', admin: { readOnly: true, description: 'SHA-256 hash of OTP' } },
+    { name: 'verificationOtpExpiresAt', type: 'date', admin: { readOnly: true } },
+    { name: 'verificationOtpSentAt', type: 'date', admin: { readOnly: true } },
   ],
 }
