@@ -46,6 +46,7 @@ export async function fetchBlogPostBySlug(
         externalLinks: true,
         internalLinks: true,
         faq: true,
+        tags: true,
       },
       depth: 2,
       limit: 1,
@@ -139,14 +140,39 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
   }
 }
 
+const mapDocToRelated = (doc: {
+  id: number
+  title?: string | null
+  slug?: string | null
+  excerpt?: string | null
+  media?: string | null
+  publishDate?: string | null
+  categories?: unknown
+}) => ({
+  id: doc.id,
+  title: doc.title ?? '',
+  slug: doc.slug ?? '',
+  excerpt: doc.excerpt ?? '',
+  media: typeof doc.media === 'string' ? doc.media : null,
+  publishDate: doc.publishDate ?? '',
+  categories: Array.isArray(doc.categories)
+    ? doc.categories.map((cat: { id?: number; name?: string; slug?: string } | number) => ({
+        id: typeof cat === 'object' ? cat.id ?? 0 : cat,
+        name: typeof cat === 'object' ? cat.name ?? '' : '',
+        slug: typeof cat === 'object' ? cat.slug ?? '' : '',
+      }))
+    : [],
+})
+
 /**
- * Fetch related articles based on categories and focus keyword
- * Used for internal linking and topical authority
+ * Fetch related articles: prioritize same category + shared tag, then same category.
+ * Used for internal linking and topical authority.
  */
 export async function fetchRelatedArticles(
   currentPostId: number,
   categoryIds: number[],
-  limit: number = 4
+  limit: number = 4,
+  tagIds: number[] = []
 ): Promise<Array<{
   id: number
   title: string
@@ -161,51 +187,81 @@ export async function fetchRelatedArticles(
       return []
     }
 
-    const result = await payload.find({
-      collection: 'posts',
-      where: {
-        id: {
-          not_equals: currentPostId,
-        },
-        categories: {
-          in: categoryIds,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        status: {
-          equals: 'published',
-        },
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        media: true,
-        publishDate: true,
-        categories: true,
-      },
-      depth: 1,
-      sort: '-publishDate',
-      limit: limit,
-    })
+    const baseWhere = {
+      id: { not_equals: currentPostId },
+      categories: { in: categoryIds },
+      deleted_at: { equals: null },
+      status: { equals: 'published' },
+    }
 
-    return result.docs.map((doc) => ({
-      id: doc.id,
-      title: doc.title ?? '',
-      slug: doc.slug ?? '',
-      excerpt: doc.excerpt ?? '',
-      media: typeof doc.media === 'string' ? doc.media : null,
-      publishDate: doc.publishDate ?? '',
-      categories: Array.isArray(doc.categories)
-        ? doc.categories.map((cat: { id?: number; name?: string; slug?: string } | number) => ({
-            id: typeof cat === 'object' ? cat.id ?? 0 : cat,
-            name: typeof cat === 'object' ? cat.name ?? '' : '',
-            slug: typeof cat === 'object' ? cat.slug ?? '' : '',
-          }))
-        : [],
-    }))
+    let docs: Array<{
+      id: number
+      title?: string | null
+      slug?: string | null
+      excerpt?: string | null
+      media?: string | null
+      publishDate?: string | null
+      categories?: unknown
+    }> = []
+    const seenIds = new Set<number>()
+
+    if (tagIds && tagIds.length > 0) {
+      const withTagResult = await payload.find({
+        collection: 'posts',
+        where: {
+          ...baseWhere,
+          tags: { in: tagIds },
+        },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          media: true,
+          publishDate: true,
+          categories: true,
+        },
+        depth: 1,
+        sort: '-publishDate',
+        limit,
+      })
+      docs = withTagResult.docs
+      docs.forEach((d) => seenIds.add(d.id))
+    }
+
+    if (docs.length < limit) {
+      const excludeIds = [currentPostId, ...seenIds]
+      const categoryOnlyWhere =
+        excludeIds.length > 1
+          ? {
+              and: [
+                { id: { not_in: excludeIds } },
+                { categories: { in: categoryIds } },
+                { deleted_at: { equals: null } },
+                { status: { equals: 'published' } },
+              ],
+            }
+          : baseWhere
+      const categoryOnlyResult = await payload.find({
+        collection: 'posts',
+        where: categoryOnlyWhere,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          media: true,
+          publishDate: true,
+          categories: true,
+        },
+        depth: 1,
+        sort: '-publishDate',
+        limit: limit - docs.length,
+      })
+      docs = [...docs, ...categoryOnlyResult.docs]
+    }
+
+    return docs.slice(0, limit).map(mapDocToRelated)
   } catch (error) {
     console.error('Error fetching related articles:', error)
     return []

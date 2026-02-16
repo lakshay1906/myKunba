@@ -156,6 +156,7 @@ export async function GET(req: NextRequest) {
             and: [
               { or: tagSlugs.map((s) => ({ slug: { equals: s } })) },
               { deleted_at: { equals: null } },
+              { or: [{ isVisible: { equals: true } }, { isVisible: { exists: false } }] },
             ],
           },
           limit: 100,

@@ -79,6 +79,12 @@ export async function generateMetadata({
       if (c?.name && !keywords.includes(c.name)) keywords.push(c.name)
     })
   }
+  if (post.tags && Array.isArray(post.tags)) {
+    post.tags.forEach((tag) => {
+      const t = typeof tag === 'object' && tag !== null && 'name' in tag ? (tag as { name: string }) : null
+      if (t?.name && !keywords.includes(t.name)) keywords.push(t.name)
+    })
+  }
 
   const metaTitle = title ?? undefined
   const metaDescription = description ?? undefined
@@ -121,10 +127,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     blog.categories?.map((cat) =>
       typeof cat === 'object' && cat !== null && 'id' in cat ? (cat as { id: number }).id : (cat as number),
     ) ?? []
+  const tagIds =
+    blog.tags?.map((tag) =>
+      typeof tag === 'object' && tag !== null && 'id' in tag ? (tag as { id: number }).id : (tag as number),
+    ) ?? []
   const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),
     getCurrentUserId(),
-    fetchRelatedArticles(blog.id, categoryIds, 4),
+    fetchRelatedArticles(blog.id, categoryIds, 4, tagIds),
   ])
 
   const siteUrl = getPublicUrl()

@@ -309,6 +309,7 @@ export interface Tag {
   id: number;
   name: string;
   slug: string;
+  isVisible?: boolean | null;
   posts?: (number | Post)[] | null;
   deleted_at?: string | null;
   /**

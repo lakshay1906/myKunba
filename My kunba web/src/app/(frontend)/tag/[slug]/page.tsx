@@ -16,8 +16,11 @@ export async function generateMetadata({
     const tagResult = await payload.find({
       collection: 'tags',
       where: {
-        slug: { equals: slug },
-        deleted_at: { equals: null },
+        and: [
+          { slug: { equals: slug } },
+          { deleted_at: { equals: null } },
+          { or: [{ isVisible: { equals: true } }, { isVisible: { exists: false } }] },
+        ],
       },
       limit: 1,
     })
@@ -73,8 +76,11 @@ export default async function TagPage({
     const tagResult = await payload.find({
       collection: 'tags',
       where: {
-        slug: { equals: slug },
-        deleted_at: { equals: null },
+        and: [
+          { slug: { equals: slug } },
+          { deleted_at: { equals: null } },
+          { or: [{ isVisible: { equals: true } }, { isVisible: { exists: false } }] },
+        ],
       },
       limit: 1,
     })

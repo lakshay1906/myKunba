@@ -19,6 +19,13 @@ export const Tags: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'isVisible',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+      admin: { description: 'Hide from public archive and selectors without deleting (e.g. typo or spam).' },
+    },
+    {
       name: 'posts',
       type: 'relationship',
       relationTo: 'posts',

@@ -46,7 +46,7 @@ type Blog = {
     name: string
     slug: string
   }>
-  tags: Array<any>
+  tags: Array<{ id: number; name?: string; slug?: string }>
 }
 
 type BlogContentProps = {
@@ -239,6 +239,28 @@ export default function BlogContent({
           </ul>
         </div>
       )}
+
+      {/* Tags - Long-tail discovery and content mesh */}
+      {blog.tags && blog.tags.length > 0 && (
+        <nav className="mb-8 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground mr-1">Tags:</span>
+          {blog.tags.map((tag) => {
+            const id = typeof tag === 'object' && tag !== null && 'id' in tag ? (tag as { id: number }).id : (tag as number)
+            const name = typeof tag === 'object' && tag !== null && 'name' in tag ? (tag as { name?: string }).name : undefined
+            const slug = typeof tag === 'object' && tag !== null && 'slug' in tag ? (tag as { slug?: string }).slug : undefined
+            const label = name ?? `#${id}`
+            const href = slug ? `/tag/${slug}` : `/tag/${id}`
+            return (
+              <Link href={href} key={id} className="inline-block">
+                <Badge variant="outline" className="hover:bg-muted cursor-pointer font-normal">
+                  #{label}
+                </Badge>
+              </Link>
+            )
+          })}
+        </nav>
+      )}
+
       <div id="comments" />
       {/* Comments Section */}
       <Comments
