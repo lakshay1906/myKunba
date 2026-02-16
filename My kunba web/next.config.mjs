@@ -47,7 +47,7 @@ const nextConfig = {
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
-  // output: 'standalone', // Disabled for Windows compatibility
+  output: 'standalone', // Disabled for Windows compatibility
   compiler: {
     removeConsole: true,
   },
