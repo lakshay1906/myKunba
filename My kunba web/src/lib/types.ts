@@ -13,6 +13,22 @@ export interface CategoryResponse {
   slug: string
   isVisible?: boolean
   parent?: number | { id: number; name?: string } | null
+  createdBy?: number | null
+  [key: string]: unknown
+}
+
+export type Tag = {
+  id: number
+  name: string
+  slug: string
+}
+
+/** Tag API response (dashboard tag by id) */
+export interface TagResponse {
+  id: number
+  name: string
+  slug: string
+  createdBy?: number | null
   [key: string]: unknown
 }
 

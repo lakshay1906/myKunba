@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
           author: true,
           excerpt: true,
           categories: true,
+          tags: true,
           publishDate: true,
           updatedAt: true,
           content: true,
@@ -48,7 +49,14 @@ export async function GET(req: NextRequest) {
         depth: 2,
       })
       const raw = blogResult.docs[0]
-      data = raw ? normalizePostJsonFields(raw) : raw
+      if (raw) {
+        const withJson = raw as unknown as Record<string, unknown> & {
+          externalLinks?: string | null
+          internalLinks?: string | null
+          faq?: string | null
+        }
+        data = normalizePostJsonFields(withJson)
+      }
 
       // Increment impressions counter (async, don't block response)
       if (data && (data as any).id) {
@@ -93,6 +101,12 @@ export async function GET(req: NextRequest) {
         ? authorParamList.flatMap((p) => p.split(',').map((s) => s.trim()).filter((s) => s && s !== 'all' && s !== '0'))
         : []
 
+      // Multiple tags: ?tag=slug1&tag=slug2 or ?tag=slug1,slug2
+      const tagParamList = req.nextUrl.searchParams.getAll('tag')
+      const tagSlugs = tagParamList.length
+        ? tagParamList.flatMap((p) => p.split(',').map((s) => s.trim()).filter((s) => s && s !== 'all' && s !== '0'))
+        : []
+
       const searchTrim = search && search.trim() ? search.trim() : ''
 
       // Resolve category slugs to IDs
@@ -133,12 +147,31 @@ export async function GET(req: NextRequest) {
         authorIds = authorResult.docs.map((u: { id: number }) => u.id)
       }
 
-      // Build where as AND of: base, categories, authors, search (all combined)
+      // Resolve tag slugs to IDs
+      let tagIds: number[] = []
+      if (tagSlugs.length > 0) {
+        const tagResult = await payload.find({
+          collection: 'tags',
+          where: {
+            and: [
+              { or: tagSlugs.map((s) => ({ slug: { equals: s } })) },
+              { deleted_at: { equals: null } },
+            ],
+          },
+          limit: 100,
+        })
+        tagIds = tagResult.docs.map((t: { id: number }) => t.id)
+      }
+
+      // Build where as AND of: base, categories, tags, authors, search (all combined)
       const andConditions: any[] = [
         { deleted_at: { equals: null }, status: { equals: 'published' } },
       ]
       if (categoryIds.length > 0) {
         andConditions.push({ categories: { in: categoryIds } })
+      }
+      if (tagIds.length > 0) {
+        andConditions.push({ tags: { in: tagIds } })
       }
       if (authorIds.length > 0) {
         andConditions.push({
@@ -166,6 +199,7 @@ export async function GET(req: NextRequest) {
           media: true,
           author: true,
           categories: true,
+          tags: true,
           publishDate: true,
           createdAt: true,
           updatedAt: true,

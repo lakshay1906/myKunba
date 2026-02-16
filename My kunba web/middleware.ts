@@ -20,12 +20,21 @@ const allowedOrigins = [
 
 /**
  * Middleware: /blog redirects first, then CORS + rate limiting for API.
+ * For dashboard routes, set x-dashboard-path so layout can redirect to unauthorised?redirect=path when needed.
  *
  * - /blog -> / (302) and /blog/:slug -> /:slug (302) to avoid redirect loops from config
+ * - /dashboard: add header with pathname for redirect param
  * - API routes: CORS and rate limiting
  */
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
+  // Dashboard: pass pathname in request header so layout can redirect to /unauthorised?redirect=pathname when auth fails
+  if (pathname.startsWith('/dashboard')) {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-dashboard-path', pathname)
+    return NextResponse.next({ request: { headers: requestHeaders } })
+  }
 
   // Redirect legacy /blog URLs before any other logic (302 to avoid cache loops)
   if (pathname === '/blog') {
@@ -134,6 +143,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on /blog, /blog/*, and all API routes
-  matcher: ['/blog', '/blog/:path*', '/api/:path*'],
+  // Run on /dashboard, /blog, /blog/*, and all API routes
+  matcher: ['/dashboard', '/dashboard/:path*', '/blog', '/blog/:path*', '/api/:path*'],
 }

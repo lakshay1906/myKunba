@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { DashboardLayoutProvider } from '@/lib/context/dashboard-layout-context'
 import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client'
 import { redirect } from 'next/navigation'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+
+async function getRedirectUrl(): Promise<string> {
+  try {
+    const h = await headers()
+    const path = (h.get('x-dashboard-path') ?? '').trim()
+    if (path && path.startsWith('/')) {
+      return `/unauthorised?redirect=${encodeURIComponent(path)}`
+    }
+  } catch {
+    // ignore
+  }
+  return '/unauthorised'
+}
 
 export const metadata: Metadata = {
   title: 'My Dashboard',
@@ -32,7 +45,7 @@ export default async function RootLayout({
     const token = (await cookies()).get('access_token')?.value
 
     if (!token) {
-      redirect('/unauthorised')
+      redirect(await getRedirectUrl())
     }
 
     const accessSecret = process.env.ACCESS_SECRET
@@ -40,7 +53,7 @@ export default async function RootLayout({
       console.error('❌ [DASHBOARD LAYOUT] ACCESS_SECRET not configured', {
         timestamp: new Date().toISOString(),
       })
-      redirect('/unauthorised')
+      redirect(await getRedirectUrl())
     }
 
     // Verify JWT token
@@ -66,7 +79,7 @@ export default async function RootLayout({
     })
 
     if (user.docs.length === 0) {
-      redirect('/unauthorised')
+      redirect(await getRedirectUrl())
     }
 
     const currentUser = user.docs[0]
@@ -75,10 +88,10 @@ export default async function RootLayout({
     const hasValidRole = allowedRoles.includes(currentUser.role)
 
     if (!hasValidRole) {
-      redirect('/unauthorised')
+      redirect(await getRedirectUrl())
     }
   } catch (error) {
-    redirect('/unauthorised')
+    redirect(await getRedirectUrl())
   }
 
   return (

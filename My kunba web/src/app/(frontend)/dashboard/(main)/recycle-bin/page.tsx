@@ -20,7 +20,7 @@ import { useAppStore } from '@/lib/context/store'
 import { toast } from 'sonner'
 import CurrentPageComponent from '@/components/CurrentPageComponent'
 
-type TabType = 'blogs' | 'categories' | 'users'
+type TabType = 'blogs' | 'categories' | 'tags' | 'users'
 
 const LIMIT = 10
 
@@ -29,13 +29,15 @@ export default function RecycleBinPage() {
   const [activeTab, setActiveTab] = useState<TabType>('blogs')
   const [blogs, setBlogs] = useState<Record<string, any>[]>([])
   const [categories, setCategories] = useState<Record<string, any>[]>([])
+  const [tags, setTags] = useState<Record<string, any>[]>([])
   const [users, setUsers] = useState<Record<string, any>[]>([])
-  const [total, setTotal] = useState({ blogs: 0, categories: 0, users: 0 })
-  const [totalPages, setTotalPages] = useState({ blogs: 1, categories: 1, users: 1 })
-  const [currentPage, setCurrentPage] = useState({ blogs: 1, categories: 1, users: 1 })
+  const [total, setTotal] = useState({ blogs: 0, categories: 0, tags: 0, users: 0 })
+  const [totalPages, setTotalPages] = useState({ blogs: 1, categories: 1, tags: 1, users: 1 })
+  const [currentPage, setCurrentPage] = useState({ blogs: 1, categories: 1, tags: 1, users: 1 })
   const [loading, setLoading] = useState(false)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
+  const [selectedTags, setSelectedTags] = useState<Record<string, any>[]>([])
   const [selectedUsers, setSelectedUsers] = useState<Record<string, any>[]>([])
 
   const fetchRecycle = useCallback(
@@ -59,6 +61,11 @@ export default function RecycleBinPage() {
           setTotal((t) => ({ ...t, categories: json.total ?? 0 }))
           setTotalPages((t) => ({ ...t, categories: json.totalPages ?? 1 }))
           setCurrentPage((t) => ({ ...t, categories: json.currentPage ?? page }))
+        } else if (type === 'tags') {
+          setTags(json.data || [])
+          setTotal((t) => ({ ...t, tags: json.total ?? 0 }))
+          setTotalPages((t) => ({ ...t, tags: json.totalPages ?? 1 }))
+          setCurrentPage((t) => ({ ...t, tags: json.currentPage ?? page }))
         } else {
           setUsers(json.data || [])
           setTotal((t) => ({ ...t, users: json.total ?? 0 }))
@@ -101,6 +108,7 @@ export default function RecycleBinPage() {
       fetchRecycle(activeTab, 1)
       if (activeTab === 'blogs') setSelectedBlogs([])
       else if (activeTab === 'categories') setSelectedCategories([])
+      else if (activeTab === 'tags') setSelectedTags([])
       else setSelectedUsers([])
     } catch (e: any) {
       toast.error('Error', { description: e.message })
@@ -169,6 +177,7 @@ export default function RecycleBinPage() {
       toast.success(`Restored ${items.length} item(s)`)
       if (type === 'blogs') setSelectedBlogs([])
       else if (type === 'categories') setSelectedCategories([])
+      else if (type === 'tags') setSelectedTags([])
       else setSelectedUsers([])
       fetchRecycle(type, currentPage[type])
     } catch (e: any) {
@@ -192,6 +201,7 @@ export default function RecycleBinPage() {
       toast.success(`Permanently deleted ${items.length} item(s)`)
       if (type === 'blogs') setSelectedBlogs([])
       else if (type === 'categories') setSelectedCategories([])
+      else if (type === 'tags') setSelectedTags([])
       else setSelectedUsers([])
       fetchRecycle(type, currentPage[type])
     } catch (e: any) {
@@ -246,6 +256,13 @@ export default function RecycleBinPage() {
     Deleted_at: c.Deleted_at ? new Date(c.Deleted_at).toLocaleDateString() : '-',
   }))
 
+  const tagData = tags.map((t) => ({
+    id: t.id,
+    Name: t.Name,
+    Slug: t.Slug,
+    Deleted_at: t.Deleted_at ? new Date(t.Deleted_at).toLocaleDateString() : '-',
+  }))
+
   const userData = users.map((u) => ({
     id: u.id,
     DisplayName: u.DisplayName ?? '-',
@@ -265,6 +282,7 @@ export default function RecycleBinPage() {
         <TabsList>
           <TabsTrigger value="blogs">Blogs</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="tags">Tags</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
         <TabsContent value="blogs" className="mt-4">
@@ -465,6 +483,111 @@ export default function RecycleBinPage() {
                         <Button
                           variant="destructive"
                           onClick={() => handleDeletePermanently('categories', value.id)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </PopoverContent>
+              </Popover>
+            )}
+            loading={loading}
+          />
+        </TabsContent>
+        <TabsContent value="tags" className="mt-4">
+          <DataTable
+            tableTitle="Deleted tags"
+            tableSubTitle="Permanently delete or empty"
+            AddProductButton={
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedTags.length > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkRestore('tags', selectedTags)}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restore
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete permanently</DialogTitle>
+                          <DialogDescription>
+                            {selectedTags.length} {selectedTags.length === 1 ? 'tag' : 'tags'} will be removed forever. This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleBulkDeletePermanently('tags', selectedTags)}
+                          >
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+                {emptyButton}
+              </div>
+            }
+            detailPageLink=""
+            slug={false}
+            selectedProductsState={{ selectedProducts: selectedTags, setSelectedProducts: setSelectedTags }}
+            total={total.tags}
+            currentPage={currentPage.tags}
+            limit={LIMIT}
+            totalPages={totalPages.tags}
+            data={tagData}
+            isCheckBoxRequired={true}
+            isEllipsisRequired={true}
+            fetchDataFunction={fetchCurrent}
+            EllipsisComponent={({ value }: { value: Record<string, any> }) => (
+              <Popover>
+                <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                  <EllipsisVertical size="1rem" />
+                </PopoverTrigger>
+                <PopoverContent className="p-1 flex flex-col w-fit">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start py-1.5 h-fit gap-2"
+                    onClick={() => handleRestore('tags', value.id)}
+                  >
+                    <RotateCcw size="0.875rem" />
+                    Restore
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start py-1.5 h-fit text-destructive">
+                        Delete permanently
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete permanently</DialogTitle>
+                        <DialogDescription>
+                          This tag will be removed forever. This cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeletePermanently('tags', value.id)}
                         >
                           Delete
                         </Button>

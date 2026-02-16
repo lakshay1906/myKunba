@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Where } from 'payload'
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
+import type { Post } from '@/payload-types'
 import { authenticateUser } from '@/utils/auth'
 import { deleteFromCloudflareR2 } from '@/utils/cloudflare-r2'
 import { extractImageUrlsFromHtml } from '@/utils/cleanup-orphaned-images'
@@ -30,12 +31,12 @@ export async function GET(req: NextRequest) {
     const userId = (user as { id?: number }).id
     const isAdmin = role === 'admin'
 
-    const type = req.nextUrl.searchParams.get('type') as 'blogs' | 'categories' | 'users' | null
+    const type = req.nextUrl.searchParams.get('type') as 'blogs' | 'categories' | 'tags' | 'users' | null
     const page = Math.max(1, Number(req.nextUrl.searchParams.get('page')) || 1)
     const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 10))
 
-    if (!type || !['blogs', 'categories', 'users'].includes(type)) {
-      return NextResponse.json({ message: 'Invalid type. Use blogs, categories, or users.' }, { status: 400 })
+    if (!type || !['blogs', 'categories', 'tags', 'users'].includes(type)) {
+      return NextResponse.json({ message: 'Invalid type. Use blogs, categories, tags, or users.' }, { status: 400 })
     }
 
     if (type === 'users' && !isAdmin) {
@@ -74,9 +75,42 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'categories') {
+      const where: Where = {
+        deleted_at: { not_equals: null },
+        ...(isAdmin ? {} : { createdBy: { equals: userId } }),
+      }
       const result = await payload.find({
         collection: 'categories',
-        where: { deleted_at: { not_equals: null } },
+        where,
+        select: { id: true, name: true, slug: true, deleted_at: true },
+        depth: 0,
+        page,
+        limit,
+        pagination: true,
+        sort: '-deleted_at',
+      })
+      return NextResponse.json({
+        data: result.docs.map((d) => ({
+          id: d.id,
+          Name: d.name,
+          Slug: d.slug,
+          Deleted_at: d.deleted_at,
+        })),
+        total: result.totalDocs,
+        totalPages: result.totalPages,
+        currentPage: result.page,
+        limit: result.limit,
+      })
+    }
+
+    if (type === 'tags') {
+      const where: Where = {
+        deleted_at: { not_equals: null },
+        ...(isAdmin ? {} : { createdBy: { equals: userId } }),
+      }
+      const result = await payload.find({
+        collection: 'tags',
+        where,
         select: { id: true, name: true, slug: true, deleted_at: true },
         depth: 0,
         page,
@@ -141,14 +175,14 @@ export async function PATCH(req: NextRequest) {
     const isAdmin = role === 'admin'
 
     const body = await req.json().catch(() => ({}))
-    const type = body.type as 'blogs' | 'categories' | 'users' | null
+    const type = body.type as 'blogs' | 'categories' | 'tags' | 'users' | null
     const ids = Array.isArray(body.ids)
       ? body.ids.map((id: unknown) => Number(id)).filter((n: number) => !Number.isNaN(n))
       : []
 
-    if (!type || !['blogs', 'categories', 'users'].includes(type) || ids.length === 0) {
+    if (!type || !['blogs', 'categories', 'tags', 'users'].includes(type) || ids.length === 0) {
       return NextResponse.json(
-        { message: 'Body must include type (blogs|categories|users) and ids (number[]).' },
+        { message: 'Body must include type (blogs|categories|tags|users) and ids (number[]).' },
         { status: 400 },
       )
     }
@@ -157,13 +191,18 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ message: 'Only admins can restore users.' }, { status: 403 })
     }
 
-    const collection = type === 'blogs' ? 'posts' : type === 'categories' ? 'categories' : 'users'
+    const collection =
+      type === 'blogs' ? 'posts' : type === 'categories' ? 'categories' : type === 'tags' ? 'tags' : 'users'
 
     for (const id of ids) {
       try {
         const doc = await payload.findByID({ collection, id, depth: 0 })
         if (type === 'blogs' && !isAdmin && (doc as { author?: number }).author !== userId) continue
         if (type === 'users' && !isAdmin) continue
+        if (type === 'tags' && !isAdmin) {
+          const createdBy = (doc as { createdBy?: number | null }).createdBy
+          if (createdBy != null && createdBy !== userId) continue
+        }
         await payload.update({
           collection,
           id,
@@ -194,13 +233,13 @@ export async function DELETE(req: NextRequest) {
     const isAdmin = role === 'admin'
 
     const body = await req.json().catch(() => ({}))
-    const type = body.type as 'blogs' | 'categories' | 'users' | null
+    const type = body.type as 'blogs' | 'categories' | 'tags' | 'users' | null
     const emptyAll = body.empty === true
     let ids: number[] = Array.isArray(body.ids) ? body.ids.map((id: unknown) => Number(id)).filter((n: number) => !Number.isNaN(n)) : []
 
-    if (!type || !['blogs', 'categories', 'users'].includes(type)) {
+    if (!type || !['blogs', 'categories', 'tags', 'users'].includes(type)) {
       return NextResponse.json(
-        { message: 'Body must include type (blogs|categories|users).' },
+        { message: 'Body must include type (blogs|categories|tags|users).' },
         { status: 400 },
       )
     }
@@ -211,8 +250,11 @@ export async function DELETE(req: NextRequest) {
           ? { deleted_at: { not_equals: null }, ...(isAdmin ? {} : { author: { equals: userId } }) }
           : type === 'categories'
             ? { deleted_at: { not_equals: null } }
-            : { deleted_at: { not_equals: null } }
-      const col = type === 'blogs' ? 'posts' : type === 'categories' ? 'categories' : 'users'
+            : type === 'tags'
+              ? { deleted_at: { not_equals: null }, ...(isAdmin ? {} : { createdBy: { equals: userId } }) }
+              : { deleted_at: { not_equals: null } }
+      const col =
+        type === 'blogs' ? 'posts' : type === 'categories' ? 'categories' : type === 'tags' ? 'tags' : 'users'
       const all = await payload.find({ collection: col, where, limit: 10000, depth: 0 })
       ids = all.docs.map((d) => d.id)
     }
@@ -230,14 +272,18 @@ export async function DELETE(req: NextRequest) {
 
     if (type === 'blogs') {
       for (const id of ids) {
-        let doc: { author?: number; media?: string; content?: unknown } | null = null
+        let doc: Post | null = null
         try {
-          doc = await payload.findByID({ collection: 'posts', id })
+          doc = (await payload.findByID({ collection: 'posts', id })) as Post
         } catch {
           continue
         }
         if (!doc) continue
-        if (!isAdmin && doc.author !== userId) continue
+        const authorId =
+          typeof doc.author === 'object' && doc.author && doc.author !== null && 'id' in doc.author
+            ? (doc.author as { id: number }).id
+            : doc.author
+        if (!isAdmin && authorId !== userId) continue
 
         // Collect image URLs to delete later (after DB delete succeeds)
         const urlsToDelete: string[] = []
@@ -249,14 +295,15 @@ export async function DELETE(req: NextRequest) {
         if (content) {
           let html = ''
           if (typeof content === 'string') {
-            if (content.startsWith('{') || content.startsWith('[')) {
+            const contentStr = content as string
+            if (contentStr.startsWith('{') || contentStr.startsWith('[')) {
               try {
-                html = convertLexicalToHtml(JSON.parse(content))
+                html = convertLexicalToHtml(JSON.parse(contentStr))
               } catch {
-                html = content
+                html = contentStr
               }
             } else {
-              html = content
+              html = contentStr
             }
           } else {
             html = convertLexicalToHtml(content as any)
@@ -311,6 +358,11 @@ export async function DELETE(req: NextRequest) {
     if (type === 'categories') {
       for (const id of ids) {
         try {
+          const doc = await payload.findByID({ collection: 'categories', id, depth: 0 })
+          if (!isAdmin) {
+            const createdBy = (doc as { createdBy?: number | null }).createdBy
+            if (createdBy != null && createdBy !== userId) continue
+          }
           await payload.delete({ collection: 'categories', id })
         } catch (err) {
           console.error('Payload delete category failed:', id, err)
@@ -318,6 +370,23 @@ export async function DELETE(req: NextRequest) {
         }
       }
       return NextResponse.json({ message: 'Permanently deleted selected categories.' }, { status: 200 })
+    }
+
+    if (type === 'tags') {
+      for (const id of ids) {
+        try {
+          const doc = await payload.findByID({ collection: 'tags', id, depth: 0 })
+          if (!isAdmin) {
+            const createdBy = (doc as { createdBy?: number | null }).createdBy
+            if (createdBy != null && createdBy !== userId) continue
+          }
+          await payload.delete({ collection: 'tags', id })
+        } catch (err) {
+          console.error('Payload delete tag failed:', id, err)
+          throw err
+        }
+      }
+      return NextResponse.json({ message: 'Permanently deleted selected tags.' }, { status: 200 })
     }
 
     // type === 'users'

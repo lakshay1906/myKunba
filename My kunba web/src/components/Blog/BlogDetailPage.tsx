@@ -24,8 +24,10 @@ import { format } from 'date-fns'
 import { CalendarIcon, X, Save, ArrowLeft, ImagePlus, BarChart3 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import CategorySelector from '../../components/Blog/category-selector'
+import CategorySelector from '@/components/Blog/category-selector'
+import TagSelector from '@/components/Blog/tag-selector'
 import { fetchAllCategories } from '@/app/actions/category-actions'
+import { fetchAllTags } from '@/app/actions/tag-actions'
 import Toast from '../Toast'
 import Loading from '../Loading'
 import Link from 'next/link'
@@ -67,8 +69,8 @@ export default function EditBlogPage({
   const [blog, setBlog] = useState<Record<string, any>>({})
   const [contentHtml, setContentHtml] = useState<string>('')
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
-  const [tags, setTags] = useState<string[]>([])
-  const [newTag, setNewTag] = useState('')
+  const [selectedTags, setSelectedTags] = useState<number[]>([])
+  const [allTags, setAllTags] = useState<{ id: number; name: string; slug?: string }[]>([])
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [allCategories, setAllCategories] = useState<Record<string, any>[]>([])
@@ -151,6 +153,10 @@ export default function EditBlogPage({
       if (blogData.categories && Array.isArray(blogData.categories)) {
         setSelectedCategories(blogData.categories.map((cat: any) => cat.id || cat))
       }
+      // Set tags
+      if (blogData.tags && Array.isArray(blogData.tags)) {
+        setSelectedTags(blogData.tags.map((t: any) => t.id || t))
+      }
 
       // Set publish date
       if (blogData.publishDate) {
@@ -179,9 +185,12 @@ export default function EditBlogPage({
         }))
       }
 
-      // Fetch all categories for selector
+      // Fetch all categories and tags for selectors
       fetchAllCategories().then((result) => {
         setAllCategories(result.docs || [])
+      })
+      fetchAllTags().then((result) => {
+        setAllTags(result.docs || [])
       })
     }
   }, [blogData])
@@ -227,20 +236,6 @@ export default function EditBlogPage({
   function handleDateSelect(selectedDate: Date | undefined) {
     setDate(selectedDate)
     setBlog({ ...blog, publishDate: selectedDate ? selectedDate.toISOString() : null })
-  }
-
-  function handleAddTag(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && newTag.trim() !== '') {
-      e.preventDefault()
-      if (!tags.includes(newTag.trim())) {
-        setTags([...tags, newTag.trim()])
-      }
-      setNewTag('')
-    }
-  }
-
-  function handleRemoveTag(tagToRemove: string) {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
   }
 
   async function handleSave() {
@@ -365,10 +360,9 @@ export default function EditBlogPage({
         faq: blog.faq || [],
       }
 
-      // Add categories if selected
-      if (selectedCategories.length > 0) {
-        updateData.categories = selectedCategories
-      }
+      // Add categories and tags (send arrays so clearing is supported)
+      updateData.categories = selectedCategories
+      updateData.tags = selectedTags
 
       // Add publish date if set
       if (date) {
@@ -1046,26 +1040,12 @@ export default function EditBlogPage({
               </div>
               <div className="space-y-2">
                 <Label>Tags</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Add a tag and press Enter"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleAddTag}
+                <TagSelector
+                  allTags={allTags}
+                  selectedTags={selectedTags}
+                  onChange={setSelectedTags}
+                  authToken={loginDetail?.token}
                 />
-                <p className="text-sm text-muted-foreground mt-1">Press Enter to add a tag</p>
               </div>
             </div>
           </div>

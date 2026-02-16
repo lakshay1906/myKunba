@@ -215,6 +215,10 @@ export interface Category {
   parent?: (number | null) | Category;
   deleted_at?: string | null;
   isVisible: boolean;
+  /**
+   * User who created this category. Authors can only edit/delete their own.
+   */
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -288,11 +292,29 @@ export interface Post {
   faq?: string | null;
   author: number | User;
   categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
   deleted_at?: string | null;
   /**
    * Number of times this blog has been viewed
    */
   impressions?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  posts?: (number | Post)[] | null;
+  deleted_at?: string | null;
+  /**
+   * User who created this tag. Authors can only edit/delete their own.
+   */
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -318,19 +340,6 @@ export interface PostLog {
   user?: (number | null) | User;
   action: 'create' | 'update' | 'delete';
   timestamp?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  slug: string;
-  posts?: (number | Post)[] | null;
-  deleted_at?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -556,6 +565,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   parent?: T;
   deleted_at?: T;
   isVisible?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -618,6 +628,7 @@ export interface PostsSelect<T extends boolean = true> {
   faq?: T;
   author?: T;
   categories?: T;
+  tags?: T;
   deleted_at?: T;
   impressions?: T;
   updatedAt?: T;
@@ -632,6 +643,7 @@ export interface TagsSelect<T extends boolean = true> {
   slug?: T;
   posts?: T;
   deleted_at?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

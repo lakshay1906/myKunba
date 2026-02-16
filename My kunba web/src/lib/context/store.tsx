@@ -19,6 +19,7 @@ type AppContextType = {
     profile_pic: string
     name: string
     role: string
+    id?: number
   }
   setLoginDetail: React.Dispatch<
     SetStateAction<{
@@ -27,6 +28,7 @@ type AppContextType = {
       profile_pic: string
       name: string
       role: string
+      id?: number
     } | null>
   >
   logout: () => Promise<void>
@@ -56,6 +58,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
     profile_pic: string
     name: string
     role: string
+    id?: number
   }>(null)
   const [loading, setLoading] = useState(!!token) // Initialize as true if token exists
   const [searchResults, setSearchResults] = useState<unknown[] | null>(null)
@@ -118,6 +121,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
               name: data.displayName,
               role: data.role,
               profile_pic: data.profileImage ? data.profileImage.url : null,
+              id: data.id,
             })
         }
       } catch (error) {

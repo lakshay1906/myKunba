@@ -77,7 +77,7 @@ const getRoleConfig = (role: string) => {
 
 export default function Profile({ user }: { user: Record<string, any> }) {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
-  const [editData, setEditData] = useState(() => ({
+  const [editData, setEditData] = useState<Record<string, any>>(() => ({
     ...user,
     socialLinks: parseSocialLinks(user.socialLinks),
   }))

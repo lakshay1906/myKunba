@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import CategorySelector from './category-selector'
+import TagSelector from './tag-selector'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -37,6 +38,7 @@ import * as z from 'zod'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { toast } from 'sonner'
 import { fetchAllCategories } from '@/app/actions/category-actions'
+import { fetchAllTags } from '@/app/actions/tag-actions'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
@@ -97,6 +99,7 @@ type FormValues = z.infer<typeof formSchema>
 export function CreatePostForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
+  const [tags, setTags] = useState<{ id: number; name: string; slug?: string }[]>([])
   const router = useRouter()
   const [currentTab, setCurrentTab] = useState('content')
   const { loginDetail } = useAppStore()
@@ -113,6 +116,7 @@ export function CreatePostForm() {
     coverImage: null,
   })
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
+  const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [isDraftLoaded, setIsDraftLoaded] = useState(false)
   const [draftImageLoaded, setDraftImageLoaded] = useState(false)
   const [hasDraftData, setHasDraftData] = useState(false)
@@ -281,6 +285,10 @@ export function CreatePostForm() {
         if (draftData.categories && draftData.categories.length > 0) {
           setSelectedCategories(draftData.categories)
         }
+        // Populate tags if they exist
+        if (draftData.tags && draftData.tags.length > 0) {
+          setSelectedTags(draftData.tags)
+        }
 
         // Populate cover image if it exists
         if (draftData.coverImage) {
@@ -377,6 +385,7 @@ export function CreatePostForm() {
           status: formValues.status,
           publishDate: formValues.publishDate ? formValues.publishDate.toISOString() : undefined,
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          tags: selectedTags.length > 0 ? selectedTags : undefined,
           coverImage: imageUploadData.coverImage || undefined,
         }
 
@@ -396,6 +405,7 @@ export function CreatePostForm() {
           draftData.excerpt ||
           draftData.coverImage ||
           (draftData.categories && draftData.categories.length > 0) ||
+          (draftData.tags && draftData.tags.length > 0) ||
           draftData.metaTitle ||
           draftData.metaDescription ||
           draftData.focusKeyword ||
@@ -423,7 +433,7 @@ export function CreatePostForm() {
         }, 1000) // Debounce for 1 second
       }
     },
-    [form, selectedCategories, imageUploadData.coverImage, imageUploadData.alt, isDraftLoaded],
+    [form, selectedCategories, selectedTags, imageUploadData.coverImage, imageUploadData.alt, isDraftLoaded],
   )
 
   // Store saveDraft in ref for use in handleImageUploadDataChange
@@ -449,11 +459,13 @@ export function CreatePostForm() {
       imagePreview: imageUploadData.coverImage?.substring(0, 50) || 'none',
       altText: imageUploadData.alt || 'none',
       categoriesCount: selectedCategories.length,
+      tagsCount: selectedTags.length,
     })
     // Save immediately when image, alt text, or categories change
     saveDraft(true)
   }, [
     selectedCategories,
+    selectedTags,
     imageUploadData.coverImage,
     imageUploadData.alt,
     saveDraft,
@@ -492,7 +504,8 @@ export function CreatePostForm() {
         formValues.content ||
         formValues.excerpt ||
         imageUploadData.coverImage ||
-        selectedCategories.length > 0
+        selectedCategories.length > 0 ||
+        selectedTags.length > 0
 
       if (hasContent && !hasShownLeaveToastRef.current) {
         // Save immediately (not debounced) when leaving
@@ -533,7 +546,7 @@ export function CreatePostForm() {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [form, imageUploadData.coverImage, selectedCategories, saveDraft])
+  }, [form, imageUploadData.coverImage, selectedCategories, selectedTags, saveDraft])
 
   function handleImageUploaded(imageData: any) {
     // Assuming the uploaded image returns a URL or path
@@ -671,8 +684,9 @@ export function CreatePostForm() {
         { keepDefaultValues: false },
       )
 
-      // Clear categories
+      // Clear categories and tags
       setSelectedCategories([])
+      setSelectedTags([])
 
       // Clear image upload data including alt text
       handleImageUploadDataChange((prev) => ({
@@ -935,8 +949,9 @@ export function CreatePostForm() {
           content: processedContent, // Use processed content with uploaded image URLs
           // NEW: Cloudflare R2 storage - ACTIVE
           coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
-          // Add categories from state
+          // Add categories and tags from state
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          tags: selectedTags.length > 0 ? selectedTags : undefined,
           // SEO fields
           focusKeyword: data.focusKeyword || undefined,
           imageAltText: imageUploadData.alt?.trim() || undefined,
@@ -1015,8 +1030,9 @@ export function CreatePostForm() {
           { keepDefaultValues: false },
         )
 
-        // Clear categories and image data
+        // Clear categories, tags, and image data
         setSelectedCategories([])
+        setSelectedTags([])
         setDraftImageLoaded(false)
         handleImageUploadDataChange((prev) => ({
           ...prev,
@@ -1127,10 +1143,24 @@ export function CreatePostForm() {
     }
   }, [setRightSidebarOpen])
 
-  // Fetch categories on mount
+  // Fetch categories and tags on mount
   useEffect(() => {
     refreshCategories()
   }, [refreshCategories])
+
+  const refreshTags = useCallback(async () => {
+    try {
+      const res = await fetchAllTags()
+      setTags(res.docs || [])
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+      toast.error('Error', { description: 'Failed to refresh tags' })
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshTags()
+  }, [refreshTags])
 
   // Handle category creation - refresh list and trigger draft save
   const handleCategoryCreated = useCallback(
@@ -1142,6 +1172,13 @@ export function CreatePostForm() {
       // This will trigger the useEffect watching selectedCategories, which will save the draft
     },
     [refreshCategories],
+  )
+
+  const handleTagCreated = useCallback(
+    (newTag: { id: number; name: string; slug: string }) => {
+      refreshTags()
+    },
+    [refreshTags],
   )
 
   return (
@@ -1742,6 +1779,18 @@ export function CreatePostForm() {
                       authToken={loginDetail?.token}
                     />
                   </div>
+
+                  {/* Tags Field */}
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <TagSelector
+                      allTags={tags}
+                      selectedTags={selectedTags}
+                      onChange={setSelectedTags}
+                      onTagCreated={handleTagCreated}
+                      authToken={loginDetail?.token}
+                    />
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -1759,7 +1808,8 @@ export function CreatePostForm() {
                   formValues.content ||
                   formValues.excerpt ||
                   imageUploadData.coverImage ||
-                  selectedCategories.length > 0
+                  selectedCategories.length > 0 ||
+                  selectedTags.length > 0
 
                 if (hasContent) {
                   if (saveTimeoutRef.current) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sheet,
   SheetContent,
@@ -34,8 +35,22 @@ export interface UserDetails {
 }
 
 export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegistrationSheetProps) {
+  const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const { googleSignIn, emailSignIn, emailSignUp, setLoginDetail, setLoading } = useAppStore()
+
+  const closeAndMaybeRedirect = useCallback(() => {
+    onOpenChange(false)
+    try {
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+      const r = params.get('redirect')
+      if (r && r.startsWith('/') && !r.startsWith('//')) {
+        router.push(r)
+      }
+    } catch {
+      // ignore
+    }
+  }, [onOpenChange, router])
   const [userDetails, setuserDetails] = useState<UserDetails | Record<string, any>>({})
   const [loginForm, setLoginForm] = useState<{
     email: string
@@ -138,7 +153,9 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 name: data.displayName,
                 profile_pic: data.profileImage ? data.profileImage.url : null,
                 role: data.role,
+                id: data.id,
               })
+              closeAndMaybeRedirect()
             }
           } else if (btnText === 'Sign Up') {
             // For Google auth users, auto-complete registration without showing profile form
@@ -168,13 +185,14 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                   name: data.displayName ?? data.email?.split('@')[0] ?? 'User',
                   profile_pic: data.photoURL ?? '',
                   role: 'user',
+                  id: undefined,
                 })
                 Toast({
                   message: 'Success',
                   description: 'Account created successfully!',
                   isSuccess: true,
                 })
-                onOpenChange(false)
+                closeAndMaybeRedirect()
               } else {
                 const errorData = await signInRes.json()
                 // If user already exists, try to login instead
@@ -193,8 +211,9 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                       name: userData.displayName,
                       profile_pic: userData.profileImage ? userData.profileImage.url : null,
                       role: userData.role,
+                      id: userData.id,
                     })
-                    onOpenChange(false)
+                    closeAndMaybeRedirect()
                   } else {
                     Toast({
                       message: 'Error',
@@ -280,7 +299,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                   name: userDetails.name ?? '',
                   role,
                 }))
-                onOpenChange(false)
+                closeAndMaybeRedirect()
               }}
               onInComplete={() => {
                 cleanupIncompleteRegistration()

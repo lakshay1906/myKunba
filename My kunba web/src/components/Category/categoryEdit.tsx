@@ -34,6 +34,7 @@ export interface CategoryRow {
   slug?: string
   isVisible?: boolean
   parent?: number | { id: number } | null
+  createdBy?: number | null
 }
 
 export function popoverEllipsis({
@@ -41,11 +42,13 @@ export function popoverEllipsis({
   isDetailPage,
   setCategories,
   onCategoryUpdated,
+  isReadOnly = false,
 }: {
   value: CategoryRow
   isDetailPage: boolean
   setCategories?: React.Dispatch<React.SetStateAction<CategoryRow[]>>
   onCategoryUpdated?: () => void
+  isReadOnly?: boolean
 }) {
   const { loginDetail } = useAppStore()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -175,6 +178,8 @@ export function popoverEllipsis({
         <EllipsisVertical size={'1rem'} />
       </PopoverTrigger>
       <PopoverContent className="p-1 flex flex-col w-fit mr-2">
+        {!isReadOnly && (
+        <>
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button variant={'ghost'} className="w-full justify-start py-1.5 h-fit">
@@ -319,6 +324,8 @@ export function popoverEllipsis({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </>
+        )}
         {!isDetailPage && (
           <Link href={`/dashboard/category/${value.id}`}>
             <Button variant={'ghost'} className="w-full justify-start py-1.5 h-fit">

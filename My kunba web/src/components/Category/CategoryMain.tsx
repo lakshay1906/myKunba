@@ -46,6 +46,9 @@ export default function CategoryMain({
   const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
   const { loginDetail } = useAppStore()
 
+  const currentUserId = (loginDetail as { id?: number } | null)?.id
+  const isAuthor = (loginDetail as { role?: string } | null)?.role === 'author'
+
   async function deleteCategory(id: number, silent = false) {
     try {
       const rawRes = await fetch(`/api/dashboard/category?id=${id}`, {
@@ -73,13 +76,20 @@ export default function CategoryMain({
 
   async function handleBulkDelete() {
     if (selectedCategories.length === 0) return
-    const count = selectedCategories.length
-    for (const cat of selectedCategories) {
+    const toDelete =
+      isAuthor && currentUserId != null
+        ? selectedCategories.filter((c: { createdBy?: number | null }) => c.createdBy != null && c.createdBy === currentUserId)
+        : selectedCategories
+    if (toDelete.length === 0) {
+      toast.error('You can only delete categories you created')
+      return
+    }
+    for (const cat of toDelete) {
       await deleteCategory(Number(cat.id), true)
     }
     setSelectedCategories([])
     fetchCategories(limit, (currentPage - 1) * limit, false, currentPage)
-    toast.success('Success', { description: `${count} categor(y/ies) deleted and moved to recycle bin` })
+    toast.success('Success', { description: `${toDelete.length} categor(y/ies) deleted and moved to recycle bin` })
   }
 
   // This function signature matches what CurrentPageComponent expects: (limit, offset, skipScroll, page)
@@ -184,27 +194,31 @@ export default function CategoryMain({
         id: category.id,
         Name: category.name,
         Slug: `/${category.slug}`,
+        createdBy: (category as CategoryRow).createdBy,
       }))}
-      EllipsisComponent={({ value }: { value: { id: number; Name?: string; Slug?: string; name?: string; slug?: string; isVisible?: boolean; parent?: number | { id: number } | null } }) =>
+      EllipsisComponent={({ value }: { value: { id: number; Name?: string; Slug?: string; name?: string; slug?: string; isVisible?: boolean; parent?: number | { id: number } | null; createdBy?: number | null } }) =>
         popoverEllipsis({
-          value,
+          value: { ...value, createdBy: value.createdBy },
           isDetailPage: false,
           setCategories,
           onCategoryUpdated: () => {
-            // Update total count after deletion (update is handled in popoverEllipsis)
             setTotal((prev) => Math.max(0, prev - 1))
             setTotalPages((prev) => {
               const newTotal = total - 1
               if (newTotal <= 0) return 1
               return Math.ceil(newTotal / limit)
             })
-            // If current page becomes empty and not page 1, go to previous page
             if (categories.length === 1 && currentPage > 1) {
               const newPage = currentPage - 1
               const offset = (newPage - 1) * limit
               fetchCategories(limit, offset, false, newPage)
             }
           },
+          isReadOnly:
+            isAuthor &&
+            value.createdBy != null &&
+            currentUserId != null &&
+            value.createdBy !== currentUserId,
         })
       }
       isCheckBoxRequired={true}

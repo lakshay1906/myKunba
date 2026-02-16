@@ -49,7 +49,7 @@ export default function DataTable({
 }: {
   tableTitle?: string
   tableSubTitle?: string
-  AddProductButton: React.JSX.Element
+  AddProductButton?: React.JSX.Element
   detailPageLink: string
   slug?: boolean
   selectedProductsState: Record<string, any>

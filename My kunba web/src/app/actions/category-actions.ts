@@ -16,7 +16,7 @@ export async function createCategory(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         name,
@@ -70,7 +70,7 @@ export async function fetchCategoryData(id: number) {
     const rawRes = await fetch(`${getServerApiUrl()}/api/dashboard/category?id=${id}`, {
       method: 'GET',
       headers: {
-        Authorization: `bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     })
 
@@ -100,7 +100,7 @@ export async function fetchAllCategoryBlogs(catId: number) {
     const rawRes = await fetch(`${getServerApiUrl()}/api/dashboard/category?id=${catId}`, {
       method: 'GET',
       headers: {
-        Authorization: `bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     })
     if (!rawRes.ok) {

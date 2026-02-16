@@ -122,12 +122,12 @@ export const Posts: CollectionConfig = {
       relationTo: 'categories',
       hasMany: true,
     },
-    // {
-    //   name: 'tags',
-    //   type: 'relationship',
-    //   relationTo: 'tags',
-    //   hasMany: true,
-    // },
+    {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+    },
     {
       name: 'deleted_at',
       type: 'date',

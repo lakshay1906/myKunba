@@ -53,6 +53,7 @@ export interface BlogDraftData {
   internalLinks?: Array<{ url: string; anchorText: string }>
   faq?: Array<{ question: string; answer: string }>
   categories?: number[]
+  tags?: number[]
   coverImage?: string
   // Metadata properties (not part of actual draft data)
   hasIndexedDBData?: boolean
@@ -159,12 +160,13 @@ export async function saveDraftToCookie(data: BlogDraftData) {
     // 3. Total JSON would be larger than 2KB (cookie safety margin)
     // 4. Image size is larger than 1KB (even if not data URL, might be large)
     // 5. Has focusKeyword / externalLinks / internalLinks / faq (avoid cookie truncation)
-    useIndexedDB =
+    useIndexedDB = Boolean(
       hasImage ||
-      contentSize > 1000 ||
-      testJsonSize > 2000 ||
-      imageSize > 1000 ||
-      hasSeoOrLinksOrFaq
+        contentSize > 1000 ||
+        testJsonSize > 2000 ||
+        imageSize > 1000 ||
+        hasSeoOrLinksOrFaq,
+    )
 
     if (useIndexedDB) {
       console.log('Using IndexedDB for draft storage:', {

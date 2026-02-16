@@ -62,7 +62,7 @@ export function normalizePostJsonFields<
     faq?: string | null
   },
 >(doc: T): WithParsedPostJsonFields<T> {
-  const out = { ...doc } as WithParsedPostJsonFields<T>
+  const out = { ...doc } as unknown as WithParsedPostJsonFields<T>
   ;(out as Record<string, unknown>).externalLinks =
     typeof doc.externalLinks === 'string'
       ? parseExternalLinks(doc.externalLinks)
@@ -73,5 +73,5 @@ export function normalizePostJsonFields<
       : []
   ;(out as Record<string, unknown>).faq =
     typeof doc.faq === 'string' ? parseFaq(doc.faq) : []
-  return out
+  return out as unknown as WithParsedPostJsonFields<T>
 }

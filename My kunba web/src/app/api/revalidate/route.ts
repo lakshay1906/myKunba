@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   revalidateBlogPost,
   revalidateCategory,
+  revalidateTag,
   revalidateAuthor,
   revalidateListings,
 } from '@/lib/revalidate-website'
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof path !== 'string' || !path.startsWith('/') || path.includes('..')) {
       return NextResponse.json(
-        { message: 'Invalid path. Use a path like /, /my-post-slug, /category/tech, /author/1' },
+        { message: 'Invalid path. Use a path like /, /my-post-slug, /category/tech, /tag/slug, /author/1' },
         { status: 400 },
       )
     }
@@ -56,6 +57,11 @@ export async function POST(request: NextRequest) {
       revalidateCategory(slug)
       return NextResponse.json({ revalidated: true, path: normalizedPath })
     }
+    if (normalizedPath.startsWith('/tag/') && normalizedPath.length > 5) {
+      const slug = normalizedPath.slice('/tag/'.length)
+      revalidateTag(slug)
+      return NextResponse.json({ revalidated: true, path: normalizedPath })
+    }
     if (normalizedPath.startsWith('/author/') && normalizedPath.length > 8) {
       const slug = normalizedPath.slice('/author/'.length)
       if (slug) {
@@ -65,13 +71,13 @@ export async function POST(request: NextRequest) {
     }
     // Blog posts are at /[slug] (e.g. /my-post-slug); single segment = blog post slug
     const firstSegment = normalizedPath.slice(1).split('/')[0]
-    if (firstSegment && !['blog', 'category', 'author', 'dashboard', 'about', 'contact', 'profile', 'upload', 'unauthorised'].includes(firstSegment)) {
+    if (firstSegment && !['blog', 'category', 'tag', 'author', 'dashboard', 'about', 'contact', 'profile', 'upload', 'unauthorised'].includes(firstSegment)) {
       revalidateBlogPost(firstSegment)
       return NextResponse.json({ revalidated: true, path: normalizedPath })
     }
 
     return NextResponse.json(
-      { message: 'Path not supported for revalidation. Use /slug, /category/slug, /author/slug, or /' },
+      { message: 'Path not supported for revalidation. Use /slug, /category/slug, /tag/slug, /author/slug, or /' },
       { status: 400 },
     )
   } catch (error) {

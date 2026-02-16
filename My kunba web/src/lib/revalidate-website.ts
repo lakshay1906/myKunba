@@ -22,6 +22,13 @@ export function revalidateCategory(slug: string) {
   revalidatePath('/')
 }
 
+export function revalidateTag(slug: string) {
+  if (slug) {
+    revalidatePath(`/tag/${slug}`)
+  }
+  revalidatePath('/')
+}
+
 export function revalidateAuthor(slug: string) {
   if (slug) {
     revalidatePath(`/author/${slug}`)

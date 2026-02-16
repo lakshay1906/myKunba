@@ -66,11 +66,12 @@ export async function GET(req: NextRequest) {
             isFeatured: true,
             author: true,
             categories: true,
+            tags: true,
             createdAt: true,
             updatedAt: true,
             impressions: true,
           },
-          depth: 2, // Include relationships (author, media, categories)
+          depth: 2, // Include relationships (author, media, categories, tags)
         })
         return NextResponse.json({ data: blog.docs }, { status: 200 })
       } else {
@@ -80,11 +81,22 @@ export async function GET(req: NextRequest) {
         const pageNum = page ? Number(page) : 1
         const limitNum = limit ? Number(limit) : 10
 
+        // Admin can filter by authorId; author always sees only their own
+        const isAdmin = userData.role === 'admin'
+        const authorIdParam = req.nextUrl.searchParams.get('authorId')
+        const filterAuthorId =
+          isAdmin && authorIdParam != null && authorIdParam !== ''
+            ? Number(authorIdParam)
+            : (userData.id as number)
+        if (isAdmin && authorIdParam != null && authorIdParam !== '' && isNaN(Number(authorIdParam))) {
+          return NextResponse.json({ message: 'Invalid authorId' }, { status: 400 })
+        }
+
         const blog = await payload.find({
           collection: 'posts',
           where: {
             author: {
-              equals: data.docs[0].id,
+              equals: filterAuthorId,
             },
             deleted_at: {
               equals: null,
@@ -136,6 +148,7 @@ export async function POST(req: NextRequest) {
       metaTitle,
       metaDescription,
       categories,
+      tags,
       focusKeyword,
       imageAltText,
       externalLinks,
@@ -148,6 +161,13 @@ export async function POST(req: NextRequest) {
       requireRole: null, // Allow admin and author roles
       fetchUser: true,
     })
+
+    if (!authResult) {
+      return NextResponse.json(
+        { message: "You're not authorized to perform this action" },
+        { status: 401 },
+      )
+    }
 
     const { user: authorData } = authResult
 
@@ -239,9 +259,15 @@ export async function POST(req: NextRequest) {
     const faqStr = stringifyFaq(faq)
     if (faqStr != null) postData.faq = faqStr
 
-    // Add categories - Payload accepts array of numbers for hasMany relationships
-    // Include empty array if no categories to ensure field is set
+    // Add categories and tags - Payload accepts array of numbers for hasMany relationships
     postData.categories = categoriesData
+    let tagsData: number[] = []
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      tagsData = tags
+        .map((t) => (typeof t === 'string' ? Number(t) : t))
+        .filter((t): t is number => typeof t === 'number' && !isNaN(t))
+    }
+    postData.tags = tagsData
 
     const createdPost = await payload.create({
       collection: 'posts',
@@ -306,6 +332,7 @@ export async function PUT(req: NextRequest) {
       metaTitle,
       metaDescription,
       categories,
+      tags,
       commentsEnabled,
       isFeatured,
       focusKeyword,
@@ -424,14 +451,22 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Update categories if provided - ensure it's an array of numbers
+    // Update categories if provided
     if (categories !== undefined) {
       if (Array.isArray(categories) && categories.length > 0) {
         const categoriesData = categories.map((cat) => Number(cat)).filter((cat) => !isNaN(cat))
         updateData.categories = categoriesData.length > 0 ? categoriesData : []
       } else {
-        // If categories is provided but empty, set to empty array
         updateData.categories = []
+      }
+    }
+    // Update tags if provided
+    if (tags !== undefined) {
+      if (Array.isArray(tags) && tags.length > 0) {
+        const tagsData = tags.map((t) => Number(t)).filter((t) => !isNaN(t))
+        updateData.tags = tagsData.length > 0 ? tagsData : []
+      } else {
+        updateData.tags = []
       }
     }
 

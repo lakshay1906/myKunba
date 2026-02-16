@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { payload } from '@/payload-client'
+import { getServerApiUrl } from '@/lib/env'
 import { normalizePostJsonFields } from '@/lib/utils/posts-json-fields'
 
 /**
@@ -136,6 +137,7 @@ export async function fetchDashboardBlogBySlug(slug: string) {
         isFeatured: true,
         author: true,
         categories: true,
+        tags: true,
         createdAt: true,
         updatedAt: true,
         impressions: true,
@@ -160,7 +162,12 @@ export async function fetchDashboardBlogBySlug(slug: string) {
       throw new Error('You are not authorized to view this blog post')
     }
 
-    return normalizePostJsonFields(blogPost)
+    const withJson = blogPost as unknown as Record<string, unknown> & {
+      externalLinks?: string | null
+      internalLinks?: string | null
+      faq?: string | null
+    }
+    return normalizePostJsonFields(withJson)
   } catch (error: any) {
     console.error('Error fetching dashboard blog by slug:', error)
     throw error
@@ -168,39 +175,68 @@ export async function fetchDashboardBlogBySlug(slug: string) {
 }
 
 /**
- * Fetch categories for dashboard with pagination
+ * Fetch categories for dashboard with pagination (uses API so author/admin auth applies)
  */
 export async function fetchDashboardCategories(page: number = 1, limit: number = 10) {
   try {
-    const data = await payload.find({
-      collection: 'categories',
-      depth: 0,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+    const res = await fetch(
+      `${getServerApiUrl()}/api/dashboard/category?page=${page}&limit=${limit}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
       },
-      where: {
-        deleted_at: {
-          equals: null,
-        },
-      },
-      pagination: true,
-      limit,
-      page,
-      sort: '-createdAt',
-    })
-
+    )
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || 'Failed to fetch categories')
+    }
+    const data = await res.json()
     return {
-      docs: data.docs,
-      totalDocs: data.totalDocs,
-      totalPages: data.totalPages,
-      page: data.page,
-      limit: data.limit,
+      docs: data.docs ?? [],
+      totalDocs: data.totalDocs ?? 0,
+      totalPages: data.totalPages ?? 1,
+      page: data.page ?? page,
+      limit: data.limit ?? limit,
     }
   } catch (error: any) {
     console.error('Error fetching dashboard categories:', error)
     throw new Error(error.message || 'Failed to fetch categories')
+  }
+}
+
+/**
+ * Fetch tags for dashboard with pagination (uses API so author/admin auth applies)
+ */
+export async function fetchDashboardTags(page: number = 1, limit: number = 10) {
+  try {
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+    const res = await fetch(
+      `${getServerApiUrl()}/api/dashboard/tag?page=${page}&limit=${limit}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || 'Failed to fetch tags')
+    }
+    const data = await res.json()
+    return {
+      docs: data.docs ?? [],
+      totalDocs: data.totalDocs ?? 0,
+      totalPages: data.totalPages ?? 1,
+      page: data.page ?? page,
+      limit: data.limit ?? limit,
+    }
+  } catch (error: any) {
+    console.error('Error fetching dashboard tags:', error)
+    throw new Error(error.message || 'Failed to fetch tags')
   }
 }
 

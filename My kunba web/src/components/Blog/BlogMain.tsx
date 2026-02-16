@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DataTable from '../DataTable'
 import Link from 'next/link'
 import { Button } from '../ui/button'
@@ -15,6 +15,13 @@ import {
   DialogTrigger,
   DialogClose,
 } from '../ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
 import { EllipsisVertical, Trash2 } from 'lucide-react'
 import Toast from '../Toast'
 import { toast } from 'sonner'
@@ -42,7 +49,33 @@ export default function BlogMain({
   const [limit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
+  const [authors, setAuthors] = useState<{ id: number; displayName: string; email?: string }[]>([])
+  const [selectedAuthorId, setSelectedAuthorId] = useState<number | null>(null)
   const { loginDetail } = useAppStore()
+
+  const isAdmin = (loginDetail as { role?: string } | null)?.role === 'admin'
+  const currentUserId = (loginDetail as { id?: number } | null)?.id
+
+  useEffect(() => {
+    if (!isAdmin || !loginDetail?.token) return
+    fetch('/api/dashboard/authors', {
+      headers: { Authorization: `bearer ${loginDetail.token}` },
+    })
+      .then((res) => res.ok ? res.json() : { authors: [] })
+      .then((data) => {
+        setAuthors(data.authors || [])
+        if (selectedAuthorId == null && currentUserId != null) {
+          setSelectedAuthorId(currentUserId)
+        }
+      })
+      .catch(() => setAuthors([]))
+  }, [isAdmin, loginDetail?.token])
+
+  useEffect(() => {
+    if (isAdmin && currentUserId != null && selectedAuthorId == null) {
+      setSelectedAuthorId(currentUserId)
+    }
+  }, [isAdmin, currentUserId, selectedAuthorId])
 
   async function deleteBlog(id: string, silent = false) {
     if (!loginDetail || !loginDetail.token) {
@@ -101,7 +134,13 @@ export default function BlogMain({
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/dashboard/blog?page=${page}&limit=${limitParam}`, {
+      const url = new URL('/api/dashboard/blog', window.location.origin)
+      url.searchParams.set('page', String(page))
+      url.searchParams.set('limit', String(limitParam))
+      if (isAdmin && selectedAuthorId != null) {
+        url.searchParams.set('authorId', String(selectedAuthorId))
+      }
+      const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           Authorization: `bearer ${loginDetail.token}`,
@@ -132,6 +171,13 @@ export default function BlogMain({
     }
   }
 
+  useEffect(() => {
+    if (!loginDetail || !isAdmin) return
+    if (selectedAuthorId != null && currentPage === 1) {
+      fetchBlogs(limit, 0, false, 1)
+    }
+  }, [selectedAuthorId])
+
   async function handleBulkDelete() {
     if (!loginDetail?.token || selectedBlogs.length === 0) return
     const count = selectedBlogs.length
@@ -148,7 +194,27 @@ export default function BlogMain({
       tableTitle="Blog"
       tableSubTitle="Explore all your blogs"
       AddProductButton={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isAdmin && authors.length > 0 && (
+            <Select
+              value={selectedAuthorId != null ? String(selectedAuthorId) : undefined}
+              onValueChange={(v) => {
+                const id = Number(v)
+                if (!Number.isNaN(id)) setSelectedAuthorId(id)
+              }}
+            >
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Select author" />
+              </SelectTrigger>
+              <SelectContent>
+                {authors.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>
+                    {a.displayName || a.email || `User ${a.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           {selectedBlogs.length > 0 && (
             <Dialog>
               <DialogTrigger asChild>

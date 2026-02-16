@@ -35,7 +35,7 @@ export async function getCurrentUserFromCookies(): Promise<{
     id: doc.id,
     email: doc.email,
     role: doc.role,
-    displayName: doc.displayName,
+    displayName: doc.displayName ?? undefined,
   }
 }
 
@@ -56,7 +56,7 @@ export async function getTokenFromRequest(request: NextRequest): Promise<string 
   // Fall back to cookies (for web apps)
   const cookieStore = await cookies()
   const token = cookieStore.get('access_token')?.value
-  return token || null
+  return token ?? null
 }
 
 /**

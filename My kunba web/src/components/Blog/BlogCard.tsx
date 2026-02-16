@@ -6,15 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Image from 'next/image'
 
 interface BlogPost {
-  // OLD: Media was an object with url property - COMMENTED OUT
-  // media: Record<string, any>
-  // NEW: Media is now a string URL from Cloudflare R2 - ACTIVE
   media: string | null
   id: number
   title: string
   slug: string
   author: Record<string, any>
   categories: Record<string, any>[]
+  tags?: Record<string, any>[]
   excerpt: string
   content: string
   createdAt: string
@@ -82,10 +80,22 @@ export default function BlogCard({ post }: BlogCardProps) {
           )}
         </div>
         <div className="flex flex-wrap items-start gap-2 mb-3 p-6 pt-4 pb-0">
-          {post.categories.map((category) => (
+          {post.categories?.map((category) => (
             <Badge key={category.id} variant="secondary" className="font-medium">
               {category.name}
             </Badge>
+          ))}
+          {post.tags?.map((tag) => (
+            <Link
+              key={tag.id}
+              href={`/tag/${tag.slug || tag.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex"
+            >
+              <Badge variant="outline" className="font-medium hover:bg-muted">
+                #{tag.name}
+              </Badge>
+            </Link>
           ))}
         </div>
         <div>

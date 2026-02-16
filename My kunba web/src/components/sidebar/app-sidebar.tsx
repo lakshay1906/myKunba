@@ -11,6 +11,7 @@ import {
   MessageCircleHeart,
   Reply,
   Shapes,
+  Tag,
   Trash2,
 } from 'lucide-react'
 import { NavDocuments } from '@/components/sidebar/nav-documents'
@@ -135,6 +136,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         name: 'Category',
         url: '/dashboard/category',
         icon: Shapes,
+      },
+      {
+        name: 'Tags',
+        url: '/dashboard/tag',
+        icon: Tag,
       },
       ...(loginDetail?.role === 'admin'
         ? [{ name: 'Media', url: '/dashboard/media', icon: ImageIcon }]

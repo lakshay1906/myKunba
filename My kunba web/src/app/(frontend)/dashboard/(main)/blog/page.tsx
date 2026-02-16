@@ -12,7 +12,6 @@ export default async function page({ searchParams }: { searchParams: Promise<{ p
     const limit = 10
 
     const blogData = await fetchDashboardBlogs(page, limit)
-    console.log(`blogData: ${blogData}`)
 
     return (
       <BlogMain
@@ -25,6 +24,6 @@ export default async function page({ searchParams }: { searchParams: Promise<{ p
     )
   } catch (error) {
     console.error('Error loading blogs:', error)
-    redirect('/unauthorised')
+    redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/blog'))
   }
 }

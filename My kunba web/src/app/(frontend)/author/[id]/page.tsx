@@ -9,6 +9,16 @@ import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
+/** User doc from users collection with fields used on author pages */
+type AuthorProfile = {
+  id: number
+  username?: string
+  displayName?: string | null
+  bio?: string | null
+  profileImage?: string | null
+  role?: string
+}
+
 // Generate metadata for author pages (Programmatic SEO + E-E-A-T)
 export async function generateMetadata({
   params,
@@ -59,14 +69,15 @@ export async function generateMetadata({
       }
     }
 
+    const profile = author as AuthorProfile
     const siteUrl = getPublicUrl()
-    const authorSlug = (author as any).username || String(author.id)
+    const authorSlug = profile.username || String(profile.id)
     const authorUrl = `${siteUrl}/author/${authorSlug}`
 
-    const displayName = author.displayName ?? 'Author'
-    const bio = author.bio ?? undefined
+    const displayName = profile.displayName ?? 'Author'
+    const bio = profile.bio ?? undefined
     const profileImageUrl =
-      typeof author.profileImage === 'string' ? author.profileImage : undefined
+      typeof profile.profileImage === 'string' ? profile.profileImage : undefined
 
     return {
       title: `${displayName} - Author Profile | My Kunba`,
@@ -158,7 +169,8 @@ export default async function AuthorPage({
       notFound()
     }
 
-    const authorIdForPosts = author.id as number
+    const profile = author as AuthorProfile
+    const authorIdForPosts = profile.id as number
 
     const limit = 12
     const pageNum = page
@@ -212,21 +224,21 @@ export default async function AuthorPage({
 
     // Generate structured data for author page (E-E-A-T)
     const siteUrl = getPublicUrl()
-    const authorSlug = (author as any).username || String(author.id)
+    const authorSlug = profile.username || String(profile.id)
     const authorUrl = `${siteUrl}/author/${authorSlug}`
 
     const personSchema = {
       '@context': 'https://schema.org',
       '@type': 'Person',
-      name: author.displayName,
+      name: profile.displayName,
       url: authorUrl,
-      ...(author.bio && {
-        description: author.bio,
+      ...(profile.bio && {
+        description: profile.bio,
       }),
-      ...(author.profileImage && {
-        image: author.profileImage,
+      ...(profile.profileImage && {
+        image: profile.profileImage,
       }),
-      jobTitle: author.role === 'admin' ? 'Administrator' : author.role === 'author' ? 'Content Author' : 'User',
+      jobTitle: profile.role === 'admin' ? 'Administrator' : profile.role === 'author' ? 'Content Author' : 'User',
       worksFor: {
         '@type': 'Organization',
         name: 'My Kunba',
@@ -259,7 +271,7 @@ export default async function AuthorPage({
         {
           '@type': 'ListItem',
           position: 3,
-          name: author.displayName,
+          name: profile.displayName,
           item: authorUrl,
         },
       ],
@@ -285,11 +297,11 @@ export default async function AuthorPage({
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="size-24 border-4 border-background shadow-lg">
                 <AvatarImage
-                  src={typeof author.profileImage === 'string' ? author.profileImage : ''}
-                  alt={author.displayName ?? undefined}
+                  src={typeof profile.profileImage === 'string' ? profile.profileImage : ''}
+                  alt={profile.displayName ?? undefined}
                 />
                 <AvatarFallback className="text-2xl">
-                  {author.displayName
+                  {profile.displayName
                     ?.split(' ')
                     .map((n: string) => n[0])
                     .join('')
@@ -297,21 +309,21 @@ export default async function AuthorPage({
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold mb-2">{author.displayName}</h1>
+                <h1 className="text-3xl font-bold mb-2">{profile.displayName}</h1>
                 <Badge className="mb-4">
-                  {author.role === 'admin'
+                  {profile.role === 'admin'
                     ? 'Administrator'
-                    : author.role === 'author'
+                    : profile.role === 'author'
                       ? 'Content Author'
                       : 'User'}
                 </Badge>
-                {author.bio && <p className="text-muted-foreground leading-relaxed">{author.bio}</p>}
+                {profile.bio && <p className="text-muted-foreground leading-relaxed">{profile.bio}</p>}
               </div>
             </div>
           </div>
 
           <h2 className="text-2xl font-bold mb-4">
-            Articles by {author.displayName} ({authorPosts.totalDocs || 0})
+            Articles by {profile.displayName} ({authorPosts.totalDocs || 0})
           </h2>
           <Blog
             posts={authorPosts}

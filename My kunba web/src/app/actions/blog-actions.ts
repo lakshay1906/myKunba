@@ -51,7 +51,17 @@ export async function fetchBlogPostBySlug(
       limit: 1,
     })
     const doc = result.docs[0] ?? null
-    return doc ? normalizePostJsonFields(doc) : null
+    if (!doc) return null
+    const withJson = doc as unknown as Record<string, unknown> & {
+      externalLinks?: string | null
+      internalLinks?: string | null
+      faq?: string | null
+    }
+    return normalizePostJsonFields(withJson) as (Omit<Post, 'externalLinks' | 'internalLinks' | 'faq'> & {
+      externalLinks: ExternalLinkItem[]
+      internalLinks: InternalLinkItem[]
+      faq: FAQItem[]
+    })
   } catch (error) {
     console.error('Error fetching blog post by slug:', error)
     return null

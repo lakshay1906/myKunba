@@ -30,7 +30,7 @@ export async function createPost(data: PostData, token: string) {
       headers: {
         'Content-Type': 'application/json',
         // Add authentication if needed
-        Authorization: `bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         ...data,

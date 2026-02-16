@@ -51,6 +51,11 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
   })
   const { loginDetail, loading: contextLoading } = useAppStore()
 
+  const currentUserId = (loginDetail as { id?: number } | null)?.id
+  const isAuthor = (loginDetail as { role?: string } | null)?.role === 'author'
+  const createdBy = response.createdBy as number | null | undefined
+  const isReadOnly = isAuthor && createdBy != null && currentUserId != null && createdBy !== currentUserId
+
   useEffect(() => {
     if (!loginDetail?.token) return
     fetch(`/api/dashboard/category?all=true`, {
@@ -176,13 +181,13 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
           <p>{postsCount}</p>
         </div>
 
-        {!editMode ? (
+        {!isReadOnly && !editMode ? (
           <div className="p-4">
             <Button variant="outline" onClick={() => setEditMode(true)}>
               Edit category
             </Button>
           </div>
-        ) : (
+        ) : !isReadOnly && editMode ? (
           <div className="p-4 space-y-4 border-t">
             <h2 className="font-medium">Edit category</h2>
             <div className="space-y-2">
@@ -267,7 +272,7 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
               </Button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
       <DataTable
         tableTitle="Posts"
@@ -290,9 +295,11 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
         fetchDataFunction={fetchPosts}
         loading={loading}
         AddProductButton={
-          <Link href={`/dashboard/category/${id}/add-posts`}>
-            <Button variant="outline">Add Posts</Button>
-          </Link>
+          !isReadOnly ? (
+            <Link href={`/dashboard/category/${id}/add-posts`}>
+              <Button variant="outline">Add Posts</Button>
+            </Link>
+          ) : undefined
         }
       />
     </div>

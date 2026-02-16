@@ -32,10 +32,12 @@ export default async function Page() {
       redirect('/unauthorised')
     }
 
-    const user = data.docs[0] as Record<string, unknown>
+    const user = data.docs[0] as unknown as Record<string, unknown>
     const normalizedUser = {
       ...user,
-      socialLinks: parseSocialLinks(user.socialLinks as string | unknown),
+      socialLinks: parseSocialLinks(
+        user.socialLinks as string | { platform?: string | null; url?: string | null }[] | null | undefined,
+      ),
     }
     return <Profile user={normalizedUser} />
   } catch (error) {
