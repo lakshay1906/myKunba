@@ -157,27 +157,27 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           author:
             typeof blog.author === 'object' && blog.author !== null && 'displayName' in blog.author
               ? {
-                  id: blog.author.id,
-                  username: (blog.author as any).username,
-                  displayName: blog.author.displayName ?? undefined,
-                  profileImage: undefined,
-                  bio: blog.author.bio ?? undefined,
-                  role: blog.author.role ?? undefined,
-                }
+                id: blog.author.id,
+                username: (blog.author as any).username,
+                displayName: blog.author.displayName ?? undefined,
+                profileImage: undefined,
+                bio: blog.author.bio ?? undefined,
+                role: blog.author.role ?? undefined,
+              }
               : undefined,
           categories: Array.isArray(blog.categories)
             ? blog.categories
-                .filter((c) => typeof c === 'object' && c !== null)
-                .map((c) => {
-                  const o = c as unknown as { id?: number; name?: string; slug?: string }
-                  return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
-                })
-                .filter((cat) => cat.id && cat.name)
+              .filter((c) => typeof c === 'object' && c !== null)
+              .map((c) => {
+                const o = c as unknown as { id?: number; name?: string; slug?: string }
+                return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
+              })
+              .filter((cat) => cat.id && cat.name)
             : undefined,
         }}
         siteUrl={siteUrl}
       />
-      <main className="container mx-auto">
+      <main className="container mx-auto px-3">
         <div className="flex flex-col lg:flex-row gap-8 py-4">
           <div className="min-w-0 flex-1">
             <BlogContent

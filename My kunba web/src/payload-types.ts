@@ -309,7 +309,10 @@ export interface Tag {
   id: number;
   name: string;
   slug: string;
-  isVisible?: boolean | null;
+  /**
+   * Hide from public archive and selectors without deleting (e.g. typo or spam).
+   */
+  isVisible: boolean;
   posts?: (number | Post)[] | null;
   deleted_at?: string | null;
   /**
@@ -642,6 +645,7 @@ export interface PostsSelect<T extends boolean = true> {
 export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  isVisible?: T;
   posts?: T;
   deleted_at?: T;
   createdBy?: T;

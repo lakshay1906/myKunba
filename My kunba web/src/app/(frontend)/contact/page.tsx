@@ -70,12 +70,12 @@ export default function Contact() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto mt-8">
+    <div className="container mx-auto mt-8 px-3">
       <h1 className="text-3xl font-bold mb-8">Contact Us</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 xl:p-8 mb-8">
             <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               Have a question, suggestion, or want to contribute to our blog? We'd love to hear from
@@ -114,7 +114,7 @@ export default function Contact() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 xl:p-8">
             <h2 className="text-2xl font-semibold mb-6">Follow Us</h2>
             <div className="flex space-x-4">
               <a
@@ -148,8 +148,8 @@ export default function Contact() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8">
-          <h2 className="text-2xl font-semibold mb-6">Send Us a Message</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 xl:p-8">
+          <h2 className="text-2xl font-semibold mb-6">Send us a message</h2>
 
           {submitSuccess && (
             <div className="mb-6 p-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg">
@@ -171,9 +171,8 @@ export default function Contact() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 rounded-md border ${
-                  errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                className={`w-full px-4 py-2 rounded-md border ${errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
               />
               {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
@@ -191,9 +190,8 @@ export default function Contact() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 rounded-md border ${
-                  errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                className={`w-full px-4 py-2 rounded-md border ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
               />
               {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
             </div>
@@ -228,9 +226,8 @@ export default function Contact() {
                 rows={5}
                 value={formData.message}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 rounded-md border ${
-                  errors.message ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                className={`w-full px-4 py-2 rounded-md border ${errors.message ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
               ></textarea>
               {errors.message && <p className="mt-1 text-sm text-red-500">{errors.message}</p>}
             </div>
