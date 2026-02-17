@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useRouter } from 'next/navigation'
 import { SetStateAction, useEffect, useState } from 'react'
 import Toast from '../Toast'
 import { Category } from '@/lib/types'
@@ -41,7 +40,6 @@ export default function Create({
   const [isVisible, setIsVisible] = useState(true)
   const [parentId, setParentId] = useState<string>('none')
   const [parentOptions, setParentOptions] = useState<{ id: number; name: string }[]>([])
-  const router = useRouter()
   const { loginDetail } = useAppStore()
 
   useEffect(() => {
@@ -148,12 +146,7 @@ export default function Create({
         </div>
         <DialogFooter className="flex justify-between">
           <DialogClose asChild>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => router.back()}
-              disabled={loading}
-            >
+            <Button variant="outline" type="button" disabled={loading}>
               Cancel
             </Button>
           </DialogClose>
