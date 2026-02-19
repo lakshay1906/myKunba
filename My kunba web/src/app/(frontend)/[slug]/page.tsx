@@ -5,11 +5,10 @@ import type { Metadata } from 'next'
 import type { ComponentProps } from 'react'
 import { getPublicUrl } from '@/lib/env'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
-import { fetchBlogPostBySlug, fetchRelatedArticles } from '@/app/actions/blog-actions'
+import { fetchBlogPostBySlug, getCachedRelatedArticles } from '@/app/actions/blog-actions'
 import { notFound } from 'next/navigation'
 
-// Blog posts are served at /[slug] (e.g. /my-post-slug), not /blog/[slug]
-export const dynamic = 'force-dynamic'
+// SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
 type Blog = {
   id: number
@@ -134,7 +133,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),
     getCurrentUserId(),
-    fetchRelatedArticles(blog.id, categoryIds, 4, tagIds),
+    getCachedRelatedArticles(blog.id, categoryIds, 4, tagIds),
   ])
 
   const siteUrl = getPublicUrl()

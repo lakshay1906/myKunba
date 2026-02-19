@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { payload } from '@/payload-client'
 import {
   normalizePostJsonFields,
@@ -12,7 +13,7 @@ import type { Post } from '@/payload-types'
  * Use this in /[slug] (blog post page) so the page works without calling the API (avoids URL/reachability issues).
  * Returns post with externalLinks, internalLinks, and faq as parsed arrays (not JSON strings).
  */
-export async function fetchBlogPostBySlug(
+export async function fetchBlogPostBySlugInternal(
   slug: string,
 ): Promise<(Omit<Post, 'externalLinks' | 'internalLinks' | 'faq'> & {
   externalLinks: ExternalLinkItem[]
@@ -67,6 +68,15 @@ export async function fetchBlogPostBySlug(
     console.error('Error fetching blog post by slug:', error)
     return null
   }
+}
+
+/** Cached for SSG; invalidated by revalidateTag('posts'). Use in [slug] page. */
+export async function fetchBlogPostBySlug(slug: string) {
+  return unstable_cache(
+    () => fetchBlogPostBySlugInternal(slug),
+    ['post', slug],
+    { tags: ['posts'] },
+  )()
 }
 
 export interface FeaturedBlog {
@@ -138,6 +148,11 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
     console.error('Error fetching featured blogs:', error)
     return []
   }
+}
+
+/** Cached version for SSG; invalidated by revalidateTag('posts'). */
+export function getCachedFeaturedBlogs() {
+  return unstable_cache(fetchFeaturedBlogs, ['featured-blogs'], { tags: ['posts'] })()
 }
 
 const mapDocToRelated = (doc: {
@@ -266,4 +281,18 @@ export async function fetchRelatedArticles(
     console.error('Error fetching related articles:', error)
     return []
   }
+}
+
+/** Cached for SSG; invalidated by revalidateTag('posts'). */
+export function getCachedRelatedArticles(
+  currentPostId: number,
+  categoryIds: number[],
+  limit: number = 4,
+  tagIds: number[] = [],
+) {
+  return unstable_cache(
+    () => fetchRelatedArticles(currentPostId, categoryIds, limit, tagIds),
+    ['related', String(currentPostId), categoryIds.join(','), String(limit), tagIds.join(',')],
+    { tags: ['posts'] },
+  )()
 }

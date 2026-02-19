@@ -1,5 +1,8 @@
 import Profile from '@/components/profile/Profile'
 import { cookies } from 'next/headers'
+
+// Private: always SSR so authors see real-time data
+export const dynamic = 'force-dynamic'
 import { payload } from '@/payload-client'
 import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'

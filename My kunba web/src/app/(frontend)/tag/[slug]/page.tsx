@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
-import { fetchAllCategories } from '@/app/actions/category-actions'
 import { notFound } from 'next/navigation'
 
 export async function generateMetadata({
@@ -93,15 +92,17 @@ export default async function TagPage({
     const limit = 12
     const offset = (page - 1) * limit
 
+    // SSG: cached until revalidateTag('posts')
     const [postsRes, categoriesRes] = await Promise.all([
       fetch(`${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&tag=${slug}`, {
-        cache: 'no-store',
+        next: { tags: ['posts'] },
       }),
-      fetchAllCategories(),
+      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
     ])
 
     const posts = await postsRes.json()
-    const categories = categoriesRes?.docs || []
+    const categoriesData = await categoriesRes.json().catch(() => ({ docs: [] }))
+    const categories = categoriesData?.docs || []
 
     const siteUrl = getPublicUrl()
     const tagUrl = `${siteUrl}/tag/${slug}`

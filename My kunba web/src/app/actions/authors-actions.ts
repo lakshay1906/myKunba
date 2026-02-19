@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { payload } from '@/payload-client'
 
 export interface AuthorOption {
@@ -33,4 +34,9 @@ export async function fetchAuthors(): Promise<AuthorOption[]> {
   } catch {
     return []
   }
+}
+
+/** Cached version for SSG; invalidated by revalidateTag('posts'). */
+export function getCachedAuthors() {
+  return unstable_cache(fetchAuthors, ['authors'], { tags: ['posts'] })()
 }

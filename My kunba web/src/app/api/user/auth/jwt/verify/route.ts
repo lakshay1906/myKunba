@@ -6,7 +6,11 @@ import { payload } from '@/payload-client'
 
 export async function GET(req: NextRequest) {
   try {
-    const accessToken = req.headers.get('Authorization')?.split(' ')[1]
+    // Prefer Authorization header (mobile); fall back to cookie (web, allows static layout)
+    let accessToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
+    if (!accessToken) {
+      accessToken = req.cookies.get('access_token')?.value ?? null
+    }
     const accessSecret = process.env.ACCESS_SECRET
 
     if (!accessToken) {
@@ -33,7 +37,12 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return NextResponse.json(data.docs, { status: 200 })
+    // When token came from cookie, include it so the client can store in state and send as Authorization
+    const fromCookie = !req.headers.get('Authorization')
+    return NextResponse.json(
+      { docs: data.docs, ...(fromCookie && { token: accessToken }) },
+      { status: 200 },
+    )
   } catch (error) {
     console.error('💥 [JWT VERIFY API] Error occurred:', {
       error: error instanceof Error ? error.message : 'Unknown error',

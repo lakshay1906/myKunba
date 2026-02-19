@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getPublicUrl } from '@/lib/env'
 
+// Static SSG; no frequent revalidation
 export const metadata: Metadata = {
   title: 'About Us',
   description: 'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights on technology, design, and personal development.',

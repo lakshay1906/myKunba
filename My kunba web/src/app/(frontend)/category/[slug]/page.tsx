@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
-import { fetchAllCategories } from '@/app/actions/category-actions'
 import { notFound } from 'next/navigation'
 
 // Generate metadata for category pages (Programmatic SEO)
@@ -105,16 +104,17 @@ export default async function CategoryPage({
     const limit = 12
     const offset = (page - 1) * limit
 
-    // Fetch posts in this category (server-to-self API: use server URL)
+    // SSG: cached until revalidateTag('posts')
     const [postsRes, categoriesRes] = await Promise.all([
       fetch(`${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&category=${slug}`, {
-        cache: 'no-store',
+        next: { tags: ['posts'] },
       }),
-      fetchAllCategories(),
+      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
     ])
 
     const posts = await postsRes.json()
-    const categories = categoriesRes?.docs || []
+    const categoriesData = await categoriesRes.json().catch(() => ({ docs: [] }))
+    const categories = categoriesData?.docs || []
 
     // Generate structured data for category page (public URL for canonical/schema)
     const siteUrl = getPublicUrl()

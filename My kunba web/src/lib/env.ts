@@ -3,9 +3,11 @@
  *
  * - NEXT_PUBLIC_PUBLIC_URL (https://new.mykunba.org): public domain.
  *   Use for canonical URLs, sitemap, robots, Open Graph, meta tags, JSON-LD, any URL shown to users or crawlers.
+ *   Use for client-side fetches (browser).
  *
- * - NEXT_PUBLIC_NEXT_URL (http://123.12.1.123:3000): private/server URL.
- *   Use for server-side fetches from the Next app to its own API (same host, private IP).
+ * - NEXT_PUBLIC_NEXT_URL: private/server URL (e.g. http://internal-ip:3000 or http://localhost:3000).
+ *   Use for server-side fetches from the Next app to its own API (same host). Prefer internal/private IP on
+ *   production so traffic stays inside the network and DB is not exposed to the public.
  */
 
 const PUBLIC_DEFAULT = 'https://new.mykunba.org'

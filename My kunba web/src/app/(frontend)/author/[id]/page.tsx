@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
-import { getPublicUrl } from '@/lib/env'
-import { fetchAllCategories } from '@/app/actions/category-actions'
+import { getPublicUrl, getServerApiUrl } from '@/lib/env'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -173,54 +172,21 @@ export default async function AuthorPage({
     const authorIdForPosts = profile.id as number
 
     const limit = 12
-    const pageNum = page
+    const offset = (page - 1) * limit
+    const authorEmail = (profile as { email?: string }).email ?? ''
 
-    // Fetch posts by this author directly from Payload
-    const [authorPostsResult, categoriesRes] = await Promise.all([
-      payload.find({
-        collection: 'posts',
-        where: {
-          author: {
-            equals: authorIdForPosts,
-          },
-          deleted_at: {
-            equals: null,
-          },
-          status: {
-            equals: 'published',
-          },
-        },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          excerpt: true,
-          media: true,
-          author: true,
-          categories: true,
-          publishDate: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        depth: 2,
-        pagination: true,
-        limit: limit,
-        page: pageNum,
-        sort: '-publishDate',
-      }),
-      fetchAllCategories(),
+    // SSG: cached until revalidateTag('posts')
+    const [postsRes, categoriesRes] = await Promise.all([
+      fetch(
+        `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&author=${encodeURIComponent(authorEmail)}`,
+        { next: { tags: ['posts'] } },
+      ),
+      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
     ])
 
-    const authorPosts = {
-      docs: authorPostsResult.docs,
-      totalDocs: authorPostsResult.totalDocs,
-      totalPages: authorPostsResult.totalPages,
-      page: authorPostsResult.page,
-      hasNextPage: authorPostsResult.hasNextPage,
-      hasPrevPage: authorPostsResult.hasPrevPage,
-    }
-
-    const categories = categoriesRes?.docs || []
+    const authorPosts = await postsRes.json()
+    const categoriesData = await categoriesRes.json().catch(() => ({ docs: [] }))
+    const categories = categoriesData?.docs || []
 
     // Generate structured data for author page (E-E-A-T)
     const siteUrl = getPublicUrl()

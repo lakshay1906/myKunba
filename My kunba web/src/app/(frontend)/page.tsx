@@ -1,13 +1,12 @@
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
 import { fetchAllCategories } from '@/app/actions/category-actions'
-import { fetchFeaturedBlogs } from '@/app/actions/blog-actions'
-import { fetchAuthors } from '@/app/actions/authors-actions'
+import { getCachedFeaturedBlogs } from '@/app/actions/blog-actions'
+import { getCachedAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import type { Metadata } from 'next'
 
-// ISR: revalidate every hour so new posts show without full rebuild
-export const revalidate = 3600
+// SSG: static until on-demand revalidation via revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -44,14 +43,15 @@ export default async function Home({
   const blogUrl = `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}`
 
   const [postsRes, categoriesRes, featuredBlogs, initialAuthors] = await Promise.all([
-    fetch(blogUrl, { next: { revalidate: 3600 } }),
-    fetchAllCategories(),
-    fetchFeaturedBlogs(),
-    fetchAuthors(),
+    fetch(blogUrl, { next: { tags: ['posts'] } }),
+    fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
+    getCachedFeaturedBlogs(),
+    getCachedAuthors(),
   ])
 
   const posts = await postsRes.json()
-  const categories = categoriesRes?.docs || []
+  const categoriesData = await categoriesRes.json().catch(() => ({ docs: [] }))
+  const categories = categoriesData?.docs || []
 
   // Generate structured data for homepage (public URL for canonical/schema)
   const publicUrl = getPublicUrl()

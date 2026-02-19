@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag as nextRevalidateTag } from 'next/cache'
 
 /**
  * Revalidate public website cache after content changes (post, category, profile).
@@ -7,6 +7,11 @@ import { revalidatePath } from 'next/cache'
  * When you add a profile update API (e.g. PUT that updates displayName, bio, profileImage),
  * call revalidateAuthor(userId) after a successful update so /author/[id] reflects changes.
  */
+
+/** On-demand invalidation for all SSG pages that use fetch(..., { next: { tags: ['posts'] } }). Call after create/update/delete of any post. */
+export function revalidatePostsTag() {
+  nextRevalidateTag('posts')
+}
 
 export function revalidateBlogPost(slug: string) {
   if (slug) {

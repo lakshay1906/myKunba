@@ -100,23 +100,21 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
 
   useEffect(() => {
     ;(async () => {
-      if (!token) {
-        setLoading(false)
-        return
-      }
       setLoading(true)
       try {
         const rawRes = await fetch(`/api/user/auth/jwt/verify`, {
           method: 'GET',
-          headers: {
-            Authorization: `bearer ${token}`,
-          },
+          credentials: 'include',
+          headers: token ? { Authorization: `bearer ${token}` } : undefined,
         })
         if (rawRes.ok) {
-          const [data] = await rawRes.json()
-          if (data)
+          const json = await rawRes.json()
+          const docs = json.docs ?? (Array.isArray(json) ? json : [])
+          const data = docs[0]
+          const resolvedToken = json.token ?? token ?? null
+          if (data && resolvedToken)
             setLoginDetail({
-              token: token,
+              token: resolvedToken,
               email: data.email,
               name: data.displayName,
               role: data.role,
