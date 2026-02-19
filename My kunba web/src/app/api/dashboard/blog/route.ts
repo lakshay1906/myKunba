@@ -374,8 +374,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
     }
 
+    // Resolve author ID (Payload may return relation as id or as { id } object)
+    const postAuthorId =
+      typeof blogPost.author === 'object' && blogPost.author !== null && 'id' in blogPost.author
+        ? (blogPost.author as { id: number }).id
+        : Number(blogPost.author)
+
     // Authorization check: Admin can edit any, author can only edit their own
-    if (!isAdmin && blogPost.author !== currentUser.id) {
+    if (!isAdmin && postAuthorId !== Number(currentUser.id)) {
       return NextResponse.json(
         { message: 'You are not authorized to edit this blog post' },
         { status: 403 },
@@ -557,8 +563,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
     }
 
+    // Resolve author ID (Payload may return relation as id or as { id } object)
+    const postAuthorId =
+      typeof blogPost.author === 'object' && blogPost.author !== null && 'id' in blogPost.author
+        ? (blogPost.author as { id: number }).id
+        : Number(blogPost.author)
+
     // Authorization check: Admin can delete any, author can only delete their own
-    if (!isAdmin && blogPost.author !== currentUser.id) {
+    if (!isAdmin && postAuthorId !== Number(currentUser.id)) {
       return NextResponse.json(
         { message: 'You are not authorized to delete this blog post' },
         { status: 403 },

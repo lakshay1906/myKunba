@@ -7,9 +7,12 @@ import { payload } from '@/payload-client'
 export async function GET(req: NextRequest) {
   try {
     // Prefer Authorization header (mobile); fall back to cookie (web, allows static layout)
-    let accessToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
+    let accessToken = req.headers
+      .get('Authorization')
+      ?.replace(/^Bearer\s+/i, '')
+      .trim()
     if (!accessToken) {
-      accessToken = req.cookies.get('access_token')?.value ?? null
+      accessToken = req.cookies.get('access_token')?.value ?? undefined
     }
     const accessSecret = process.env.ACCESS_SECRET
 

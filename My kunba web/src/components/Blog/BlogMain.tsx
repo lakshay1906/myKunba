@@ -77,10 +77,14 @@ export default function BlogMain({
     }
   }, [isAdmin, currentUserId, selectedAuthorId])
 
-  async function deleteBlog(id: string, silent = false) {
+  async function deleteBlog(
+    id: string,
+    silent = false,
+  ): Promise<{ success: true } | { success: false; message: string }> {
     if (!loginDetail || !loginDetail.token) {
-      if (!silent) toast.error('Unauthorized', { description: 'You must be logged in to delete a blog' })
-      return
+      const msg = 'You must be logged in to delete a blog'
+      if (!silent) toast.error('Unauthorized', { description: msg })
+      return { success: false, message: msg }
     }
 
     try {
@@ -93,7 +97,8 @@ export default function BlogMain({
 
       if (!rawRes.ok) {
         const error = await rawRes.json()
-        throw new Error(error.message || 'Failed to delete blog')
+        const message = error.message || 'Failed to delete blog'
+        throw new Error(message)
       }
 
       // Remove from state instead of refetching
@@ -114,9 +119,13 @@ export default function BlogMain({
         const offset = (newPage - 1) * limit
         fetchBlogs(limit, offset, false, newPage)
       }
+
+      return { success: true }
     } catch (error: any) {
       console.error('Error deleting blog:', error)
-      if (!silent) toast.error('Error', { description: error.message || 'Failed to delete blog' })
+      const message = error.message || 'Failed to delete blog'
+      if (!silent) toast.error('Error', { description: message })
+      return { success: false, message }
     }
   }
 
@@ -181,12 +190,24 @@ export default function BlogMain({
   async function handleBulkDelete() {
     if (!loginDetail?.token || selectedBlogs.length === 0) return
     const count = selectedBlogs.length
-    for (const blog of selectedBlogs) {
-      await deleteBlog(String(blog.id), true)
-    }
+    const results = await Promise.all(
+      selectedBlogs.map((blog) => deleteBlog(String(blog.id), true)),
+    )
+    const succeeded = results.filter((r): r is { success: true } => r.success).length
+    const firstFailure = results.find((r): r is { success: false; message: string } => !r.success)
     setSelectedBlogs([])
     fetchBlogs(limit, 0, false, currentPage)
-    toast.success('Success', { description: `${count} blog(s) deleted and moved to recycle bin` })
+    if (succeeded === 0) {
+      toast.error('Error', {
+        description: firstFailure?.message ?? 'You are not authorized to delete this blog post',
+      })
+    } else if (succeeded === count) {
+      toast.success('Success', { description: `${succeeded} blog(s) deleted and moved to recycle bin` })
+    } else {
+      toast.warning('Partial', {
+        description: `${succeeded} of ${count} blog(s) deleted. ${firstFailure?.message ?? 'Some could not be deleted.'}`,
+      })
+    }
   }
 
   return (
