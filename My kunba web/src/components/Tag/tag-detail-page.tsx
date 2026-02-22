@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useAppStore } from '@/lib/context/store'
 import type { TagResponse } from '@/lib/types'
 import { EditTagSheet, type TagRow } from './tagEdit'
+import Loading from '@/components/Loading'
 
 export default function TagDetailPage({
   id,
@@ -158,6 +159,6 @@ export default function TagDetailPage({
       />
     </div>
   ) : (
-    <p>Loading</p>
+    <Loading />
   )
 }

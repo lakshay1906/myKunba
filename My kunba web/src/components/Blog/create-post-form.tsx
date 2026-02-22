@@ -43,6 +43,7 @@ import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
 import Toast from '../Toast'
+import { Spinner } from '@/components/ui/spinner'
 import {
   saveDraftToCookie,
   loadDraftFromCookie,
@@ -1238,21 +1239,20 @@ export function CreatePostForm() {
           className="space-y-8"
         >
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <div className="flex items-center justify-between">
-
-              <TabsList className="mb-4">
-                <TabsTrigger value="content">Content</TabsTrigger>
-                <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
+            <div className="flex sm:flex-row flex-col sm:items-center justify-between">
+              <TabsList className="mb-4 flex">
+                <TabsTrigger value="content" className="flex-1">Content</TabsTrigger>
+                <TabsTrigger value="seo" className="flex-1">SEO & Meta</TabsTrigger>
+                <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
               </TabsList>
               <button
                 type="button"
                 onClick={() => setRightSidebarOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-                aria-label={rightSidebarOpen ? 'Close Rank Math' : 'Open Rank Math'}
+                className="w-fit flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+                aria-label={rightSidebarOpen ? 'Close SEO Sidebar' : 'Open SEO Sidebar'}
               >
                 <BarChart3 className="h-4 w-4" />
-                <span>Rank Math</span>
+                <span>SEO Score</span>
                 {seoScoreResult != null && (
                   <span
                     className={cn(
@@ -1869,7 +1869,7 @@ export function CreatePostForm() {
                         setCurrentTab(tab)
                         try {
                           form.setFocus(firstErrorKey as Parameters<typeof form.setFocus>[0], { shouldSelect: true })
-                        } catch (_) {}
+                        } catch (_) { }
                         // Get first error message (support nested e.g. externalLinks.0.url)
                         const getMessage = (obj: any): string | undefined => {
                           if (!obj || typeof obj !== 'object') return undefined
@@ -1893,7 +1893,14 @@ export function CreatePostForm() {
                 }}
                 disabled={isLoading || isSubmittingRef.current}
               >
-                {isLoading ? 'Submitting...' : 'Submit'}
+                {isLoading ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit'
+                )}
               </Button>
             ) : (
               <Button

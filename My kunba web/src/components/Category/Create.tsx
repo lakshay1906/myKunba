@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { SetStateAction, useEffect, useState } from 'react'
 import Toast from '../Toast'
+import { Spinner } from '@/components/ui/spinner'
 import { Category } from '@/lib/types'
 import { createCategory } from '@/app/actions/category-actions'
 import { useAppStore } from '@/lib/context/store'
@@ -151,7 +152,14 @@ export default function Create({
             </Button>
           </DialogClose>
           <Button type="submit" disabled={loading} onClick={handleSubmit}>
-            {loading ? 'Creating...' : 'Create Category'}
+            {loading ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Creating...
+              </>
+            ) : (
+              'Create Category'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { SEOScoreResult, SEOCheckItem } from '@/lib/utils/seo-validation'
 
-// Keep docked sidebar behavior, but don't crush content on smaller screens
-const SIDEBAR_WIDTH = 'clamp(260px, 28vw, 320px)'
+// Responsive width via CSS (SSR-safe); lg = 1024px
+const SIDEBAR_WIDTH_STYLE = { minWidth: '260px' }
 
 interface SEOSidebarProps {
   result: SEOScoreResult | null
@@ -103,13 +103,13 @@ export function SEOSidebar({ result, onClose, className }: SEOSidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-l bg-background text-foreground shadow-lg',
+        'flex h-full w-full flex-col border-l bg-background text-foreground shadow-lg lg:w-[clamp(260px,28vw,320px)]',
         className,
       )}
-      style={{ width: SIDEBAR_WIDTH, minWidth: '260px' }}
+      style={SIDEBAR_WIDTH_STYLE}
     >
       <div className="flex shrink-0 items-center justify-between border-b px-3 py-3">
-        <h2 className="text-sm font-semibold">Rank Math</h2>
+        <h2 className="text-sm font-semibold">SEO Score</h2>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Pin">
             <span className="text-muted-foreground">☆</span>

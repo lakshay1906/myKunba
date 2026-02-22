@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, CheckCircle, AlertCircle, Loader2, FileImage, Link } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle, FileImage, Link } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { getImageDimensions, getImageDimensionsFromUrl } from '@/utils/image-utils'
 import AspectRatioWarning from './aspect-ratio-warning'
 import ImagePreview from './image-preview'
@@ -375,7 +376,7 @@ export default function UnifiedImageUpload({
         {/* Loading Dimensions */}
         {imageUploadData.loadingDimensions && (
           <Alert className="border-blue-200 bg-blue-50">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <Spinner className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
               Analyzing image dimensions...
             </AlertDescription>
@@ -419,7 +420,7 @@ export default function UnifiedImageUpload({
         >
           {imageUploadData.uploading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Spinner className="w-4 h-4 mr-2" />
               Uploading...
             </>
           ) : (

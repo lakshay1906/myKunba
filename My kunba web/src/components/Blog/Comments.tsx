@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore } from '@/lib/context/store'
 import Toast from '@/components/Toast'
+import { Spinner } from '@/components/ui/spinner'
 import { MoreVertical, Trash2, Edit2, ThumbsUp, ThumbsDown } from 'lucide-react'
 import {
   DropdownMenu,
@@ -1023,7 +1024,14 @@ export default function Comments({
             disabled={loadingMore}
             className="min-w-[120px]"
           >
-            {loadingMore ? 'Loading...' : 'Load More Comments'}
+            {loadingMore ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Loading...
+              </>
+            ) : (
+              'Load More Comments'
+            )}
           </Button>
         </div>
       )}

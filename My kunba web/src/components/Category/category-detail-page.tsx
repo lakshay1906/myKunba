@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import type { CategoryResponse } from '@/lib/types'
+import Loading from '@/components/Loading'
 
 export default function CategoryDetailPage({ id, response }: { id: string; response: CategoryResponse | null }) {
   if (!response || !response.id) {
@@ -304,6 +305,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
       />
     </div>
   ) : (
-    <p>Loading</p>
+    <Loading />
   )
 }

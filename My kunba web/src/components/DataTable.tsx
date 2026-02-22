@@ -27,6 +27,7 @@ import React from 'react'
 import Link from 'next/link'
 import StatusTag from './StatusTag'
 import { motion } from 'framer-motion'
+import Loading from '@/components/Loading'
 
 export default function DataTable({
   tableTitle,
@@ -104,16 +105,19 @@ export default function DataTable({
           {!loading && AddProductButton !== undefined && AddProductButton}
         </div>
       )}
-      {!loading ? (
-        data.length <= 0 ? (
-          <div className="w-full h-96 flex flex-col items-center justify-center gap-2 text-sm">
-            <Info size={'1rem'} />
-            <div className="text-center">
-              <p>No records</p>
-              <p className="text-muted-foreground">There are no records to show</p>
-            </div>
+      {loading ? (
+        <div className="w-full h-96 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : data.length <= 0 ? (
+        <div className="w-full h-96 flex flex-col items-center justify-center gap-2 text-sm">
+          <Info size={'1rem'} />
+          <div className="text-center">
+            <p>No records</p>
+            <p className="text-muted-foreground">There are no records to show</p>
           </div>
-        ) : (
+        </div>
+      ) : (
           <>
             <div className="p-3 sm:p-4 flex items-center justify-between">
               <Select>
@@ -300,10 +304,7 @@ export default function DataTable({
               </TableBody>
             </Table>
           </>
-        )
-      ) : (
-        <p className="p-2">Loading</p>
-      )}
+        )}
     </Card>
   )
 }

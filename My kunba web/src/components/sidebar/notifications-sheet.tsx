@@ -18,6 +18,7 @@ import { useAppStore } from '@/lib/context/store'
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import Loading from '@/components/Loading'
 
 type Notification = {
   id: number
@@ -215,7 +216,7 @@ export function NotificationsSheet() {
         <ScrollArea className="h-[calc(100vh-200px)]">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-muted-foreground">Loading notifications...</div>
+              <Loading />
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">

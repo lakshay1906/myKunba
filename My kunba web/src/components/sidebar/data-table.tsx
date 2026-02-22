@@ -45,7 +45,6 @@ import {
   ChevronsRightIcon,
   ColumnsIcon,
   GripVerticalIcon,
-  LoaderIcon,
   MoreVerticalIcon,
   PlusIcon,
   TrendingUpIcon,
@@ -54,6 +53,7 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import useMobile from '@/hooks/use-mobile'
+import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -191,7 +191,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         {row.original.status === 'Done' ? (
           <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
         ) : (
-          <LoaderIcon />
+          <Spinner className="size-3" />
         )}
         {row.original.status}
       </Badge>

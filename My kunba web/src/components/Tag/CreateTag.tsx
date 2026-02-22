@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/spinner'
 import { createTag } from '@/app/actions/tag-actions'
 import type { Tag } from '@/lib/types'
 
@@ -75,7 +76,14 @@ export default function CreateTag({
             </Button>
           </DialogClose>
           <Button onClick={handleSubmit} disabled={loading || !name.trim()}>
-            {loading ? 'Creating...' : 'Create Tag'}
+            {loading ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Creating...
+              </>
+            ) : (
+              'Create Tag'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
