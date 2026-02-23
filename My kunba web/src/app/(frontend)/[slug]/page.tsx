@@ -1,6 +1,7 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
 import FAQAccordion from '@/components/Blog/FAQAccordion'
+import FloatingShare from '@/components/FloatingShare'
 import type { Metadata } from 'next'
 import type { ComponentProps } from 'react'
 import { getPublicUrl } from '@/lib/env'
@@ -142,6 +143,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <>
+      <FloatingShare />
       <BlogSchema
         post={{
           title: blog.title ?? '',
