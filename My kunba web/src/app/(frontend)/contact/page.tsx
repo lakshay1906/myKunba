@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, Github, Twitter, Linkedin } from 'lucide-react'
+import { Mail, Phone, Send, Github, Twitter, Linkedin } from 'lucide-react'
 
 export default function Contact() {
+  const contactEmail = 'sanjubhati@mykunba.org'
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -88,7 +89,12 @@ export default function Contact() {
                 <Mail className="w-5 h-5 text-blue-500 mt-1 mr-3" />
                 <div>
                   <h3 className="font-medium">Email</h3>
-                  <p className="text-gray-600 dark:text-gray-400">contact@myblog.com</p>
+                  <a
+                    href={`mailto:${contactEmail}`}
+                    className="text-primary font-medium underline underline-offset-4 hover:no-underline"
+                  >
+                    {contactEmail}
+                  </a>
                 </div>
               </div>
 
@@ -96,7 +102,7 @@ export default function Contact() {
                 <Phone className="w-5 h-5 text-blue-500 mt-1 mr-3" />
                 <div>
                   <h3 className="font-medium">Phone</h3>
-                  <p className="text-gray-600 dark:text-gray-400">+1 (555) 123-4567</p>
+                  <a href="tel:+919013601955" className="text-gray-600 dark:text-gray-400">+91 9013601955</a>
                 </div>
               </div>
 

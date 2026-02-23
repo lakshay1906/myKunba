@@ -3,10 +3,12 @@
 import {
   Book,
   ContactRound,
+  FileWarning,
   Menu,
   MessageCircleQuestion,
   Newspaper,
   Send,
+  Shield,
   UserCircle,
   Zap,
 } from 'lucide-react'
@@ -130,12 +132,18 @@ export default function Navbar({
           icon: <Send className="size-5 shrink-0" />,
           url: '/contact',
         },
-        // {
-        //   title: 'Terms of Service',
-        //   description: 'Our terms and conditions for using our services',
-        //   icon: <Book className="size-5 shrink-0" />,
-        //   url: '#',
-        // },
+        {
+          title: 'Privacy Policy',
+          description: 'How we collect, use, and protect your information',
+          icon: <Shield className="size-5 shrink-0" />,
+          url: '/privacy-policy',
+        },
+        {
+          title: 'Disclaimer',
+          description: 'Important information about the use of our website and content',
+          icon: <FileWarning className="size-5 shrink-0" />,
+          url: '/disclaimer',
+        },
       ],
     },
   ],

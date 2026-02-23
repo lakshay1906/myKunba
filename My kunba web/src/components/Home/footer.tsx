@@ -11,11 +11,12 @@ const sections = [
   {
     title: 'Links',
     links: [
-      { name: 'Home', href: '#' },
-      { name: 'About', href: '#' },
-      { name: 'Contact', href: '#' },
-      { name: 'All Posts / Blog', href: '#' },
-      // { name: 'Privacy Policy', href: '#' },
+      { name: 'Home', href: '/' },
+      { name: 'About', href: '/about' },
+      { name: 'Contact', href: '/contact' },
+      { name: 'All Posts / Blog', href: '/' },
+      { name: 'Privacy Policy', href: '/privacy-policy' },
+      { name: 'Disclaimer', href: '/disclaimer' },
     ],
   },
   {
@@ -127,10 +128,10 @@ export default function Footer() {
         <p>© 2024 Shadcn. All rights reserved.</p>
         <ul className="flex gap-4">
           <li className="underline hover:text-primary">
-            <a href="#"> Terms and Conditions</a>
+            <a href="/disclaimer">Disclaimer</a>
           </li>
           <li className="underline hover:text-primary">
-            <a href="#"> Privacy Policy</a>
+            <a href="/privacy-policy">Privacy Policy</a>
           </li>
         </ul>
       </div>
