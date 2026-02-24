@@ -7,6 +7,9 @@ import {
 } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 
+/** Max size in bytes for WebP output; if larger after conversion, we reduce quality/size until under this. */
+const MAX_WEBP_SIZE_BYTES = 500 * 1024 // 500 KB
+
 // Validate required environment variables
 function validateEnvVars() {
   const required = [
@@ -168,9 +171,30 @@ export async function convertToWebP(
       }
     }
 
-    // Convert to WebP with 100% quality
-    // Using quality: 100 for maximum quality preservation
-    const webpBuffer = await sharp(buffer).webp({ quality: 100, effort: 6 }).toBuffer()
+    // Convert to WebP (start with high quality)
+    let webpBuffer = await sharp(buffer).webp({ quality: 100, effort: 6 }).toBuffer()
+
+    // If result is over 500 KB, reduce quality then dimensions until under limit
+    if (webpBuffer.length > MAX_WEBP_SIZE_BYTES) {
+      const width = metadata.width ?? 1920
+      const height = metadata.height ?? 1080
+      const qualities = [85, 70, 55, 40, 30, 20]
+      for (const q of qualities) {
+        webpBuffer = await sharp(buffer).webp({ quality: q, effort: 6 }).toBuffer()
+        if (webpBuffer.length <= MAX_WEBP_SIZE_BYTES) break
+      }
+      if (webpBuffer.length > MAX_WEBP_SIZE_BYTES) {
+        for (let scale = 0.9; scale >= 0.3; scale -= 0.1) {
+          const w = Math.round(width * scale)
+          const h = Math.round(height * scale)
+          webpBuffer = await sharp(buffer)
+            .resize(w, h, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 30, effort: 6 })
+            .toBuffer()
+          if (webpBuffer.length <= MAX_WEBP_SIZE_BYTES) break
+        }
+      }
+    }
 
     // Update filename to have .webp extension
     const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '')

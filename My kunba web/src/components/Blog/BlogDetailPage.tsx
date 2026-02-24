@@ -317,7 +317,14 @@ export default function EditBlogPage({
         if (!blog.excerpt || typeof blog.excerpt !== 'string' || !blog.excerpt.trim()) {
           missing.push('Excerpt')
         }
-        if (!blog.content || typeof blog.content !== 'string' || !blog.content.trim()) {
+        // Content can be HTML string (after edit) or Lexical object (from server when not edited)
+        const contentAsString =
+          typeof blog.content === 'string'
+            ? blog.content
+            : blog.content && typeof blog.content === 'object' && blog.content?.root
+              ? convertLexicalToHtml(blog.content as Parameters<typeof convertLexicalToHtml>[0])
+              : ''
+        if (!contentAsString || !contentAsString.trim()) {
           missing.push('Content')
         }
         const hasCoverImage =
@@ -473,17 +480,25 @@ export default function EditBlogPage({
         }
       }
 
+      // Normalize content to HTML (editor may have string; initial load from server is Lexical object)
+      const contentHtmlForSave =
+        typeof blog.content === 'string'
+          ? blog.content
+          : blog.content && typeof blog.content === 'object' && blog.content?.root
+            ? convertLexicalToHtml(blog.content as Parameters<typeof convertLexicalToHtml>[0])
+            : ''
+
       // Process content HTML to upload any pending images (data URLs) to Cloudflare R2.
       // Only run when there are actual <img> tags with data: URLs (not just "data:image" in text/JSON).
-      let processedContent = blog.content
+      let processedContent = contentHtmlForSave
       const hasDataUrlImages =
-        blog.content && /<img[^>]+src=["']data:image\b/i.test(blog.content)
+        contentHtmlForSave && /<img[^>]+src=["']data:image\b/i.test(contentHtmlForSave)
       if (hasDataUrlImages) {
         try {
           toast.info('Processing images...', {
             description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
           })
-          const contentProcessingResult = await processContentImages(blog.content)
+          const contentProcessingResult = await processContentImages(contentHtmlForSave)
           processedContent = contentProcessingResult.processedContent
         } catch (error: any) {
           console.error('Error processing content images:', error)
