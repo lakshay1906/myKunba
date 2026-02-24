@@ -187,10 +187,13 @@ export async function POST(req: NextRequest) {
     }
 
     const author = { docs: [authorData] }
-    if (!coverImage)
-      return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
+    const isDraft = status === 'draft'
+    if (!isDraft && !coverImage) {
+      return NextResponse.json({ message: 'Cover image is required for publishing' }, { status: 400 })
+    }
 
-    const lexicalContent = convertHtmlToLexicalWithParser(content)
+    const contentStr = content != null && typeof content === 'string' ? content : ''
+    const lexicalContent = convertHtmlToLexicalWithParser(contentStr)
 
     // OLD: Database storage - COMMENTED OUT
     // await payload.create({
@@ -226,19 +229,26 @@ export async function POST(req: NextRequest) {
         .filter((cat): cat is number => cat !== null)
     }
 
+    // For draft: allow empty title/slug and no cover; use unique placeholders so DB unique constraints hold
+    const uniqueSuffix = Date.now()
+    const finalTitle =
+      title != null && String(title).trim() !== '' ? String(title).trim() : `Draft ${uniqueSuffix}`
+    const finalSlug =
+      slug != null && String(slug).trim() !== '' ? String(slug).trim() : `draft-${uniqueSuffix}`
+
     // Auto-fill metaTitle and metaDescription if not provided
-    const finalMetaTitle = metaTitle || title
-    const finalMetaDescription = metaDescription || excerpt
+    const finalMetaTitle = metaTitle || finalTitle
+    const finalMetaDescription = metaDescription || excerpt || ''
 
     // Build the data object
     const postData: any = {
-      title,
+      title: finalTitle,
       author: author.docs[0].id,
-      slug,
+      slug: finalSlug,
       status,
       content: lexicalContent,
-      media: coverImage, // NEW: URL string from Cloudflare R2
-      excerpt,
+      media: coverImage || null, // Draft may have no cover image
+      excerpt: excerpt || '',
       metaDescription: finalMetaDescription,
       metaTitle: finalMetaTitle,
       publishDate: publishDate ? publishDate : Date.now(),

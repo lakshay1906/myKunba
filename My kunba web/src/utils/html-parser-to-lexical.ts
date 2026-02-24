@@ -44,9 +44,9 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
     const result: (LexicalTextNode | LexicalElementNode)[] = []
 
     if (node.nodeType === 3) {
-      // Text node
-      const text = node.text.trim()
-      if (text) {
+      // Text node - preserve spaces (do not trim); trimming caused "of early" to become "ofearly"
+      const text = node.text ?? ''
+      if (text.length > 0) {
         result.push(createTextNode(text))
       }
     } else if (node.nodeType === 1) {
@@ -282,7 +282,7 @@ function createTextNode(text: string): LexicalTextNode {
   return {
     type: 'text',
     version: 1,
-    text: text.trim(),
+    text, // Do not trim - preserves space between e.g. "of" (normal) and "early" (bold)
     format: 0,
     style: '',
     mode: 'normal',

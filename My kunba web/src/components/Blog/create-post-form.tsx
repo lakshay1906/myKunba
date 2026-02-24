@@ -53,16 +53,24 @@ import {
 } from '@/lib/utils/cookies'
 import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { AlertCircle, BarChart3 } from 'lucide-react'
 import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
 import { processContentImages } from '@/utils/process-content-images'
 
-// Define the form schema with Zod
+// Define the form schema with Zod - all fields optional so draft can submit with minimal/no data
 const formSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  slug: z.string().min(1, 'Slug is required'),
-  excerpt: z.string().min(1, 'Excerpt is required'),
-  content: z.string().min(1, 'Content is required'),
+  title: z.string().optional(),
+  slug: z.string().optional(),
+  excerpt: z.string().optional(),
+  content: z.string().optional(),
   status: z.enum(['draft', 'published']),
   publishDate: z.date().optional(),
   metaTitle: z.string().optional(),
@@ -131,6 +139,8 @@ export function CreatePostForm() {
   const metaDescriptionManuallyEditedRef = useRef(false)
   const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+  const [titleExistsDialogOpen, setTitleExistsDialogOpen] = useState(false)
+  const pendingDraftDataRef = useRef<FormValues | null>(null)
 
   // Sync SEO result to layout context so the right sidebar (rendered in layout) can show it
   useEffect(() => {
@@ -726,77 +736,14 @@ export function CreatePostForm() {
     }
   }
 
-  // Handle form submission - ONLY called from Submit button onClick
-  const onSubmit = async (data: FormValues, event?: React.BaseSyntheticEvent) => {
-    // Additional safeguard: prevent accidental submissions
-    if (event) {
-      event.preventDefault()
-      event.stopPropagation()
-    }
+  // Run create blog (upload images + create post). Used by onSubmit and by "Continue anyway" from title-exists dialog.
+  const runCreateBlog = useCallback(
+    async (data: FormValues) => {
+      const uploadedImages: string[] = []
+      const isDraft = data.status === 'draft'
 
-    // Guard: ensure we're not already submitting
-    if (isSubmittingRef.current || isLoading) {
-      console.warn('Form submission already in progress, ignoring duplicate submit')
-      return
-    }
-
-    setIsLoading(true)
-    isSubmittingRef.current = true
-
-    // Track uploaded images for cleanup in case of failure
-    const uploadedImages: string[] = []
-
-    try {
-      if (!loginDetail) {
-        isSubmittingRef.current = false
-        setIsLoading(false)
-        toast.error('Error', {
-          description: "You're not authorized to perform this action",
-        })
-        return
-      }
-
-      // PHASE 1: Pre-validation - Check unique fields BEFORE uploading images
-      toast.info('Validating...', {
-        description: 'Checking if title and slug are available...',
-      })
-
-      const validationResponse = await fetch(`/api/dashboard/blog/validate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `bearer ${loginDetail.token}`,
-        },
-        body: JSON.stringify({
-          title: data.title,
-          slug: data.slug,
-        }),
-      })
-
-      const validationResult = await validationResponse.json()
-
-      if (!validationResult.valid) {
-        isSubmittingRef.current = false
-        setIsLoading(false)
-
-        // Build error message from validation errors
-        const errorMessages = []
-        if (validationResult.errors?.title) {
-          errorMessages.push(validationResult.errors.title)
-        }
-        if (validationResult.errors?.slug) {
-          errorMessages.push(validationResult.errors.slug)
-        }
-
-        toast.error('Validation Failed', {
-          description:
-            errorMessages.join('. ') ||
-            'Title or slug already exists. Please choose different values.',
-        })
-        return
-      }
-
-      // PHASE 2: Validation passed - Now upload images
+      try {
+        // PHASE 2: Upload images
       toast.info('Uploading images...', {
         description: 'Uploading images to Cloudflare R2...',
       })
@@ -892,8 +839,8 @@ export function CreatePostForm() {
         }
       }
 
-      // Cover image is required
-      if (!coverImageUrl) {
+      // Cover image is required only for publishing, not for draft
+      if (!isDraft && !coverImageUrl) {
         isSubmittingRef.current = false
         setIsLoading(false)
         toast.error('Error', {
@@ -1076,6 +1023,108 @@ export function CreatePostForm() {
     } finally {
       setIsLoading(false)
     }
+    },
+    [
+      handleUpload,
+      loginDetail,
+      imageUploadData,
+      selectedCategories,
+      selectedTags,
+      form,
+      router,
+      handleImageUploadDataChange,
+    ],
+  )
+
+  // Handle form submission - ONLY called from Submit button onClick
+  const onSubmit = async (data: FormValues, event?: React.BaseSyntheticEvent) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    if (isSubmittingRef.current || isLoading) {
+      console.warn('Form submission already in progress, ignoring duplicate submit')
+      return
+    }
+    if (!loginDetail) {
+      toast.error('Error', { description: "You're not authorized to perform this action" })
+      return
+    }
+
+    setIsLoading(true)
+    isSubmittingRef.current = true
+
+    try {
+      // Published: require title, slug, excerpt, content
+      if (data.status === 'published') {
+        const required: { field: keyof FormValues; label: string }[] = []
+        if (!data.title?.trim()) required.push({ field: 'title', label: 'Title' })
+        if (!data.slug?.trim()) required.push({ field: 'slug', label: 'Slug' })
+        if (!data.excerpt?.trim()) required.push({ field: 'excerpt', label: 'Excerpt' })
+        if (!data.content?.trim()) required.push({ field: 'content', label: 'Content' })
+        if (required.length > 0) {
+          required.forEach(({ field, label }) =>
+            form.setError(field, { type: 'manual', message: `${label} is required for publishing` }),
+          )
+          setCurrentTab('content')
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          toast.error('Validation error', {
+            description: `${required.map((r) => r.label).join(', ')} required for publishing.`,
+          })
+          return
+        }
+      }
+
+      // Draft with title entered: check if title already exists; if so, show dialog
+      if (data.status === 'draft' && data.title?.trim()) {
+        const titleCheckRes = await fetch(`/api/dashboard/blog/validate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `bearer ${loginDetail.token}`,
+          },
+          body: JSON.stringify({ title: data.title.trim() }),
+        })
+        const titleCheck = await titleCheckRes.json()
+        if (!titleCheck.valid && titleCheck.errors?.title) {
+          pendingDraftDataRef.current = data
+          setTitleExistsDialogOpen(true)
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // Published: full title + slug uniqueness check before upload
+      if (data.status === 'published') {
+        toast.info('Validating...', { description: 'Checking if title and slug are available...' })
+        const validationResponse = await fetch(`/api/dashboard/blog/validate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `bearer ${loginDetail.token}`,
+          },
+          body: JSON.stringify({ title: data.title, slug: data.slug }),
+        })
+        const validationResult = await validationResponse.json()
+        if (!validationResult.valid) {
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          const msgs = [validationResult.errors?.title, validationResult.errors?.slug].filter(Boolean)
+          toast.error('Validation Failed', {
+            description: msgs.join('. ') || 'Title or slug already exists.',
+          })
+          return
+        }
+      }
+
+      await runCreateBlog(data)
+    } catch (err: any) {
+      isSubmittingRef.current = false
+      setIsLoading(false)
+      toast.error('Error', { description: err?.message || 'Error submitting' })
+    }
   }
 
   // Generate slug from title (trims leading/trailing space so slug has no leading/trailing hyphens)
@@ -1210,6 +1259,58 @@ export function CreatePostForm() {
           </Button>
         </div>
       )}
+
+      {/* Title already exists – confirm before saving draft anyway */}
+      <Dialog open={titleExistsDialogOpen} onOpenChange={setTitleExistsDialogOpen}>
+        <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            setTitleExistsDialogOpen(false)
+            pendingDraftDataRef.current = null
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Title already exists</DialogTitle>
+            <DialogDescription>
+              A blog post with this title already exists. Do you want to save as draft anyway? You
+              can edit the title later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setTitleExistsDialogOpen(false)
+                pendingDraftDataRef.current = null
+              }}
+            >
+              No
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                const data = pendingDraftDataRef.current
+                setTitleExistsDialogOpen(false)
+                pendingDraftDataRef.current = null
+                if (data) {
+                  setIsLoading(true)
+                  isSubmittingRef.current = true
+                  try {
+                    await runCreateBlog(data)
+                  } catch (err: any) {
+                    isSubmittingRef.current = false
+                    setIsLoading(false)
+                    toast.error('Error', { description: err?.message || 'Error saving draft' })
+                  }
+                }
+              }}
+            >
+              Continue anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Form {...form}>
         <form

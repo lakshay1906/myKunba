@@ -88,6 +88,27 @@ export default function EditBlogPage({
   })
   const isUploadingRef = useRef(false)
   const originalContentImagesRef = useRef<string[]>([]) // Track original Cloudflare R2 images in content
+  /** Snapshot of loaded data for change detection; skip API call if nothing changed */
+  const initialSnapshotRef = useRef<{
+    title: string
+    slug: string
+    excerpt: string
+    content: string
+    status: string
+    metaTitle: string
+    metaDescription: string
+    commentsEnabled: boolean
+    isFeatured: boolean
+    focusKeyword: string
+    imageAltText: string
+    externalLinks: string
+    internalLinks: string
+    faq: string
+    categories: string
+    tags: string
+    publishDate: string | null
+    coverImage: string | null
+  } | null>(null)
   const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
 
@@ -149,14 +170,14 @@ export default function EditBlogPage({
       const originalImages = extractImageUrlsFromHtml(htmlContent)
       originalContentImagesRef.current = originalImages
 
-      // Set categories
-      if (blogData.categories && Array.isArray(blogData.categories)) {
-        setSelectedCategories(blogData.categories.map((cat: any) => cat.id || cat))
-      }
-      // Set tags
-      if (blogData.tags && Array.isArray(blogData.tags)) {
-        setSelectedTags(blogData.tags.map((t: any) => t.id || t))
-      }
+      const catIds = blogData.categories && Array.isArray(blogData.categories)
+        ? blogData.categories.map((cat: any) => cat.id ?? cat)
+        : []
+      const tagIds = blogData.tags && Array.isArray(blogData.tags)
+        ? blogData.tags.map((t: any) => t.id ?? t)
+        : []
+      if (catIds.length) setSelectedCategories(catIds)
+      if (tagIds.length) setSelectedTags(tagIds)
 
       // Set publish date
       if (blogData.publishDate) {
@@ -183,6 +204,31 @@ export default function EditBlogPage({
           ...prev,
           alt: (blogData.imageAltText ?? blogData.title ?? '').toString(),
         }))
+      }
+
+      // Snapshot for change detection (compare with current state before calling API)
+      const publishDate = blogData.publishDate
+        ? new Date(blogData.publishDate).toISOString()
+        : null
+      initialSnapshotRef.current = {
+        title: (blogData.title ?? '').toString(),
+        slug: (blogData.slug ?? '').toString(),
+        excerpt: (blogData.excerpt ?? '').toString(),
+        content: htmlContent,
+        status: (blogData.status ?? 'draft').toString(),
+        metaTitle: (blogData.metaTitle ?? '').toString(),
+        metaDescription: (blogData.metaDescription ?? '').toString(),
+        commentsEnabled: blogData.commentsEnabled !== false,
+        isFeatured: blogData.isFeatured === true,
+        focusKeyword: (blogData.focusKeyword ?? '').toString(),
+        imageAltText: (blogData.imageAltText ?? blogData.title ?? '').toString(),
+        externalLinks: JSON.stringify(blogData.externalLinks ?? []),
+        internalLinks: JSON.stringify(blogData.internalLinks ?? []),
+        faq: JSON.stringify(blogData.faq ?? []),
+        categories: JSON.stringify([...catIds].sort((a, b) => a - b)),
+        tags: JSON.stringify([...tagIds].sort((a, b) => a - b)),
+        publishDate,
+        coverImage: blogData.media && typeof blogData.media === 'string' ? blogData.media : null,
       }
 
       // Fetch all categories and tags for selectors
@@ -257,6 +303,121 @@ export default function EditBlogPage({
         })
         router.push('/unauthorised')
         return
+      }
+
+      // When saving as published, validate all required fields before saving
+      if (blog.status === 'published') {
+        const missing: string[] = []
+        if (!blog.title || typeof blog.title !== 'string' || !blog.title.trim()) {
+          missing.push('Title')
+        }
+        if (!blog.slug || typeof blog.slug !== 'string' || !blog.slug.trim()) {
+          missing.push('Slug')
+        }
+        if (!blog.excerpt || typeof blog.excerpt !== 'string' || !blog.excerpt.trim()) {
+          missing.push('Excerpt')
+        }
+        if (!blog.content || typeof blog.content !== 'string' || !blog.content.trim()) {
+          missing.push('Content')
+        }
+        const hasCoverImage =
+          (imageUploadData.coverImage && imageUploadData.coverImage.trim() !== '') ||
+          (blog.media && typeof blog.media === 'string' && blog.media.trim() !== '')
+        if (!hasCoverImage) {
+          missing.push('Cover image')
+        }
+        if (missing.length > 0) {
+          toast.error('Validation failed', {
+            description: `Required for publishing: ${missing.join(', ')}. Please fill these in or save as Draft.`,
+            duration: 6000,
+          })
+          setSaving(false)
+          return
+        }
+        // Optionally validate title/slug uniqueness (excluding current post) via API
+        const validationResponse = await fetch('/api/dashboard/blog/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${loginDetail.token}`,
+          },
+          body: JSON.stringify({
+            title: blog.title.trim(),
+            slug: blog.slug.trim(),
+            id: blog.id,
+          }),
+        })
+        const validationResult = await validationResponse.json()
+        if (!validationResult.valid) {
+          const msgs: string[] = []
+          if (validationResult.errors?.title) msgs.push(validationResult.errors.title)
+          if (validationResult.errors?.slug) msgs.push(validationResult.errors.slug)
+          toast.error('Validation failed', {
+            description: msgs.join('. ') || 'Title or slug already in use by another post.',
+            duration: 6000,
+          })
+          setSaving(false)
+          return
+        }
+      }
+
+      // Change detection: skip API call if nothing changed (still navigate and show feedback)
+      const initial = initialSnapshotRef.current
+      if (initial) {
+        const currentCover =
+          (imageUploadData.coverImage && imageUploadData.coverImage.trim() !== '')
+            ? imageUploadData.coverImage
+            : (blog.media && typeof blog.media === 'string' ? blog.media : null)
+        const currentPublishDate = date ? date.toISOString() : null
+        const currentCategories = JSON.stringify([...selectedCategories].sort((a, b) => a - b))
+        const currentTags = JSON.stringify([...selectedTags].sort((a, b) => a - b))
+        const current: typeof initial = {
+          title: (blog.title ?? '').toString(),
+          slug: (blog.slug ?? '').toString(),
+          excerpt: (blog.excerpt ?? '').toString(),
+          content: contentHtml,
+          status: (blog.status ?? 'draft').toString(),
+          metaTitle: (blog.metaTitle ?? '').toString(),
+          metaDescription: (blog.metaDescription ?? '').toString(),
+          commentsEnabled: blog.commentsEnabled !== false,
+          isFeatured: blog.isFeatured === true,
+          focusKeyword: (blog.focusKeyword ?? '').toString(),
+          imageAltText: (imageUploadData.alt ?? '').toString(),
+          externalLinks: JSON.stringify(blog.externalLinks ?? []),
+          internalLinks: JSON.stringify(blog.internalLinks ?? []),
+          faq: JSON.stringify(blog.faq ?? []),
+          categories: currentCategories,
+          tags: currentTags,
+          publishDate: currentPublishDate,
+          coverImage: currentCover,
+        }
+        const same =
+          initial.title === current.title &&
+          initial.slug === current.slug &&
+          initial.excerpt === current.excerpt &&
+          initial.content === current.content &&
+          initial.status === current.status &&
+          initial.metaTitle === current.metaTitle &&
+          initial.metaDescription === current.metaDescription &&
+          initial.commentsEnabled === current.commentsEnabled &&
+          initial.isFeatured === current.isFeatured &&
+          initial.focusKeyword === current.focusKeyword &&
+          initial.imageAltText === current.imageAltText &&
+          initial.externalLinks === current.externalLinks &&
+          initial.internalLinks === current.internalLinks &&
+          initial.faq === current.faq &&
+          initial.categories === current.categories &&
+          initial.tags === current.tags &&
+          initial.publishDate === current.publishDate &&
+          initial.coverImage === current.coverImage
+        if (same) {
+          toast.success('No changes to save', {
+            description: 'Your blog is already up to date.',
+          })
+          router.push('/dashboard/blog')
+          setSaving(false)
+          return
+        }
       }
 
       // Upload image if a new one was selected (file upload or URL)

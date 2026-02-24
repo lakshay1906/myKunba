@@ -11,10 +11,17 @@ export async function POST(req: NextRequest) {
   try {
     const { title, slug, id } = await req.json()
 
-    // Validate required fields
-    if (!title || !slug) {
+    // For draft: title-only check is allowed (slug optional). For publish: both required.
+    const titleOnlyCheck = slug === undefined || slug === null || String(slug).trim() === ''
+    if (title === undefined || title === null || typeof title !== 'string' || title.trim() === '') {
       return NextResponse.json(
-        { valid: false, errors: { message: 'Title and slug are required' } },
+        { valid: false, errors: { message: 'Title is required for validation' } },
+        { status: 400 },
+      )
+    }
+    if (!titleOnlyCheck && (!slug || String(slug).trim() === '')) {
+      return NextResponse.json(
+        { valid: false, errors: { message: 'Slug is required when not doing title-only check' } },
         { status: 400 },
       )
     }
@@ -57,20 +64,22 @@ export async function POST(req: NextRequest) {
       limit: 1,
     })
 
-    // Check for duplicate slug
-    const slugQuery: any = {
-      slug: { equals: slug },
-      deleted_at: { equals: null },
+    // Check for duplicate slug (only when slug was provided, i.e. not title-only draft check)
+    let existingSlug = { docs: [] as { id: number }[] }
+    if (!titleOnlyCheck && slug) {
+      const slugQuery: any = {
+        slug: { equals: slug },
+        deleted_at: { equals: null },
+      }
+      if (id) {
+        slugQuery.id = { not_equals: Number(id) }
+      }
+      existingSlug = await payload.find({
+        collection: 'posts',
+        where: slugQuery,
+        limit: 1,
+      })
     }
-    if (id) {
-      slugQuery.id = { not_equals: Number(id) } // Exclude current post for updates
-    }
-
-    const existingSlug = await payload.find({
-      collection: 'posts',
-      where: slugQuery,
-      limit: 1,
-    })
 
     // Build validation result
     const errors: { title?: string; slug?: string } = {}
@@ -81,7 +90,7 @@ export async function POST(req: NextRequest) {
       isValid = false
     }
 
-    if (existingSlug.docs.length > 0) {
+    if (!titleOnlyCheck && existingSlug.docs.length > 0) {
       errors.slug = 'A blog post with this slug already exists'
       isValid = false
     }

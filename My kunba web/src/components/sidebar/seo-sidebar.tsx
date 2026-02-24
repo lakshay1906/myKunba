@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { X, ChevronUp, Check, HelpCircle } from 'lucide-react'
+import { X, ChevronUp, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -38,9 +38,9 @@ function CheckRow({ item }: { item: SEOCheckItem }) {
   return (
     <div className="flex items-start gap-2 py-1.5 text-sm">
       {item.passed ? (
-        <Check className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
+        <Check className="size-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
       ) : (
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
+        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
           ✕
         </span>
       )}
@@ -52,7 +52,6 @@ function CheckRow({ item }: { item: SEOCheckItem }) {
       >
         {item.message}
       </span>
-      <HelpCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70 mt-0.5" />
     </div>
   )
 }
@@ -84,7 +83,7 @@ function Section({
             </span>
           )}
           <ChevronUp
-            className={cn('h-4 w-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
+            className={cn('size-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
           />
         </span>
       </button>
@@ -110,21 +109,15 @@ export function SEOSidebar({ result, onClose, className }: SEOSidebarProps) {
     >
       <div className="flex shrink-0 items-center justify-between border-b px-3 py-3">
         <h2 className="text-sm font-semibold">SEO Score</h2>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Pin">
-            <span className="text-muted-foreground">☆</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={onClose}
-            aria-label="Close SEO sidebar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onClose}
+          aria-label="Close SEO sidebar"
+        >
+          <X className="size-4" />
+        </Button>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
