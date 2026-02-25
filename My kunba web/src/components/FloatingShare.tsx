@@ -114,7 +114,7 @@ export default function FloatingShare() {
   )
 
   const buttonBaseClass =
-    'flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-lg transition-colors'
+    'cursor-pointer flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-lg transition-colors'
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center" aria-label="Share">
@@ -195,7 +195,7 @@ export default function FloatingShare() {
       <motion.button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        className="cursor-pointer flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         title={isOpen ? 'Close share menu' : 'Share'}
         aria-label={isOpen ? 'Close share menu' : 'Share'}
         aria-expanded={isOpen}

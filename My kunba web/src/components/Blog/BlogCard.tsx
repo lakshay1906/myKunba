@@ -92,7 +92,7 @@ export default function BlogCard({ post }: BlogCardProps) {
               onClick={(e) => e.stopPropagation()}
               className="inline-flex"
             >
-              <Badge variant="outline" className="font-medium hover:bg-muted">
+              <Badge variant="outline" className="cursor-pointer font-medium hover:bg-muted">
                 #{tag.name}
               </Badge>
             </Link>

@@ -29,9 +29,6 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { JSX } from 'react'
 import { useAppStore } from '@/lib/context/store'
-import { motion } from 'framer-motion'
-import { RotateCcw } from 'lucide-react'
-import { usePathname } from 'next/navigation'
 import ThemeToggle from './ThemeToggle'
 import { Badge } from '../ui/badge'
 import { SignInButton } from './Authentication/sign-in-button'
@@ -70,7 +67,7 @@ interface NavbarProps {
 
 export default function Navbar({
   logo = {
-    url: 'https://www.mykunba.org',
+    url: 'https://new.mykunba.org',
     src: '/logo.svg',
     alt: 'mykunba.org',
     title: 'myKunba',
@@ -149,11 +146,10 @@ export default function Navbar({
   ],
 }: NavbarProps) {
   const { loginDetail, logout } = useAppStore()
-  const pathname = usePathname()
 
   return (
-    <div className='w-full border-b fixed top-0 z-50'>
-      <section className="p-4 bg-background container mx-auto! px-3!">
+    <div className='w-full border-b fixed top-0 z-50 bg-background'>
+      <section className="p-4 container mx-auto! px-3!">
         <nav className="hidden justify-between lg:flex w-full container mx-auto">
           <div className="flex items-center gap-6">
             <Link href={logo.url} className="flex items-center gap-2 bg-none">
@@ -226,13 +222,15 @@ export default function Navbar({
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-between flex-1 min-w-0">
               <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
-                <Image
-                  src={logo.src}
-                  width={32}
-                  height={32}
-                  className="w-8 shrink-0"
-                  alt={logo.alt}
-                />
+                <span className="inline-block shrink-0 dark:invert">
+                  <Image
+                    src={logo.src}
+                    width={32}
+                    height={32}
+                    className="w-8 shrink-0"
+                    alt={logo.alt}
+                  />
+                </span>
                 <span className="text-lg font-semibold truncate">{logo.title}</span>
               </a>
               <div className="flex gap-5 justify-center items-center shrink-0">
@@ -247,13 +245,15 @@ export default function Navbar({
                     <SheetHeader>
                       <SheetTitle>
                         <a href={logo.url} className="flex items-center gap-2">
-                          <Image
-                            src={logo.src}
-                            width={32}
-                            height={32}
-                            className="w-8"
-                            alt={logo.alt}
-                          />
+                          <span className="inline-block dark:invert">
+                            <Image
+                              src={logo.src}
+                              width={32}
+                              height={32}
+                              className="w-8"
+                              alt={logo.alt}
+                            />
+                          </span>
                           <span className="text-lg font-semibold">{logo.title}</span>
                         </a>
                       </SheetTitle>

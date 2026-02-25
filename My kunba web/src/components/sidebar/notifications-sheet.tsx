@@ -235,9 +235,9 @@ export function NotificationsSheet() {
                 return (
                   <div
                     key={notification.id}
-                    className={`p-4 rounded-lg border transition-colors ${
+                    className={`cursor-pointer p-4 rounded-lg border transition-colors ${
                       notification.read ? 'bg-background' : 'bg-muted/50 border-primary/20'
-                    } ${postLink ? 'cursor-pointer hover:bg-muted' : ''}`}
+                    } ${postLink ? 'hover:bg-muted' : ''}`}
                     onClick={() => {
                       if (!notification.read) {
                         markAsRead(notification.id)
@@ -271,7 +271,7 @@ export function NotificationsSheet() {
                         {postLink && (
                           <Link
                             href={postLink}
-                            className="text-xs text-primary hover:underline mt-2 inline-block"
+                            className="cursor-pointer text-xs text-primary hover:underline mt-2 inline-block"
                             onClick={(e) => {
                               e.stopPropagation()
                               setOpen(false)

@@ -226,7 +226,7 @@ export default function DataTable({
                               {detailHref && isFirstContentColumn ? (
                                 <Link
                                   href={detailHref}
-                                  className="block hover:underline focus:underline outline-none"
+                                  className="cursor-pointer block hover:underline focus:underline outline-none"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {cellContent}
@@ -267,7 +267,7 @@ export default function DataTable({
                       })}
                       {isEllipsisRequired && (
                         <TableCell
-                          className="text-right flex justify-end pr-5 h-full"
+                          className="cursor-pointer text-right flex justify-end pr-5 h-full"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <EllipsisComponent value={col} />

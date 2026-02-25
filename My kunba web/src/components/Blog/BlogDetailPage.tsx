@@ -758,7 +758,7 @@ export default function EditBlogPage({
           <button
             type="button"
             onClick={() => setRightSidebarOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+            className="cursor-pointer flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
             aria-label={rightSidebarOpen ? 'Close SEO Sidebar' : 'Open SEO Sidebar'}
           >
             <BarChart3 className="size-4" />

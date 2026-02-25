@@ -899,7 +899,7 @@ export default function Comments({
                 <button
                   onClick={() => handlePostLikeDislike('like')}
                   disabled={updatingReaction}
-                  className={`flex items-center gap-1 text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`cursor-pointer flex items-center gap-1 text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     userReaction === 'like' ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
@@ -909,7 +909,7 @@ export default function Comments({
                 <button
                   onClick={() => handlePostLikeDislike('dislike')}
                   disabled={updatingReaction}
-                  className={`flex items-center gap-1 text-sm hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`cursor-pointer flex items-center gap-1 text-sm hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     userReaction === 'dislike' ? 'text-destructive' : 'text-muted-foreground'
                   }`}
                 >

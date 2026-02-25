@@ -126,6 +126,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
             <CarouselItem key={blog.id} className="pl-0">
               <Link
                 href={`/${blog.slug}`}
+                className="cursor-pointer"
                 onClick={async () => {
                   // Track impression on click
                   try {

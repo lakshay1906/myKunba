@@ -336,7 +336,7 @@ function MediaCard({
       <button
         type="button"
         onClick={onDetail}
-        className="aspect-video w-full bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="cursor-pointer aspect-video w-full bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={item.url}
@@ -394,7 +394,7 @@ function MediaRow({
       <button
         type="button"
         onClick={onDetail}
-        className="h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="cursor-pointer h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={item.url}

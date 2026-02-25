@@ -129,7 +129,7 @@ export default function App() {
           </div>
         </div>
         {uploadState === 'uploaded' && image && (
-          <div onClick={handleResetClick}>
+          <div className="cursor-pointer" onClick={handleResetClick}>
             <Image
               // className={classes.logo}
               src={image}

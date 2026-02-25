@@ -73,7 +73,7 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between py-3 px-2 text-left text-sm font-medium hover:bg-muted/50 rounded-md transition-colors"
+        className="cursor-pointer flex w-full items-center justify-between py-3 px-2 text-left text-sm font-medium hover:bg-muted/50 rounded-md transition-colors"
       >
         <span>{title}</span>
         <span className="flex items-center gap-1.5">
