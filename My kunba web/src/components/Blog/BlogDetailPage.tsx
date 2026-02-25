@@ -427,11 +427,19 @@ export default function EditBlogPage({
         }
       }
 
-      // Upload image if a new one was selected (file upload or URL)
-      let finalImageUrl = blog.media && typeof blog.media === 'string' ? blog.media : null
+      // Upload image if a new one was selected (file upload or URL).
+      // Use existing cover from blog.media or imageUploadData.coverImage (when it's already a URL) so content-only saves don't clear the image.
+      const existingMediaUrl =
+        blog.media && typeof blog.media === 'string' ? blog.media : null
+      const existingCoverUrl =
+        imageUploadData.coverImage &&
+        !imageUploadData.coverImage.startsWith('data:')
+          ? imageUploadData.coverImage
+          : null
+      let finalImageUrl = existingMediaUrl || existingCoverUrl || null
 
       // Check if user selected a new image
-      if (imageUploadData.coverImage && imageUploadData.coverImage !== blog.media) {
+      if (imageUploadData.coverImage && imageUploadData.coverImage !== existingMediaUrl) {
         // If it's a data URL, it means a file was selected and needs to be uploaded
         if (
           imageUploadData.coverImage.startsWith('data:') &&

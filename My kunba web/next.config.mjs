@@ -136,6 +136,13 @@ const nextConfig = {
   // If SCSS issues persist, use: pnpm run dev:webpack (runs without Turbopack)
   // Turbopack resolveAlias doesn't work well with Windows paths for SCSS
   turbopack: {},
+  // Allow image uploads up to 15 MB (avoids HTML error page when large files are rejected)
+  experimental: {
+    proxyClientMaxBodySize: '15mb',
+    serverActions: {
+      bodySizeLimit: '15mb',
+    },
+  },
 }
 
 // Wrap the config to ensure experimental.turbo is removed if it exists

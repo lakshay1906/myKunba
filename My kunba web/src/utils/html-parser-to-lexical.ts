@@ -165,11 +165,11 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
 
         case 'strong':
         case 'b':
-          // Handle bold text
+          // Handle bold text - do not trim so space between "Work Culture" (bold) and "plays" (normal) is preserved
           result.push({
             type: 'text',
             version: 1,
-            text: element.text.trim(),
+            text: element.text ?? '',
             format: 1, // Bold format
             style: '',
             mode: 'normal',
@@ -179,11 +179,11 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
 
         case 'em':
         case 'i':
-          // Handle italic text
+          // Handle italic text - do not trim to preserve boundary spaces
           result.push({
             type: 'text',
             version: 1,
-            text: element.text.trim(),
+            text: element.text ?? '',
             format: 2, // Italic format
             style: '',
             mode: 'normal',
