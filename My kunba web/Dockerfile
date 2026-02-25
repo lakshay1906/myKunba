@@ -47,9 +47,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
-# Build Next.js (standalone output)
+# Build Next.js with standalone output (required for this Dockerfile)
+ENV DOCKER_BUILD=1
 # Use --webpack so standalone file tracing generates middleware.js.nft.json (Turbopack can omit it)
-# npx uses node_modules from deps (no pnpm/yarn needed in builder)
 RUN npx next build --webpack
 
 # =========================

@@ -62,6 +62,36 @@ Alternatively, you can use [Docker](https://www.docker.com) to spin up this temp
 
 That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
 
+### Production container (build & run)
+
+To build and run the app as a single container (e.g. on EC2 or any host):
+
+1. **Build the image** (from the project root):
+   ```bash
+   docker build -t mykunba-web .
+   ```
+
+2. **Run the container** with env vars. The image does **not** include `.env`; pass config at runtime:
+   ```bash
+   docker run -d --name mykunba -p 3000:3000 \
+     --env-file .env \
+     mykunba-web
+   ```
+   Or pass variables explicitly:
+   ```bash
+   docker run -d --name mykunba -p 3000:3000 \
+     -e DATABASE_URI="..." \
+     -e GA_PROPERTY_ID="..." \
+     -e GA_CLIENT_EMAIL="..." \
+     -e GA_PRIVATE_KEY_BASE64="..." \
+     mykunba-web
+   ```
+
+3. **Google Analytics in Docker:** Use **`GA_PRIVATE_KEY_BASE64`** (base64-encoded PEM key) instead of `GA_PRIVATE_KEY` so newlines are not lost in the container environment. Generate it with:
+   ```bash
+   cat service-account-key.json | jq -r .private_key | base64 -w0
+   ```
+
 ## Questions
 
 If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).

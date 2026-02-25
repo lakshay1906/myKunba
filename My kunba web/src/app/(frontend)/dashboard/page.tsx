@@ -26,8 +26,9 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Check that GA_PROPERTY_ID, GA_CLIENT_EMAIL, and GA_PRIVATE_KEY are set in .env and that
-              the service account has access to the GA4 property.
+              Check that GA_PROPERTY_ID, GA_CLIENT_EMAIL, and GA_PRIVATE_KEY (or GA_PRIVATE_KEY_BASE64) are set in .env
+              and that the service account has access to the GA4 property. On EC2, prefer GA_PRIVATE_KEY_BASE64 to avoid
+              newline/escaping issues.
             </p>
           </CardContent>
         </Card>

@@ -24,19 +24,44 @@ function getDateRangeLast30Days(): { startDate: string; endDate: string } {
   }
 }
 
+/**
+ * Normalize GA private key from env. Supports:
+ * - Escaped newlines in .env: "-----BEGIN ... KEY-----\nMIIE...\n-----END ... KEY-----"
+ * - Literal newlines (e.g. from a file or multiline env)
+ * - Base64-encoded key (GA_PRIVATE_KEY_BASE64) to avoid newline/escaping issues on Linux/EC2
+ */
+function getPrivateKey(): string | null {
+  const base64 = process.env.GA_PRIVATE_KEY_BASE64
+  if (base64?.trim()) {
+    try {
+      return Buffer.from(base64.trim(), 'base64').toString('utf8')
+    } catch {
+      return null
+    }
+  }
+  const raw = process.env.GA_PRIVATE_KEY
+  if (!raw?.trim()) return null
+  // Restore newlines: escaped \n (from .env) and fix Windows-style line endings
+  const key = raw
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+  return key.includes('BEGIN') && key.includes('END') ? key : null
+}
+
 function createClient(): BetaAnalyticsDataClient | null {
   const propertyId = process.env.GA_PROPERTY_ID
   const clientEmail = process.env.GA_CLIENT_EMAIL
-  const privateKey = process.env.GA_PRIVATE_KEY
+  const key = getPrivateKey()
 
-  if (!propertyId || !clientEmail || !privateKey) {
+  if (!propertyId || !clientEmail || !key) {
     return null
   }
 
-  const key = privateKey.replace(/\\n/g, '\n')
   return new BetaAnalyticsDataClient({
     credentials: {
-      client_email: clientEmail,
+      client_email: clientEmail.trim(),
       private_key: key,
     },
   })

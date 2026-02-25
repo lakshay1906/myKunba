@@ -47,7 +47,8 @@ const nextConfig = {
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
-  output: 'standalone', // Disabled for Windows compatibility
+  // Standalone output for Docker; leave unset for local dev (e.g. Windows)
+  ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
   compiler: {
     removeConsole: true,
   },
