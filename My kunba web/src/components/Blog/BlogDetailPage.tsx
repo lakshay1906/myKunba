@@ -88,6 +88,8 @@ export default function EditBlogPage({
   })
   const isUploadingRef = useRef(false)
   const originalContentImagesRef = useRef<string[]>([]) // Track original Cloudflare R2 images in content
+  /** Current cover image URL - kept in sync on load and when user picks new image; used on save so content-only edits don't lose the cover */
+  const currentCoverUrlRef = useRef<string | null>(null)
   /** Snapshot of loaded data for change detection; skip API call if nothing changed */
   const initialSnapshotRef = useRef<{
     title: string
@@ -189,13 +191,17 @@ export default function EditBlogPage({
         setShowDatePicker(true)
       }
 
-      // Set cover image if exists
-      if (blogData.media && typeof blogData.media === 'string') {
+      // Set cover image if exists and keep ref so save always has current cover (survives content-only edits)
+      const mediaUrl = blogData.media && typeof blogData.media === 'string' ? blogData.media : null
+      if (mediaUrl) {
+        currentCoverUrlRef.current = mediaUrl
         setImageUploadData((prev) => ({
           ...prev,
-          coverImage: blogData.media,
+          coverImage: mediaUrl,
           alt: (blogData.imageAltText ?? blogData.title ?? '').toString(),
         }))
+      } else {
+        currentCoverUrlRef.current = null
       }
 
       // Ensure alt text is available in the image dialog even if no media is set
@@ -243,8 +249,8 @@ export default function EditBlogPage({
 
   function handleContentChange(newContent: string) {
     setContentHtml(newContent)
-    // Store HTML content, will be converted to lexical on save
-    setBlog({ ...blog, content: newContent })
+    // Use functional update so we never overwrite other fields (e.g. media) with stale state
+    setBlog((prev) => ({ ...prev, content: newContent }))
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -428,7 +434,7 @@ export default function EditBlogPage({
       }
 
       // Upload image if a new one was selected (file upload or URL).
-      // Use existing cover from blog.media or imageUploadData.coverImage (when it's already a URL) so content-only saves don't clear the image.
+      // Prefer ref (set on load and when user picks new image) so content-only saves never lose the cover.
       const existingMediaUrl =
         blog.media && typeof blog.media === 'string' ? blog.media : null
       const existingCoverUrl =
@@ -436,10 +442,11 @@ export default function EditBlogPage({
         !imageUploadData.coverImage.startsWith('data:')
           ? imageUploadData.coverImage
           : null
-      let finalImageUrl = existingMediaUrl || existingCoverUrl || null
+      let finalImageUrl =
+        currentCoverUrlRef.current || existingMediaUrl || existingCoverUrl || null
 
       // Check if user selected a new image
-      if (imageUploadData.coverImage && imageUploadData.coverImage !== existingMediaUrl) {
+      if (imageUploadData.coverImage && imageUploadData.coverImage !== (currentCoverUrlRef.current || existingMediaUrl)) {
         // If it's a data URL, it means a file was selected and needs to be uploaded
         if (
           imageUploadData.coverImage.startsWith('data:') &&
@@ -485,8 +492,10 @@ export default function EditBlogPage({
         // If coverImage is already a URL (not data URL and not the current blog.media), use it directly
         else if (!imageUploadData.coverImage.startsWith('data:')) {
           finalImageUrl = imageUploadData.coverImage
+          currentCoverUrlRef.current = imageUploadData.coverImage
         }
       }
+      if (finalImageUrl) currentCoverUrlRef.current = finalImageUrl
 
       // Normalize content to HTML (editor may have string; initial load from server is Lexical object)
       const contentHtmlForSave =
@@ -615,13 +624,14 @@ export default function EditBlogPage({
   }
 
   function handleImageUploaded(imageData: any) {
-    // Update the blog state with the new image URL
     const imageUrl = imageData.url || imageData.filename || imageData.src
-    setBlog({ ...blog, media: imageUrl })
+    currentCoverUrlRef.current = imageUrl
+    setBlog((prev) => ({ ...prev, media: imageUrl }))
     setImageUploadData((prev) => ({ ...prev, coverImage: imageUrl, isOpen: false }))
   }
 
   function clearImageUpload() {
+    currentCoverUrlRef.current = null
     setImageUploadData({
       file: null,
       imageUrl: '',

@@ -430,41 +430,43 @@ export async function PUT(req: NextRequest) {
         blogPost.media && typeof blogPost.media === 'string' ? blogPost.media : null
       const cloudflarePublicUrl = process.env.CLOUDFLARE_PUBLIC_URL
 
-      // Check if current image is stored in Cloudflare
-      const currentImageIsInCloudflare =
-        currentMediaUrl && cloudflarePublicUrl && currentMediaUrl.startsWith(cloudflarePublicUrl)
-
-      // Check if new image is a Cloudflare URL (file upload) or external URL
-      const newImageIsInCloudflare =
-        cloudflarePublicUrl && coverImage.startsWith(cloudflarePublicUrl)
-
-      try {
-        // Case 1: Current image is in Cloudflare
-        if (currentImageIsInCloudflare) {
-          if (newImageIsInCloudflare) {
-            // User uploaded a new file → delete old image, update with new Cloudflare URL
-            await deleteFromCloudflareR2(currentMediaUrl!)
-            updateData.media = coverImage
-          } else {
-            // User provided a new URL → delete old image from Cloudflare, update with new URL
-            await deleteFromCloudflareR2(currentMediaUrl!)
-            updateData.media = coverImage
-          }
-        } else {
-          // Case 2: Current image is NOT in Cloudflare (external URL)
-          if (newImageIsInCloudflare) {
-            // User uploaded a file → update with Cloudflare URL (no deletion needed)
-            updateData.media = coverImage
-          } else {
-            // User provided a new URL → simply update the URL
-            updateData.media = coverImage
-          }
-        }
-      } catch (error) {
-        // Log error but don't fail the update if deletion fails
-        console.error('Error handling image update:', error)
-        // Still update with new image URL
+      // Same URL = no change (e.g. content-only save). Never delete from R2 in that case.
+      const isSameImage = currentMediaUrl && coverImage === currentMediaUrl
+      if (isSameImage) {
         updateData.media = coverImage
+      } else {
+        // Check if current image is stored in Cloudflare
+        const currentImageIsInCloudflare =
+          currentMediaUrl && cloudflarePublicUrl && currentMediaUrl.startsWith(cloudflarePublicUrl)
+
+        // Check if new image is a Cloudflare URL (file upload) or external URL
+        const newImageIsInCloudflare =
+          cloudflarePublicUrl && coverImage.startsWith(cloudflarePublicUrl)
+
+        try {
+          // Case 1: Current image is in Cloudflare — only delete if we're actually replacing it
+          if (currentImageIsInCloudflare) {
+            if (newImageIsInCloudflare) {
+              // User uploaded a new file → delete old image, update with new Cloudflare URL
+              await deleteFromCloudflareR2(currentMediaUrl!)
+              updateData.media = coverImage
+            } else {
+              // User provided a new external URL → delete old image from Cloudflare, update with new URL
+              await deleteFromCloudflareR2(currentMediaUrl!)
+              updateData.media = coverImage
+            }
+          } else {
+            // Case 2: Current image is NOT in Cloudflare (external URL)
+            if (newImageIsInCloudflare) {
+              updateData.media = coverImage
+            } else {
+              updateData.media = coverImage
+            }
+          }
+        } catch (error) {
+          console.error('Error handling image update:', error)
+          updateData.media = coverImage
+        }
       }
     }
 
