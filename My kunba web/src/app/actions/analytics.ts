@@ -3,10 +3,15 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 
 export type AnalyticsDashboardData = {
-  totalViews: number
+  dateRange: { startDate: string; endDate: string }
   activeUsers: number
-  topBlogs: { pageTitle: string; views: number }[]
-  trafficSources: { name: string; views: number }[]
+  sessions: number
+  screenPageViews: number
+  engagementRate: number // 0–1
+  averageSessionDuration: number // seconds
+  dailyTrend: { date: string; views: number }[]
+  topPages: { pageTitle: string; views: number }[]
+  trafficChannels: { name: string; sessions: number }[]
   countries: { name: string; views: number }[]
 }
 
@@ -86,14 +91,24 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
   const { startDate, endDate } = getDateRangeLast30Days()
 
   try {
-    const [totalsRes, topPagesRes, sourcesRes, countriesRes] = await Promise.all([
+    const [totalsRes, dailyRes, topPagesRes, channelsRes, countriesRes] = await Promise.all([
       client.runReport({
         property,
         dateRanges: [{ startDate, endDate }],
         metrics: [
           { name: 'activeUsers' },
+          { name: 'sessions' },
           { name: 'screenPageViews' },
+          { name: 'engagementRate' },
+          { name: 'averageSessionDuration' },
         ],
+      }),
+      client.runReport({
+        property,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'date' }],
+        metrics: [{ name: 'screenPageViews' }],
+        orderBys: [{ dimension: { dimensionName: 'date' } }],
       }),
       client.runReport({
         property,
@@ -106,9 +121,9 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
       client.runReport({
         property,
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'sessionSource' }],
-        metrics: [{ name: 'screenPageViews' }],
-        orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        metrics: [{ name: 'sessions' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 15,
       }),
       client.runReport({
@@ -121,18 +136,31 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
       }),
     ])
 
-    const totalsRow = totalsRes.totals?.[0] ?? totalsRes.rows?.[0]
-    const totalViews = Number(totalsRow?.metricValues?.[1]?.value ?? 0)
-    const activeUsers = Number(totalsRow?.metricValues?.[0]?.value ?? 0)
+    const metricIndex = (res: typeof totalsRes, name: string) =>
+      res.metricHeaders?.findIndex((h) => h.name === name) ?? -1
+    const getMetric = (row: { metricValues?: { value?: string }[] } | null, res: typeof totalsRes, name: string) =>
+      Number(row?.metricValues?.[metricIndex(res, name)]?.value ?? 0)
 
-    const topBlogs = (topPagesRes.rows ?? []).map((row) => ({
+    const totalsRow = totalsRes.totals?.[0] ?? totalsRes.rows?.[0]
+    const activeUsers = getMetric(totalsRow, totalsRes, 'activeUsers')
+    const sessions = getMetric(totalsRow, totalsRes, 'sessions')
+    const screenPageViews = getMetric(totalsRow, totalsRes, 'screenPageViews')
+    const engagementRate = getMetric(totalsRow, totalsRes, 'engagementRate')
+    const averageSessionDuration = getMetric(totalsRow, totalsRes, 'averageSessionDuration')
+
+    const dailyTrend = (dailyRes.rows ?? []).map((row) => ({
+      date: row.dimensionValues?.[0]?.value ?? '',
+      views: Number(row.metricValues?.[0]?.value ?? 0),
+    }))
+
+    const topPages = (topPagesRes.rows ?? []).map((row) => ({
       pageTitle: row.dimensionValues?.[0]?.value ?? '(not set)',
       views: Number(row.metricValues?.[0]?.value ?? 0),
     }))
 
-    const trafficSources = (sourcesRes.rows ?? []).map((row) => ({
+    const trafficChannels = (channelsRes.rows ?? []).map((row) => ({
       name: row.dimensionValues?.[0]?.value ?? '(direct)',
-      views: Number(row.metricValues?.[0]?.value ?? 0),
+      sessions: Number(row.metricValues?.[0]?.value ?? 0),
     }))
 
     const countries = (countriesRes.rows ?? []).map((row) => ({
@@ -143,10 +171,15 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
     return {
       ok: true,
       data: {
-        totalViews: Number(totalViews),
-        activeUsers: Number(activeUsers),
-        topBlogs,
-        trafficSources,
+        dateRange: { startDate, endDate },
+        activeUsers,
+        sessions,
+        screenPageViews,
+        engagementRate,
+        averageSessionDuration,
+        dailyTrend,
+        topPages,
+        trafficChannels,
         countries,
       },
     }
