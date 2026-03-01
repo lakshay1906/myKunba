@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
         collection: 'posts',
         where: { author: { equals: user.id }, deleted_at: { equals: null } },
         limit: 10000,
-        select: { title: true },
+        select: { id: true },
+        depth: 0,
       })
       const ids = myPosts.docs.map((p) => (p as { id: number }).id)
       if (ids.length === 0) {
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
     const result = await payload.find({
       collection: 'post-translation-entries' as never,
       where: where as never,
-      depth: 1,
+      depth: 0,
       page,
       limit,
       sort: '-updatedAt',

@@ -17,9 +17,9 @@ This doc describes **idempotent** i18n migrations and how they run in Docker and
 - Backfills from `categories` and `tags` with `locale = 'en'`.
 - **comments**: adds `language` column (VARCHAR(10), default `'en'`) to store the comment’s language; content stays in original.
 
-### 003_posts_post_translation_entries_column.sql
+### 003_posts_post_translation_entries_column.sql **(required for blog edit)**
 
-- Adds `post_translation_entries_id` (nullable INTEGER) to `posts` if missing. Workaround for Payload queries that expect this column (e.g. reverse relation). Existing rows are unchanged; safe for production.
+- Adds `post_translation_entries_id` (nullable INTEGER) to `posts` if missing. Workaround for Payload queries that expect this column (e.g. when loading a single post with relationships for the dashboard edit form). **If you see "column ... post_translation_entries_id does not exist" when editing a blog, run this migration.** Existing rows are unchanged; safe for production.
 
 - **Runner**: `scripts/run-migration.js` (Node + `pg`)
   - Reads `DATABASE_URI` from env and runs all `NNN_*.sql` files in order, or a single file if path is passed.

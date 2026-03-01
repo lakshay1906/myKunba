@@ -238,21 +238,27 @@ export async function fetchDashboardTags(page: number = 1, limit: number = 10) {
 /**
  * Fetch post translations for dashboard (author sees own posts’ translations, admin sees all)
  */
+export const AUTH_ERROR_MESSAGE = 'DASHBOARD_AUTH_REQUIRED'
+
 export async function fetchDashboardPostTranslations(page: number = 1, limit: number = 20, postId?: number) {
   try {
     const token = (await cookies()).get('access_token')?.value
-    if (!token) throw new Error('No authentication token found')
+    if (!token) throw new Error(AUTH_ERROR_MESSAGE)
     const url = new URL(`${getServerApiUrl()}/api/dashboard/post-translations`)
     url.searchParams.set('page', String(page))
     url.searchParams.set('limit', String(limit))
     if (postId != null) url.searchParams.set('postId', String(postId))
     const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(AUTH_ERROR_MESSAGE)
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.message || 'Failed to fetch translations')
     }
     return res.json()
   } catch (error: any) {
+    if (error?.message === AUTH_ERROR_MESSAGE) throw error
     throw new Error(error.message || 'Failed to fetch translations')
   }
 }
@@ -270,9 +276,10 @@ export async function fetchDashboardPostsForTranslations() {
         deleted_at: { equals: null },
         ...(isAdmin ? {} : { author: { equals: user.id } }),
       },
-      select: { title: true, slug: true },
+      select: { id: true, title: true, slug: true },
       limit: 5000,
       sort: '-updatedAt',
+      depth: 0,
     })
     return {
       docs: blog.docs.map((d) => ({
@@ -282,6 +289,11 @@ export async function fetchDashboardPostsForTranslations() {
       })),
     }
   } catch (error: any) {
+    if (error?.message?.includes('token') || error?.message?.includes('User not found') || error?.message === 'No authentication token found') {
+      const authError = new Error(AUTH_ERROR_MESSAGE)
+      ;(authError as any).cause = error
+      throw authError
+    }
     throw new Error(error.message || 'Failed to fetch posts')
   }
 }

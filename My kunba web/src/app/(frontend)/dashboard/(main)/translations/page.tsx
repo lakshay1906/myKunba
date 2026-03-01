@@ -1,7 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import TranslationsMain from '@/components/Translations/TranslationsMain'
-import { fetchDashboardPostTranslations, fetchDashboardPostsForTranslations } from '@/app/actions/dashboard-actions'
+import {
+  fetchDashboardPostTranslations,
+  fetchDashboardPostsForTranslations,
+  AUTH_ERROR_MESSAGE,
+} from '@/app/actions/dashboard-actions'
 import { redirect } from 'next/navigation'
 
 export default async function TranslationsPage({
@@ -31,6 +35,11 @@ export default async function TranslationsPage({
       />
     )
   } catch (e) {
-    redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/translations'))
+    const isAuthError =
+      e instanceof Error && (e.message === AUTH_ERROR_MESSAGE || e.message.includes('DASHBOARD_AUTH_REQUIRED'))
+    if (isAuthError) {
+      redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/translations'))
+    }
+    throw e
   }
 }

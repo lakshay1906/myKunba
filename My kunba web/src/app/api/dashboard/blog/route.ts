@@ -115,6 +115,7 @@ export async function GET(req: NextRequest) {
           page: pageNum,
           pagination: true,
           sort: '-createdAt',
+          depth: 0,
         })
         return NextResponse.json(
           {
