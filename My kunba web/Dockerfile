@@ -80,7 +80,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/scripts ./scripts
 
 # Install pg for migration runner (scripts/run-migration.js)
-RUN npm init -y && npm install pg@8
+# Use --legacy-peer-deps so npm does not fail on next/@payloadcms/next peer conflict from standalone package.json
+RUN npm init -y && npm install pg@8 --legacy-peer-deps
 
 # Ensure permissions (nextjs user runs entrypoint and needs scripts + node_modules)
 RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts node_modules package.json package-lock.json 2>/dev/null || true
