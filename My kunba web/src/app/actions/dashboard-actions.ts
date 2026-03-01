@@ -238,7 +238,7 @@ export async function fetchDashboardTags(page: number = 1, limit: number = 10) {
 /**
  * Fetch post translations for dashboard (author sees own posts’ translations, admin sees all)
  */
-export const AUTH_ERROR_MESSAGE = 'DASHBOARD_AUTH_REQUIRED'
+const AUTH_ERROR_MESSAGE = 'DASHBOARD_AUTH_REQUIRED'
 
 export async function fetchDashboardPostTranslations(page: number = 1, limit: number = 20, postId?: number) {
   try {
