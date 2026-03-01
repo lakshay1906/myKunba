@@ -81,8 +81,8 @@ COPY --from=builder /app/scripts ./scripts
 
 # Install pg for migration runner (scripts/run-migration.js) in an isolated dir to avoid
 # npm resolver bug (isDescendantOf) and peer conflicts when merging into standalone node_modules
-RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8
-RUN cp -r /tmp/pg-install/node_modules/pg /app/node_modules/ && rm -rf /tmp/pg-install
+RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8 && \
+    mkdir -p /app/node_modules && cp -r /tmp/pg-install/node_modules/pg /app/node_modules/ && rm -rf /tmp/pg-install
 
 # Ensure permissions (nextjs user runs entrypoint and needs scripts + node_modules)
 RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts node_modules package.json package-lock.json 2>/dev/null || true
