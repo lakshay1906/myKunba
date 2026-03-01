@@ -75,6 +75,7 @@ export interface Config {
     likes: Like;
     'post-logs': PostLog;
     posts: Post;
+    'post-translation-entries': PostTranslationEntry;
     tags: Tag;
     notifications: Notification;
     subscriptions: Subscription;
@@ -92,6 +93,7 @@ export interface Config {
     likes: LikesSelect<false> | LikesSelect<true>;
     'post-logs': PostLogsSelect<false> | PostLogsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    'post-translation-entries': PostTranslationEntriesSelect<false> | PostTranslationEntriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
@@ -352,6 +354,71 @@ export interface PostLog {
   createdAt: string;
 }
 /**
+ * Translated content and SEO fields per post and locale. Use Dashboard → Translations to add or edit; only the post author or an admin can create or edit translations for a post.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "post-translation-entries".
+ */
+export interface PostTranslationEntry {
+  id: number;
+  /**
+   * The blog post this translation belongs to.
+   */
+  post: number | Post;
+  /**
+   * Language of this translation. Use "English" only if you need to override the main post; usually add zh, hi, es, fr, ar.
+   */
+  locale: 'en' | 'zh' | 'hi' | 'es' | 'fr' | 'ar';
+  /**
+   * Translated post title.
+   */
+  title?: string | null;
+  /**
+   * Optional translated URL slug. If empty, the main post slug is used.
+   */
+  slug?: string | null;
+  /**
+   * Short summary for cards and meta.
+   */
+  excerpt?: string | null;
+  /**
+   * Full translated body (same editor as the main post).
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * SEO: title for search results and social (e.g. <title>). Important for SEO.
+   */
+  metaTitle?: string | null;
+  /**
+   * SEO: meta description for search results. Keep under ~160 characters.
+   */
+  metaDescription?: string | null;
+  /**
+   * SEO: primary keyword for this translation.
+   */
+  focusKeyword?: string | null;
+  /**
+   * Alt text for the cover image in this language (accessibility and SEO).
+   */
+  imageAltText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "notifications".
  */
@@ -451,6 +518,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'post-translation-entries';
+        value: number | PostTranslationEntry;
       } | null)
     | ({
         relationTo: 'tags';
@@ -640,6 +711,24 @@ export interface PostsSelect<T extends boolean = true> {
   tags?: T;
   deleted_at?: T;
   impressions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "post-translation-entries_select".
+ */
+export interface PostTranslationEntriesSelect<T extends boolean = true> {
+  post?: T;
+  locale?: T;
+  title?: T;
+  slug?: T;
+  excerpt?: T;
+  content?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  focusKeyword?: T;
+  imageAltText?: T;
   updatedAt?: T;
   createdAt?: T;
 }

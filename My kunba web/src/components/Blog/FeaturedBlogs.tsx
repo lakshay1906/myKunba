@@ -97,8 +97,8 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
       if (carouselElement) {
         carouselElement.removeEventListener('pointerdown', handlePointerDown)
         carouselElement.removeEventListener('pointerup', handlePointerUp)
-        carouselElement.removeEventListener('mouseenter', () => {})
-        carouselElement.removeEventListener('mouseleave', () => {})
+        carouselElement.removeEventListener('mouseenter', () => { })
+        carouselElement.removeEventListener('mouseleave', () => { })
       }
     }
   }, [api, isPlaying, blogs.length])
@@ -119,7 +119,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
   }
 
   return (
-    <div className="w-full relative bg-background">
+    <div className="container mx-auto px-4 relative bg-background">
       <Carousel className="w-full" setApi={setApi}>
         <CarouselContent className="ml-0">
           {blogs.map((blog, index) => (
