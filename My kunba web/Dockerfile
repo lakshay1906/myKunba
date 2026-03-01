@@ -79,9 +79,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy migration scripts (for docker-entrypoint: wait-for-db + migrate)
 COPY --from=builder /app/scripts ./scripts
 
-# Install pg for migration runner (scripts/run-migration.js)
-# Use --legacy-peer-deps so npm does not fail on next/@payloadcms/next peer conflict from standalone package.json
-RUN npm init -y && npm install pg@8 --legacy-peer-deps
+# Install pg for migration runner (scripts/run-migration.js) in an isolated dir to avoid
+# npm resolver bug (isDescendantOf) and peer conflicts when merging into standalone node_modules
+RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8
+RUN cp -r /tmp/pg-install/node_modules/pg /app/node_modules/ && rm -rf /tmp/pg-install
 
 # Ensure permissions (nextjs user runs entrypoint and needs scripts + node_modules)
 RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts node_modules package.json package-lock.json 2>/dev/null || true
