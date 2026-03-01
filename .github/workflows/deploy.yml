@@ -59,6 +59,12 @@ jobs:
               -p 3000:3000 \
               mykunba:latest
 
+            echo "Waiting for app to be ready..."
+            sleep 15
+
+            echo "Running i18n migrations (idempotent)..."
+            docker exec mykunba node scripts/run-migration.js || true
+
             echo "Cleaning up tar file..."
             rm -f /home/ec2-user/mykunba.tar
 
