@@ -6,31 +6,34 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
 import { toast } from 'sonner'
+import { useLocale } from '@/lib/i18n/locale-context'
+import LanguageSelect from './LanguageSelect'
 
-const sections = [
+const sectionKeys = [
   {
-    title: 'Links',
+    titleKey: 'footer_links',
     links: [
-      { name: 'Home', href: '/' },
-      { name: 'About', href: '/about' },
-      { name: 'Contact', href: '/contact' },
-      { name: 'All Posts / Blog', href: '/' },
-      { name: 'Privacy Policy', href: '/privacy-policy' },
-      { name: 'Disclaimer', href: '/disclaimer' },
+      { nameKey: 'nav_home', href: '/' },
+      { nameKey: 'nav_about', href: '/about' },
+      { nameKey: 'nav_contact', href: '/contact' },
+      { nameKey: 'footer_all_posts', href: '/' },
+      { nameKey: 'nav_privacy_policy', href: '/privacy-policy' },
+      { nameKey: 'nav_disclaimer', href: '/disclaimer' },
     ],
   },
   {
-    title: 'Social Media',
+    titleKey: 'footer_social',
     links: [
-      { name: 'Twitter / X', href: '#' },
-      { name: 'GitHub', href: '#' },
-      { name: 'LinkedIn', href: '#' },
-      { name: 'Instagram', href: '#' },
+      { nameKey: 'Twitter / X', href: '#' },
+      { nameKey: 'GitHub', href: '#' },
+      { nameKey: 'LinkedIn', href: '#' },
+      { nameKey: 'Instagram', href: '#' },
     ],
   },
 ]
 
 export default function Footer() {
+  const { t } = useLocale()
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -88,29 +91,28 @@ export default function Footer() {
               {/* <p className="text-xl font-bold">myKunba.org</p> */}
             </div>
             <p className="text-base font-medium text-muted-foreground w-[80%]">
-              Where Stories Come to Life is an innovative and engaging blogging platform designed
-              for provide writers, storytellers, and content creators.
+              {t('footer_tagline')}
             </p>
           </div>
         </div>
-        {sections.map((section, sectionIdx) => (
+        {sectionKeys.map((section, sectionIdx) => (
           <div key={sectionIdx}>
-            <h3 className="mb-4 font-bold">{section.title}</h3>
+            <h3 className="mb-4 font-bold">{t(section.titleKey)}</h3>
             <ul className="space-y-4 text-muted-foreground">
               {section.links.map((link, linkIdx) => (
                 <li key={linkIdx} className="font-medium hover:text-primary">
-                  <a href={link.href}>{link.name}</a>
+                  <a href={link.href}>{t(link.nameKey)}</a>
                 </li>
               ))}
             </ul>
           </div>
         ))}
         <div className="col-span-2 xs:col-span-1">
-          <p className="mb-6 text-base font-semibold">Stay up to date</p>
+          <p className="mb-6 text-base font-semibold">{t('footer_stay_updated')}</p>
           <form onSubmit={handleSubmit} className="flex xs:flex-row flex-col gap-2">
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder={t('footer_enter_email')}
               className="w-full xs:w-[20rem] text-sm"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -118,22 +120,28 @@ export default function Footer() {
               required
             />
             <Button type="submit" className="w-fit xs:w-auto px-7 xs:px-4" disabled={isSubmitting}>
-              {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+              {isSubmitting ? t('footer_subscribing') : t('footer_subscribe')}
             </Button>
           </form>
         </div>
       </div>
       <Separator className="my-12" />
       <div className="flex flex-col justify-between gap-4 p-6 pt-0 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
-        <p>© 2024 Shadcn. All rights reserved.</p>
-        <ul className="flex gap-4">
-          <li className="underline hover:text-primary">
-            <a href="/disclaimer">Disclaimer</a>
-          </li>
-          <li className="underline hover:text-primary">
-            <a href="/privacy-policy">Privacy Policy</a>
-          </li>
-        </ul>
+        <p>{t('footer_copyright')}</p>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="sr-only">{t('footer_language')}</span>
+            <LanguageSelect />
+          </div>
+          <ul className="flex gap-4">
+            <li className="underline hover:text-primary">
+              <a href="/disclaimer">{t('nav_disclaimer')}</a>
+            </li>
+            <li className="underline hover:text-primary">
+              <a href="/privacy-policy">{t('nav_privacy_policy')}</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </footer>
   )

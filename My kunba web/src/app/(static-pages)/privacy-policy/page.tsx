@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
-import { Shield, Mail, Lock, Eye, Share2, Cookie, Calendar } from 'lucide-react'
+import { Shield, Mail, Lock, Eye, Share2, Cookie } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -22,6 +21,9 @@ export const metadata: Metadata = {
     canonical: '/privacy-policy',
   },
 }
+
+/** Static page: no dynamic APIs; layout (static-pages) does not use headers(). */
+export const dynamic = 'force-static'
 
 export default function PrivacyPolicyPage() {
   const contactEmail = 'sanjubhati@mykunba.org'

@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -174,14 +176,15 @@ export default async function AuthorPage({
     const limit = 12
     const offset = (page - 1) * limit
     const authorEmail = (profile as { email?: string }).email ?? ''
+    const headersList = await headers()
+    const locale = parseLocaleFromHeader(headersList.get('x-locale'))
 
-    // SSG: cached until revalidateTag('posts')
     const [postsRes, categoriesRes] = await Promise.all([
       fetch(
         `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&author=${encodeURIComponent(authorEmail)}`,
         { next: { tags: ['posts'] } },
       ),
-      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
+      fetch(`${getServerApiUrl()}/api/user/category?locale=${locale}`, { next: { tags: ['posts'] } }),
     ])
 
     const authorPosts = await postsRes.json()

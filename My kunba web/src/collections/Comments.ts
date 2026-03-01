@@ -32,5 +32,11 @@ export const Comments: CollectionConfig = {
       type: 'relationship',
       relationTo: 'comments',
     },
+    {
+      name: 'language',
+      type: 'text',
+      admin: { description: 'Language of the comment (e.g. en, hi). Stored for display/filtering; content stays in original.' },
+      defaultValue: 'en',
+    },
   ],
 }

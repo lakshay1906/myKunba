@@ -1,6 +1,10 @@
 import { MetadataRoute } from 'next'
 import { payload } from '@/payload-client'
 import { getPublicUrl } from '@/lib/env'
+import { getCategoryTranslationsForLocale } from '@/lib/category-translations'
+import { getTagTranslationsForLocale } from '@/lib/tag-translations'
+
+const LOCALES = ['en', 'zh', 'hi', 'es', 'fr', 'ar'] as const
 
 // ISR: revalidate every hour so new posts/categories show without full rebuild
 export const revalidate = 3600
@@ -85,32 +89,65 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Continue with other routes even if posts fail
     }
 
-    // Fetch categories
+    // Fetch categories: one URL per localized slug (e.g. /category/health, /category/swasthya)
     try {
-      const categories = await payload.find({
-        collection: 'categories',
-        where: {
-          deleted_at: {
-            equals: null,
-          },
-        },
-        select: {
-          slug: true,
-          updatedAt: true,
-        },
-        limit: 1000,
-        pagination: false,
-      })
-      categoryRoutes = categories.docs.map((category) => ({
-        url: `${baseUrl}/category/${category.slug}`,
-        lastModified: category.updatedAt ? new Date(category.updatedAt) : new Date(),
+      const categorySlugSet = new Set<string>()
+      for (const locale of LOCALES) {
+        const translated = await getCategoryTranslationsForLocale(locale)
+        for (const t of translated) {
+          categorySlugSet.add(t.slug)
+        }
+      }
+      if (categorySlugSet.size === 0) {
+        const categories = await payload.find({
+          collection: 'categories',
+          where: { deleted_at: { equals: null } },
+          select: { slug: true, updatedAt: true },
+          limit: 1000,
+          pagination: false,
+        })
+        categories.docs.forEach((c) => categorySlugSet.add((c as { slug: string }).slug))
+      }
+      categoryRoutes = Array.from(categorySlugSet).map((slug) => ({
+        url: `${baseUrl}/category/${slug}`,
+        lastModified: new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       }))
-      console.log(`[SITEMAP] Successfully fetched ${categoryRoutes.length} categories`)
+      console.log(`[SITEMAP] Successfully fetched ${categoryRoutes.length} category URLs`)
     } catch (error) {
       console.error('[SITEMAP] Error fetching categories:', error)
-      // Continue with other routes even if categories fail
+    }
+
+    // Fetch tags: one URL per localized slug
+    let tagRoutes: MetadataRoute.Sitemap = []
+    try {
+      const tagSlugSet = new Set<string>()
+      for (const locale of LOCALES) {
+        const translated = await getTagTranslationsForLocale(locale)
+        for (const t of translated) {
+          tagSlugSet.add(t.slug)
+        }
+      }
+      if (tagSlugSet.size === 0) {
+        const tags = await payload.find({
+          collection: 'tags',
+          where: { deleted_at: { equals: null } },
+          select: { slug: true },
+          limit: 1000,
+          pagination: false,
+        })
+        tags.docs.forEach((t) => tagSlugSet.add((t as { slug: string }).slug))
+      }
+      tagRoutes = Array.from(tagSlugSet).map((slug) => ({
+        url: `${baseUrl}/tag/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }))
+      console.log(`[SITEMAP] Successfully fetched ${tagRoutes.length} tag URLs`)
+    } catch (error) {
+      console.error('[SITEMAP] Error fetching tags:', error)
     }
 
     // Fetch authors
@@ -146,7 +183,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Continue with other routes even if authors fail
     }
 
-    const allRoutes = [...staticRoutes, ...blogRoutes, ...categoryRoutes, ...authorRoutes]
+    const allRoutes = [...staticRoutes, ...blogRoutes, ...categoryRoutes, ...tagRoutes, ...authorRoutes]
     console.log(`[SITEMAP] Generated sitemap with ${allRoutes.length} total URLs`)
     return allRoutes
   } catch (error) {

@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizePostJsonFields } from '@/lib/utils/posts-json-fields'
+import { getCategoryByLocalizedSlug } from '@/lib/category-translations'
+import { getTagByLocalizedSlug } from '@/lib/tag-translations'
 
 export async function GET(req: NextRequest) {
   try {
@@ -109,23 +111,28 @@ export async function GET(req: NextRequest) {
 
       const searchTrim = search && search.trim() ? search.trim() : ''
 
-      // Resolve category slugs to IDs
+      // Resolve category slugs to IDs (localized slug from category_translations, fallback to categories.slug)
       let categoryIds: number[] = []
       if (categorySlugs.length > 0) {
-        const categoryResult = await payload.find({
-          collection: 'categories',
-          where: {
-            and: [
-              {
-                or: categorySlugs.map((slug) => ({ slug: { equals: slug } })),
+        const ids = new Set<number>()
+        for (const slug of categorySlugs) {
+          const byTranslation = await getCategoryByLocalizedSlug(slug)
+          if (byTranslation) {
+            ids.add(byTranslation.categoryId)
+          } else {
+            const categoryResult = await payload.find({
+              collection: 'categories',
+              where: {
+                slug: { equals: slug },
+                deleted_at: { equals: null },
+                isVisible: { equals: true },
               },
-              { deleted_at: { equals: null } },
-              { isVisible: { equals: true } },
-            ],
-          },
-          limit: 100,
-        })
-        categoryIds = categoryResult.docs.map((c: { id: number }) => c.id)
+              limit: 1,
+            })
+            if (categoryResult.docs[0]) ids.add((categoryResult.docs[0] as { id: number }).id)
+          }
+        }
+        categoryIds = Array.from(ids)
       }
 
       // Resolve author emails to user IDs
@@ -147,21 +154,27 @@ export async function GET(req: NextRequest) {
         authorIds = authorResult.docs.map((u: { id: number }) => u.id)
       }
 
-      // Resolve tag slugs to IDs
+      // Resolve tag slugs to IDs (localized slug from tag_translations, fallback to tags.slug)
       let tagIds: number[] = []
       if (tagSlugs.length > 0) {
-        const tagResult = await payload.find({
-          collection: 'tags',
-          where: {
-            and: [
-              { or: tagSlugs.map((s) => ({ slug: { equals: s } })) },
-              { deleted_at: { equals: null } },
-              { or: [{ isVisible: { equals: true } }, { isVisible: { exists: false } }] },
-            ],
-          },
-          limit: 100,
-        })
-        tagIds = tagResult.docs.map((t: { id: number }) => t.id)
+        const ids = new Set<number>()
+        for (const slug of tagSlugs) {
+          const byTranslation = await getTagByLocalizedSlug(slug)
+          if (byTranslation) {
+            ids.add(byTranslation.tagId)
+          } else {
+            const tagResult = await payload.find({
+              collection: 'tags',
+              where: {
+                slug: { equals: slug },
+                deleted_at: { equals: null },
+              },
+              limit: 1,
+            })
+            if (tagResult.docs[0]) ids.add((tagResult.docs[0] as { id: number }).id)
+          }
+        }
+        tagIds = Array.from(ids)
       }
 
       // Build where as AND of: base, categories, tags, authors, search (all combined)

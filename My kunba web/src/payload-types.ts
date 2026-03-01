@@ -233,6 +233,10 @@ export interface Comment {
   content: string;
   status?: ('pending' | 'approved' | 'rejected') | null;
   parent?: (number | null) | Comment;
+  /**
+   * Language of the comment (e.g. en, hi). Stored for display/filtering; content stays in original.
+   */
+  language?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -583,6 +587,7 @@ export interface CommentsSelect<T extends boolean = true> {
   content?: T;
   status?: T;
   parent?: T;
+  language?: T;
   updatedAt?: T;
   createdAt?: T;
 }

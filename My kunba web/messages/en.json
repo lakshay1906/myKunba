@@ -1,0 +1,41 @@
+{
+  "Navbar": {
+    "home": "Home",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact",
+    "website": "Website",
+    "privacyPolicy": "Privacy Policy",
+    "disclaimer": "Disclaimer",
+    "dashboard": "Dashboard",
+    "signOut": "Sign Out",
+    "login": "Login",
+    "signUp": "Sign Up"
+  },
+  "Footer": {
+    "links": "Links",
+    "social": "Social Media",
+    "stayUpdated": "Stay up to date",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing...",
+    "enterEmail": "Enter your email",
+    "tagline": "Where Stories Come to Life is an innovative and engaging blogging platform designed for writers, storytellers, and content creators.",
+    "allPosts": "All Posts / Blog",
+    "copyright": "© 2024 myKunba. All rights reserved.",
+    "language": "Language"
+  },
+  "Buttons": {
+    "readMore": "Read more",
+    "comments": "Comments",
+    "relatedPosts": "Related posts",
+    "backToBlog": "Back to blog"
+  },
+  "Language": {
+    "en": "English",
+    "zh": "中文",
+    "hi": "Hindi",
+    "es": "Español",
+    "fr": "Français",
+    "ar": "العربية"
+  }
+}

@@ -259,7 +259,7 @@ export async function fetchRelatedArticles(
           : baseWhere
       const categoryOnlyResult = await payload.find({
         collection: 'posts',
-        where: categoryOnlyWhere,
+        where: categoryOnlyWhere as import('payload').Where,
         select: {
           id: true,
           title: true,

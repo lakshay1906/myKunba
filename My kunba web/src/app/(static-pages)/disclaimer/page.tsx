@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FileWarning, Mail, ExternalLink, Scale, AlertTriangle } from 'lucide-react'
 
@@ -22,6 +21,9 @@ export const metadata: Metadata = {
     canonical: '/disclaimer',
   },
 }
+
+/** Static page: no dynamic APIs; layout (static-pages) does not use headers(). */
+export const dynamic = 'force-static'
 
 export default function DisclaimerPage() {
   const contactEmail = 'sanjubhati@mykunba.org'

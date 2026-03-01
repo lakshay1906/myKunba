@@ -1,9 +1,10 @@
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
-import { fetchAllCategories } from '@/app/actions/category-actions'
 import { getCachedFeaturedBlogs } from '@/app/actions/blog-actions'
 import { getCachedAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
+import { parseLocaleFromHeader } from '@/lib/i18n/translations'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 
 // SSG: static until on-demand revalidation via revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
@@ -39,12 +40,15 @@ export default async function Home({
   const page = params.page ? Number(params.page) : 1
   const limit = 12
   const offset = (page - 1) * limit
+  const headersList = await headers()
+  const locale = parseLocaleFromHeader(headersList.get('x-locale'))
 
   const blogUrl = `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}`
+  const categoryUrl = `${getServerApiUrl()}/api/user/category?locale=${locale}`
 
   const [postsRes, categoriesRes, featuredBlogs, initialAuthors] = await Promise.all([
     fetch(blogUrl, { next: { tags: ['posts'] } }),
-    fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
+    fetch(categoryUrl, { next: { tags: ['posts'] } }),
     getCachedFeaturedBlogs(),
     getCachedAuthors(),
   ])

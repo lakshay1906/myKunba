@@ -188,11 +188,11 @@ export function CreatePostForm() {
   // Run SEO validation when relevant fields change (debounced for performance)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const metaTitle = watchedValues.metaTitle || watchedValues.title
-      const metaDesc = watchedValues.metaDescription || watchedValues.excerpt
+      const metaTitle = (watchedValues.metaTitle || watchedValues.title) ?? ''
+      const metaDesc = (watchedValues.metaDescription || watchedValues.excerpt) ?? ''
       const scoreResult = getSEOScoreAndChecks(
         metaTitle,
-        watchedValues.slug,
+        watchedValues.slug ?? '',
         metaDesc,
         watchedValues.content,
         watchedValues.focusKeyword || '',

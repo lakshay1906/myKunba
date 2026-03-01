@@ -208,11 +208,17 @@ export async function GET(req: NextRequest) {
 // POST - Create a new comment
 export async function POST(req: NextRequest) {
   try {
-    const { postId, content, parentId } = await req.json()
+    const { postId, content, parentId, language: bodyLanguage } = await req.json()
 
     if (!postId || !content) {
       return NextResponse.json({ message: 'Post ID and content are required' }, { status: 400 })
     }
+
+    const allowedLocales = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+    const language =
+      bodyLanguage && allowedLocales.includes(String(bodyLanguage)) ? String(bodyLanguage) : req.cookies.get('locale')?.value && allowedLocales.includes(req.cookies.get('locale')!.value)
+        ? req.cookies.get('locale')!.value
+        : 'en'
 
     // Get token from cookie or header
     const token =
@@ -269,15 +275,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Post not found' }, { status: 404 })
     }
 
-    // Create comment
+    // Create comment (language stored for display/filtering; content stays in original)
     const comment = await payload.create({
       collection: 'comments',
       data: {
         post: Number(postId),
         user: user.id,
         content: content.trim(),
-        status: 'approved', // Auto-approve for now, can be changed to 'pending' for moderation
+        status: 'approved',
         ...(parentId && { parent: Number(parentId) }),
+        language,
       },
     })
 

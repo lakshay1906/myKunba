@@ -11,7 +11,17 @@ import { toast } from 'sonner'
 const BUTTON_GAP = 56
 const STAGGER_DURATION = 0.05
 
-const shareOptions = [
+type ShareOptionBase = {
+  id: string
+  label: string
+  Icon: React.ComponentType<{ className?: string }>
+  hoverClass: string
+  href?: (url: string, title: string) => string
+  isMailto?: boolean
+  isCopy?: boolean
+}
+
+const shareOptions: ShareOptionBase[] = [
   {
     id: 'x',
     label: 'X (Twitter)',
@@ -75,7 +85,7 @@ const shareOptions = [
     hoverClass: 'hover:bg-primary hover:text-primary-foreground',
     isCopy: true,
   },
-] as const
+]
 
 export default function FloatingShare() {
   const [isOpen, setIsOpen] = useState(false)
@@ -91,7 +101,7 @@ export default function FloatingShare() {
   }, [])
 
   const handleShare = useCallback(
-    (option: (typeof shareOptions)[number]) => {
+    (option: ShareOptionBase) => {
       const url = getShareUrl()
       const title = getTitle()
 
@@ -170,7 +180,7 @@ export default function FloatingShare() {
                   </button>
                 ) : (
                   <a
-                    href={option.isMailto ? option.href(getShareUrl(), getTitle()) : '#'}
+                    href={option.isMailto && option.href ? option.href(getShareUrl(), getTitle()) : '#'}
                     target={option.isMailto ? '_self' : '_blank'}
                     rel={option.isMailto ? undefined : 'noopener noreferrer'}
                     onClick={(e) => {

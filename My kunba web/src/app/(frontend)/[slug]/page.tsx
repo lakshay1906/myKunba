@@ -7,7 +7,9 @@ import type { ComponentProps } from 'react'
 import { getPublicUrl } from '@/lib/env'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
 import { fetchBlogPostBySlug, getCachedRelatedArticles } from '@/app/actions/blog-actions'
+import { getPostTranslation } from '@/lib/post-translations'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 
 // SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
@@ -120,7 +122,30 @@ export async function generateMetadata({
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   if (!slug || typeof slug !== 'string') notFound()
-  const blog = await fetchBlogPostBySlug(slug.trim())
+  const headersList = await headers()
+  const allowedLocales = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+  const rawLocale = headersList.get('x-locale') ?? 'en'
+  const locale = allowedLocales.includes(rawLocale) ? rawLocale : 'en'
+
+  let blog = await fetchBlogPostBySlug(slug.trim())
+  if (!blog) notFound()
+
+  if (locale !== 'en') {
+    const tr = await getPostTranslation(blog.id, locale)
+    if (tr) {
+      blog = {
+        ...blog,
+        title: tr.title ?? blog.title,
+        excerpt: tr.excerpt ?? blog.excerpt,
+        content: (tr.content ?? blog.content) as typeof blog.content,
+        metaTitle: tr.meta_title ?? blog.metaTitle,
+        metaDescription: tr.meta_description ?? blog.metaDescription,
+        focusKeyword: tr.focus_keyword ?? blog.focusKeyword,
+        imageAltText: tr.image_alt_text ?? blog.imageAltText,
+      }
+    }
+  }
+
   if (!blog) notFound()
 
   const categoryIds =

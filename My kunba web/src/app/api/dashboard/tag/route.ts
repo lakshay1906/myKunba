@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     const slug = data.slug || data.name.toLowerCase().replace(/\s+/g, '-')
     const created = await payload.create({
       collection: 'tags',
-      data: { name: data.name.trim(), slug: slug.trim(), createdBy: user.id },
+      data: { name: data.name.trim(), slug: slug.trim(), createdBy: user.id, isVisible: true },
     })
     revalidateTag(created.slug)
     return NextResponse.json(

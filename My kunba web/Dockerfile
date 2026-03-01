@@ -76,12 +76,18 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Ensure permissions
-RUN mkdir -p .next && chown -R nextjs:nodejs .next
+# Copy migration scripts (for docker-entrypoint: wait-for-db + migrate)
+COPY --from=builder /app/scripts ./scripts
+
+# Install pg for migration runner (scripts/run-migration.js)
+RUN npm init -y && npm install pg@8
+
+# Ensure permissions (nextjs user runs entrypoint and needs scripts + node_modules)
+RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts node_modules package.json package-lock.json 2>/dev/null || true
 
 USER nextjs
 
 EXPOSE 3000
 
-# Run standalone Next.js server
-CMD ["node", "server.js"]
+# Wait for DB, run idempotent migrations, then start the app
+CMD ["node", "scripts/docker-entrypoint.js"]

@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore } from '@/lib/context/store'
+import { useLocale } from '@/lib/i18n/locale-context'
 import Toast from '@/components/Toast'
 import { Spinner } from '@/components/ui/spinner'
 import { MoreVertical, Trash2, Edit2, ThumbsUp, ThumbsDown } from 'lucide-react'
@@ -270,6 +271,7 @@ export default function Comments({
   initialCurrentUserId = null,
 }: CommentsProps) {
   const { loginDetail } = useAppStore()
+  const { locale } = useLocale()
   const [comments, setComments] = useState<Comment[]>(initialComments)
   const [loading, setLoading] = useState(false) // Start with false since we have initial data
   const [submitting, setSubmitting] = useState(false)
@@ -623,6 +625,7 @@ export default function Comments({
         body: JSON.stringify({
           postId,
           content: commentContent,
+          language: locale,
         }),
       })
 
@@ -702,6 +705,7 @@ export default function Comments({
           postId,
           content: replyText.trim(),
           parentId,
+          language: locale,
         }),
       })
 

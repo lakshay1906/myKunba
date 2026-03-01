@@ -13,6 +13,7 @@ import {
   Shapes,
   Tag,
   Trash2,
+  Languages,
 } from 'lucide-react'
 import { NavDocuments } from '@/components/sidebar/nav-documents'
 import { NavMain } from '@/components/sidebar/nav-main'
@@ -131,6 +132,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         name: 'Blog',
         url: '/dashboard/blog',
         icon: MessageCircleHeart,
+      },
+      {
+        name: 'Translations',
+        url: '/dashboard/translations',
+        icon: Languages,
       },
       {
         name: 'Category',

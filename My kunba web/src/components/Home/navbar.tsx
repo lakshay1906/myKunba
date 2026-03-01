@@ -29,12 +29,27 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { JSX } from 'react'
 import { useAppStore } from '@/lib/context/store'
+import { useLocale } from '@/lib/i18n/locale-context'
 import ThemeToggle from './ThemeToggle'
 import { Badge } from '../ui/badge'
 import { SignInButton } from './Authentication/sign-in-button'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+const titleKeyMap: Record<string, string> = {
+  Home: 'nav_home',
+  Blog: 'nav_blog',
+  Website: 'nav_website',
+  'About Us': 'nav_about',
+  'Contact Us': 'nav_contact',
+  'Privacy Policy': 'nav_privacy_policy',
+  Disclaimer: 'nav_disclaimer',
+  Dashboard: 'nav_dashboard',
+  'Sign Out': 'nav_sign_out',
+  Login: 'nav_login',
+  'Sign Up': 'nav_sign_up',
+}
 
 interface MenuItem {
   title: string
@@ -146,6 +161,12 @@ export default function Navbar({
   ],
 }: NavbarProps) {
   const { loginDetail, logout } = useAppStore()
+  const { t } = useLocale()
+
+  const menuLabel = (title: string) => {
+    const key = titleKeyMap[title as keyof typeof titleKeyMap]
+    return key ? t(key) : title
+  }
 
   return (
     <div className='w-full border-b fixed top-0 z-50 bg-background'>
@@ -161,7 +182,7 @@ export default function Navbar({
             <div className="flex items-center">
               <NavigationMenu>
                 <NavigationMenuList>
-                  {menu.map((item) => renderMenuItem(item))}
+                  {menu.map((item) => renderMenuItem(item, menuLabel))}
                   {/* {loginDetail?.role === 'admin' && (
                   <a
                     className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
@@ -180,7 +201,7 @@ export default function Navbar({
               <div className="flex gap-2 justify-center items-center">
                 {(loginDetail.role === 'admin' || loginDetail.role === 'author') && (
                   <Link href={'/dashboard'}>
-                    <Button>Dashboard</Button>
+                    <Button>{t('nav_dashboard')}</Button>
                   </Link>
                 )}
 
@@ -190,7 +211,7 @@ export default function Navbar({
                   }}
                   variant="outline"
                 >
-                  Sign Out
+                  {t('nav_sign_out')}
                 </Button>
                 <TooltipProvider>
                   <Tooltip>
@@ -210,8 +231,8 @@ export default function Navbar({
               </div>
             ) : (
               <div className="flex gap-2 justify-between items-center">
-                <SignInButton btnText="Login" />
-                <SignInButton btnText="Sign Up" />
+                <SignInButton btnText={t('nav_login') as 'Login' | 'Sign Up'} />
+                <SignInButton btnText={t('nav_sign_up') as 'Login' | 'Sign Up'} />
               </div>
             )}
           </div>
@@ -260,7 +281,7 @@ export default function Navbar({
                     </SheetHeader>
                     <div className="my-6 flex flex-col gap-6">
                       <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
-                        {menu.map((item) => renderMobileMenuItem(item))}
+                        {menu.map((item) => renderMobileMenuItem(item, menuLabel))}
                       </Accordion>
                       <div className="flex flex-col gap-3">
                         {loginDetail ? (
@@ -290,8 +311,8 @@ export default function Navbar({
                           </div>
                         ) : (
                           <div className="flex flex-col gap-3.5 mt-3">
-                            <SignInButton btnText="Login" size="sm" className="w-full" />
-                            <SignInButton btnText="Sign Up" size="sm" className="w-full" />
+                            <SignInButton btnText={t('nav_login') as 'Login' | 'Sign Up'} size="sm" className="w-full" />
+                            <SignInButton btnText={t('nav_sign_up') as 'Login' | 'Sign Up'} size="sm" className="w-full" />
                           </div>
                         )}
                       </div>
@@ -307,11 +328,11 @@ export default function Navbar({
   )
 }
 
-function renderMenuItem(item: MenuItem) {
+function renderMenuItem(item: MenuItem, menuLabel: (title: string) => string) {
   if (item.items) {
     return (
       <NavigationMenuItem key={item.title} className="text-muted-foreground bg-none h-full">
-        <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+        <NavigationMenuTrigger>{menuLabel(item.title)}</NavigationMenuTrigger>
         <NavigationMenuContent>
           <ul className="w-80 p-3">
             {item.items.map((subItem) => (
@@ -323,7 +344,7 @@ function renderMenuItem(item: MenuItem) {
                   {subItem.icon}
                   <div>
                     <div className="flex flex-wrap items-center justify-start gap-2">
-                      <div className="text-sm font-semibold">{subItem.title}</div>
+                      <div className="text-sm font-semibold">{menuLabel(subItem.title)}</div>
                       {subItem.upcoming && (
                         <Badge className="rounded-full justify-center items-center mt-0">
                           Upcoming
@@ -351,17 +372,17 @@ function renderMenuItem(item: MenuItem) {
       className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
       href={item.url}
     >
-      {item.title}
+      {menuLabel(item.title)}
     </Link>
   )
 }
 
-function renderMobileMenuItem(item: MenuItem) {
+function renderMobileMenuItem(item: MenuItem, menuLabel: (title: string) => string) {
   if (item.items) {
     return (
       <AccordionItem key={item.title} value={item.title} className="border-b-0">
         <AccordionTrigger className="py-0 font-semibold hover:no-underline">
-          {item.title}
+          {menuLabel(item.title)}
         </AccordionTrigger>
         <AccordionContent className="mt-2">
           {item.items.map((subItem) => (
@@ -373,7 +394,7 @@ function renderMobileMenuItem(item: MenuItem) {
               {subItem.icon}
               <div>
                 <div className="flex flex-wrap items-center justify-start space-x-2 space-y-1">
-                  <div className="text-sm font-semibold">{subItem.title}</div>
+                  <div className="text-sm font-semibold">{menuLabel(subItem.title)}</div>
                   {subItem.upcoming && <Badge className="rounded-full mt-0">Upcoming</Badge>}
                 </div>
                 {subItem.description && (
@@ -391,7 +412,7 @@ function renderMobileMenuItem(item: MenuItem) {
 
   return (
     <Link key={item.title} href={item.url} className="font-semibold">
-      {item.title}
+      {menuLabel(item.title)}
     </Link>
   )
 }

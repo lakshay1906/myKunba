@@ -1,4 +1,5 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import createNextIntlPlugin from 'next-intl/plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { readdirSync, existsSync } from 'fs'
@@ -42,6 +43,8 @@ const payloadUIScssPaths = findPayloadUIScssPaths()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Exclude pg from Turbopack bundling (resolve at runtime on server)
+  serverExternalPackages: ['pg'],
   // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
   // async redirects() { ... } removed
   sassOptions: {
@@ -146,8 +149,11 @@ const nextConfig = {
   },
 }
 
+// next-intl requires a request config file; must wrap the config object first so its webpack alias is merged (withPayload can return a function)
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
+const nextConfigWithIntl = withNextIntl(nextConfig)
 // Wrap the config to ensure experimental.turbo is removed if it exists
-const payloadConfig = withPayload(nextConfig, { devBundleServerPackages: false })
+const payloadConfig = withPayload(nextConfigWithIntl, { devBundleServerPackages: false })
 
 // Function to remove experimental.turbo from config
 function removeExperimentalTurbo(config) {
