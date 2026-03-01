@@ -50,9 +50,6 @@ export default async function RootLayout({
 
     const accessSecret = process.env.ACCESS_SECRET
     if (!accessSecret) {
-      console.error('❌ [DASHBOARD LAYOUT] ACCESS_SECRET not configured', {
-        timestamp: new Date().toISOString(),
-      })
       redirect(await getRedirectUrl())
     }
 

@@ -48,7 +48,6 @@ export default function BlogCard({ post }: BlogCardProps) {
         },
         body: JSON.stringify({ postId: post.id }),
       }).catch((error) => {
-        console.error('Error tracking impression:', error)
         // Silently fail - don't block user navigation
       })
     } catch (error) {

@@ -388,7 +388,6 @@ export default function Comments({
         setTotalComments(data.total || 0)
       }
     } catch (error) {
-      console.error('Error fetching comments:', error)
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -412,7 +411,6 @@ export default function Comments({
           setUserReaction(data.userReaction || null)
         }
       } catch (error) {
-        console.error('Error fetching post reactions:', error)
       }
     }
     fetchPostReactions()
@@ -454,7 +452,6 @@ export default function Comments({
             }
           }
         } catch (error) {
-          console.error('Error fetching current user:', error)
         }
       }
 

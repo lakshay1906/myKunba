@@ -31,7 +31,6 @@ export default async function TranslationsPage({
       />
     )
   } catch (e) {
-    console.error('Translations page error:', e)
     redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/translations'))
   }
 }

@@ -37,7 +37,7 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import RichTextEditor from '@/components/Blog/rich-text-editor'
 import { toast } from 'sonner'
-import { fetchAllCategories } from '@/app/actions/category-actions'
+import { fetchDashboardCategories } from '@/app/actions/category-actions'
 import { fetchAllTags } from '@/app/actions/tag-actions'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
@@ -225,16 +225,9 @@ export function CreatePostForm() {
     (updater: React.SetStateAction<ImageUploadData>) => {
       setImageUploadData((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater
-        console.log('handleImageUploadDataChange called:', {
-          prevCoverImage: prev.coverImage?.substring(0, 30) || 'none',
-          nextCoverImage: next.coverImage?.substring(0, 30) || 'none',
-          isDraftLoaded,
-          hasSaveDraftRef: !!saveDraftRef.current,
-        })
 
         // If coverImage changed, trigger save
         if (next.coverImage !== prev.coverImage && isDraftLoaded && saveDraftRef.current) {
-          console.log('Cover image changed, triggering save')
           // Reset the draft loaded flag since user selected a new image
           setDraftImageLoaded(false)
           // Use setTimeout to ensure state is updated first
@@ -256,7 +249,6 @@ export function CreatePostForm() {
       setHasDraftData(draftExists)
 
       const draftData = await loadDraftFromCookie()
-      console.log('Draft loaded from storage:', draftData)
 
       if (draftData) {
         // Temporarily disable draft saving while loading
@@ -303,23 +295,6 @@ export function CreatePostForm() {
 
         // Populate cover image if it exists
         if (draftData.coverImage) {
-          console.log(
-            'Loading cover image from draft:',
-            draftData.coverImage.substring(0, 50) + '...',
-          )
-
-          // Check if it's a data URL (local file) or a regular URL
-          const isDataUrl = draftData.coverImage.startsWith('data:')
-          const isBlobUrl = draftData.coverImage.startsWith('blob:')
-
-          if (isDataUrl) {
-            console.log('Data URL image loaded from draft - using IndexedDB for persistence')
-          } else if (isBlobUrl) {
-            console.log(
-              'Blob URL image loaded from draft - may not persist across browser sessions',
-            )
-          }
-
           handleImageUploadDataChange((prev) => {
             const newState = {
               ...prev,
@@ -327,10 +302,6 @@ export function CreatePostForm() {
               // Restore alt text if it exists in draft (for backwards compatibility)
               alt: (draftData as any).imageAltText || prev.alt || '',
             }
-            console.log('Cover image set in imageUploadData:', {
-              coverImage: newState.coverImage?.substring(0, 50) || 'null',
-              alt: newState.alt,
-            })
             setDraftImageLoaded(true)
             return newState
           })
@@ -344,8 +315,6 @@ export function CreatePostForm() {
           form.setValue('imageAltText', draftData.imageAltText, { shouldDirty: false })
           handleImageUploadDataChange((prev) => ({ ...prev, alt: draftData.imageAltText || '' }))
         }
-
-        console.log('Form reset with draft data, content:', draftData.content)
 
         // Re-enable draft saving after a short delay to let everything settle
         setTimeout(() => {
@@ -400,15 +369,6 @@ export function CreatePostForm() {
           coverImage: imageUploadData.coverImage || undefined,
         }
 
-        // Debug logging
-        console.log('Attempting to save draft:', {
-          hasContent: !!draftData.content,
-          contentLength: draftData.content?.length || 0,
-          hasCoverImage: !!draftData.coverImage,
-          coverImageType: draftData.coverImage?.substring(0, 20) || 'none',
-          hasTitle: !!draftData.title,
-        })
-
         // Only save if there's at least some content (any field)
         const hasAnyContent =
           draftData.title ||
@@ -427,20 +387,18 @@ export function CreatePostForm() {
         if (hasAnyContent) {
           await saveDraftToCookie(draftData)
           setHasDraftData(true)
-          console.log('Draft saved successfully')
         } else {
           // Clear draft if no content
           await clearDraftCookie()
           setHasDraftData(false)
-          console.log('No content to save, cleared draft')
         }
       }
 
       if (immediate) {
-        performSave().catch(console.error)
+        performSave().catch(() => {})
       } else {
         saveTimeoutRef.current = setTimeout(() => {
-          performSave().catch(console.error)
+          performSave().catch(() => {})
         }, 1000) // Debounce for 1 second
       }
     },
@@ -465,13 +423,6 @@ export function CreatePostForm() {
   // Watch for category, image, and alt text changes
   useEffect(() => {
     if (!isDraftLoaded) return
-    console.log('Image, alt text, or categories changed - triggering save:', {
-      hasImage: !!imageUploadData.coverImage,
-      imagePreview: imageUploadData.coverImage?.substring(0, 50) || 'none',
-      altText: imageUploadData.alt || 'none',
-      categoriesCount: selectedCategories.length,
-      tagsCount: selectedTags.length,
-    })
     // Save immediately when image, alt text, or categories change
     saveDraft(true)
   }, [
@@ -497,11 +448,6 @@ export function CreatePostForm() {
   const contentValue = form.watch('content')
   useEffect(() => {
     if (!isDraftLoaded) return
-    console.log('Content value changed:', {
-      hasValue: !!contentValue,
-      length: contentValue?.length || 0,
-      preview: contentValue?.substring(0, 50) || 'empty',
-    })
     // Save whenever content changes (even if empty, to clear it)
     saveDraft()
   }, [contentValue, saveDraft, isDraftLoaded])
@@ -727,8 +673,7 @@ export function CreatePostForm() {
       toast.success('Draft Cleared', {
         description: 'All draft data has been cleared. You can start fresh.',
       })
-    } catch (error) {
-      console.error('Error clearing draft:', error)
+    } catch {
       setIsDraftLoaded(true) // Re-enable even on error
       toast.error('Error', {
         description: 'Failed to clear draft. Please try again.',
@@ -768,7 +713,6 @@ export function CreatePostForm() {
               throw new Error('Failed to upload image')
             }
           } catch (error: any) {
-            console.error('Error uploading image:', error)
             isSubmittingRef.current = false
             setIsLoading(false)
             toast.error('Error', {
@@ -798,7 +742,6 @@ export function CreatePostForm() {
               throw new Error(uploadJson?.error || uploadJson?.message || 'Upload failed')
             }
           } catch (err: any) {
-            console.error('Error uploading draft-restored cover image:', err)
             isSubmittingRef.current = false
             setIsLoading(false)
             toast.error('Error', {
@@ -824,7 +767,6 @@ export function CreatePostForm() {
               throw new Error('Failed to validate image URL')
             }
           } catch (error: any) {
-            console.error('Error validating image URL:', error)
             isSubmittingRef.current = false
             setIsLoading(false)
             toast.error('Error', {
@@ -863,9 +805,6 @@ export function CreatePostForm() {
           processedContent = contentProcessingResult.processedContent
 
           if (contentProcessingResult.uploadedImages.length > 0) {
-            console.log(
-              `✅ Processed ${contentProcessingResult.uploadedImages.length} images in content`,
-            )
             // Track uploaded content images for cleanup (filter out null values)
             const contentImageUrls = contentProcessingResult.uploadedImages
               .map((img) => img.uploadedUrl)
@@ -874,7 +813,6 @@ export function CreatePostForm() {
           }
         }
       } catch (error: any) {
-        console.error('Error processing content images:', error)
         // Continue with submission even if some images fail to upload
         toast.warning('Some images failed to upload', {
           description: 'The blog will be saved, but some images may need to be re-uploaded.',
@@ -916,24 +854,10 @@ export function CreatePostForm() {
 
         // If blog creation failed but images were uploaded, cleanup orphaned images
         if (uploadedImages.length > 0) {
-          console.warn(
-            'Blog creation failed but images were uploaded. Cleaning up orphaned images...',
-            uploadedImages,
-          )
-
           // Attempt cleanup (non-blocking)
           import('@/utils/cleanup-orphaned-images')
-            .then(({ cleanupOrphanedImages }) => {
-              cleanupOrphanedImages(uploadedImages).then((result) => {
-                if (result.failed.length > 0) {
-                  console.error('Failed to cleanup some orphaned images:', result.failed)
-                  // Log for manual cleanup or queue cleanup job
-                }
-              })
-            })
-            .catch((error) => {
-              console.error('Error during image cleanup:', error)
-            })
+            .then(({ cleanupOrphanedImages }) => cleanupOrphanedImages(uploadedImages))
+            .catch(() => {})
         }
 
         isSubmittingRef.current = false
@@ -948,15 +872,12 @@ export function CreatePostForm() {
       // Blog created successfully - clear draft data BEFORE navigation
       // Flow: Submit => Image upload => blog created => draft deleted
       try {
-        console.log('Blog created successfully, clearing draft data...')
-
         // Disable draft saving before clearing
         setIsDraftLoaded(false)
 
         // Clear draft from storage
         await clearDraftCookie()
         setHasDraftData(false)
-        console.log('✅ Draft data cleared from IndexedDB and cookies')
 
         // Reset form to default values after clearing draft
         form.reset(
@@ -997,9 +918,8 @@ export function CreatePostForm() {
         // Reset file input
         const fileInput = document.getElementById('file-input') as HTMLInputElement
         if (fileInput) fileInput.value = ''
-      } catch (clearError) {
-        // Even if clearing fails, log it but don't block the success flow
-        console.error('Warning: Failed to clear draft data:', clearError)
+      } catch {
+        // Even if clearing fails, don't block the success flow
       }
 
       hasShownLeaveToastRef.current = false
@@ -1015,7 +935,6 @@ export function CreatePostForm() {
       // Navigate after draft is cleared and form is reset
       router.push('/dashboard/blog')
     } catch (error: any) {
-      console.error('Error creating post:', error)
       isSubmittingRef.current = false
       toast.error('Error', {
         description: error?.message || 'Error creating post',
@@ -1042,10 +961,7 @@ export function CreatePostForm() {
       event.preventDefault()
       event.stopPropagation()
     }
-    if (isSubmittingRef.current || isLoading) {
-      console.warn('Form submission already in progress, ignoring duplicate submit')
-      return
-    }
+    if (isSubmittingRef.current || isLoading) return
     if (!loginDetail) {
       toast.error('Error', { description: "You're not authorized to perform this action" })
       return
@@ -1173,13 +1089,13 @@ export function CreatePostForm() {
     }
   }
 
-  // Function to refresh categories list
+  // Function to refresh categories list (use dashboard API so newly created categories appear)
   const refreshCategories = useCallback(async () => {
     try {
-      const categories = await fetchAllCategories()
-      setCategories(categories.docs)
+      const categories = await fetchDashboardCategories()
+      const list = categories.docs ?? []
+      setCategories(list.map((c: { id: number; name: string; slug?: string }) => ({ id: c.id, name: c.name, slug: c.slug })))
     } catch (error) {
-      console.error('Error fetching categories:', error)
       toast.error('Error', {
         description: 'Failed to refresh categories',
       })
@@ -1202,8 +1118,7 @@ export function CreatePostForm() {
     try {
       const res = await fetchAllTags()
       setTags(res.docs || [])
-    } catch (error) {
-      console.error('Error fetching tags:', error)
+    } catch {
       toast.error('Error', { description: 'Failed to refresh tags' })
     }
   }, [])
@@ -1215,7 +1130,6 @@ export function CreatePostForm() {
   // Handle category creation - refresh list and trigger draft save
   const handleCategoryCreated = useCallback(
     (newCategory: { id: number; name: string; slug: string }) => {
-      console.log('New category created:', newCategory)
       // Refresh categories list to include the new one
       refreshCategories()
       // The category is already selected via CategorySelector's onChange

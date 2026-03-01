@@ -50,7 +50,6 @@ async function getAuthenticatedUser() {
 
     return user.docs[0]
   } catch (error) {
-    console.error('Error getting authenticated user:', error)
     throw error
   }
 }
@@ -95,7 +94,6 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
       limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard blogs:', error)
     throw new Error(error.message || 'Failed to fetch blogs')
   }
 }
@@ -169,7 +167,6 @@ export async function fetchDashboardBlogBySlug(slug: string) {
     }
     return normalizePostJsonFields(withJson)
   } catch (error: any) {
-    console.error('Error fetching dashboard blog by slug:', error)
     throw error
   }
 }
@@ -202,7 +199,6 @@ export async function fetchDashboardCategories(page: number = 1, limit: number =
       limit: data.limit ?? limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard categories:', error)
     throw new Error(error.message || 'Failed to fetch categories')
   }
 }
@@ -235,7 +231,6 @@ export async function fetchDashboardTags(page: number = 1, limit: number = 10) {
       limit: data.limit ?? limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard tags:', error)
     throw new Error(error.message || 'Failed to fetch tags')
   }
 }
@@ -258,7 +253,6 @@ export async function fetchDashboardPostTranslations(page: number = 1, limit: nu
     }
     return res.json()
   } catch (error: any) {
-    console.error('Error fetching post translations:', error)
     throw new Error(error.message || 'Failed to fetch translations')
   }
 }
@@ -288,7 +282,6 @@ export async function fetchDashboardPostsForTranslations() {
       })),
     }
   } catch (error: any) {
-    console.error('Error fetching posts for translations', error)
     throw new Error(error.message || 'Failed to fetch posts')
   }
 }
@@ -331,7 +324,6 @@ export async function fetchCategoryPosts(categoryId: number, page: number = 1, l
       limit,
     }
   } catch (error: any) {
-    console.error('Error fetching category posts:', error)
     throw new Error(error.message || 'Failed to fetch category posts')
   }
 }

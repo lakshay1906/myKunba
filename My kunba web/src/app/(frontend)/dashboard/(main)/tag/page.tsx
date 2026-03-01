@@ -31,7 +31,6 @@ export default async function TagPage({
       />
     )
   } catch (error) {
-    console.error('Error loading tags:', error)
     redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/tag'))
   }
 }

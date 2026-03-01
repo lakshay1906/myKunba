@@ -63,7 +63,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (e) {
-    console.error('POST translations list error:', e)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -143,7 +142,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(doc, { status: 201 })
   } catch (e) {
-    console.error('POST translation create error:', e)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

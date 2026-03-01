@@ -24,7 +24,6 @@ export default async function TagDetailRoute({
 
     return <TagDetailPage id={id} response={response} />
   } catch (error) {
-    console.error('Error loading tag:', error)
     redirect('/dashboard/tag')
   }
 }

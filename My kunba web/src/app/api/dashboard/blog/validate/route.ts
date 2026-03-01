@@ -103,7 +103,6 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error validating blog post:', error)
     return NextResponse.json(
       {
         valid: false,

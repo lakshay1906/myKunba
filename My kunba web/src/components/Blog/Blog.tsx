@@ -151,7 +151,6 @@ export default function Blog({
           setOffset(opts.resetOffset !== false ? limit : offsetVal + docs.length)
         }
       } catch (e) {
-        console.error('Error fetching blogs:', e)
         if (!opts.search?.trim()) setSearchResults(null)
       } finally {
         setLoading(false)
@@ -218,7 +217,7 @@ export default function Blog({
         setAuthors(sorted)
         if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(sorted))
       })
-      .catch((e) => console.error('Error fetching authors:', e))
+      .catch(() => {})
   }, [initialAuthors])
 
   const loadMore = useCallback(async () => {
@@ -240,7 +239,6 @@ export default function Blog({
         setTotal(result.totalDocs ?? 0)
       }
     } catch (e) {
-      console.error('Error loading more:', e)
     } finally {
       setLoadingMore(false)
     }
@@ -289,7 +287,7 @@ export default function Blog({
         setHasMore(hasNextPage)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -315,7 +313,7 @@ export default function Blog({
         setHasMore(result.hasNextPage ?? false)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -349,7 +347,7 @@ export default function Blog({
         setHasMore(hasNextPage)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -448,7 +446,7 @@ export default function Blog({
                   key={ele.id}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.1 * idx }}
+                  transition={{ duration: 0.1, delay: 0.05 }}
                   viewport={{ once: true, amount: 0.3 }}
                   className="size-full"
                 >

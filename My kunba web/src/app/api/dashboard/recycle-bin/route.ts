@@ -157,7 +157,6 @@ export async function GET(req: NextRequest) {
       limit: result.limit,
     })
   } catch (e: any) {
-    console.error('Recycle bin GET error:', e)
     return NextResponse.json({ message: e.message || 'Server error' }, { status: 500 })
   }
 }
@@ -209,13 +208,11 @@ export async function PATCH(req: NextRequest) {
           data: { deleted_at: null },
         })
       } catch (err) {
-        console.error(`Restore failed for ${type} id ${id}:`, err)
       }
     }
 
     return NextResponse.json({ message: 'Restored selected items.' }, { status: 200 })
   } catch (e: any) {
-    console.error('Recycle bin PATCH error:', e)
     return NextResponse.json({ message: e.message || 'Server error' }, { status: 500 })
   }
 }
@@ -328,7 +325,6 @@ export async function DELETE(req: NextRequest) {
             try {
               await payload.delete({ collection: relCol, id: relDoc.id })
             } catch (relErr) {
-              console.error(`Delete ${relCol} ${relDoc.id} failed:`, relErr)
               throw relErr
             }
           }
@@ -338,7 +334,6 @@ export async function DELETE(req: NextRequest) {
         try {
           await payload.delete({ collection: 'posts', id })
         } catch (err) {
-          console.error('Payload delete post failed:', id, err)
           throw err
         }
 
@@ -348,7 +343,6 @@ export async function DELETE(req: NextRequest) {
           try {
             await deleteFromCloudflareR2(url)
           } catch (err) {
-            console.error('R2 delete failed for:', url, err)
           }
         }
       }
@@ -365,7 +359,6 @@ export async function DELETE(req: NextRequest) {
           }
           await payload.delete({ collection: 'categories', id })
         } catch (err) {
-          console.error('Payload delete category failed:', id, err)
           throw err
         }
       }
@@ -382,7 +375,6 @@ export async function DELETE(req: NextRequest) {
           }
           await payload.delete({ collection: 'tags', id })
         } catch (err) {
-          console.error('Payload delete tag failed:', id, err)
           throw err
         }
       }
@@ -394,13 +386,11 @@ export async function DELETE(req: NextRequest) {
       try {
         await payload.delete({ collection: 'users', id })
       } catch (err) {
-        console.error('Payload delete user failed:', id, err)
         throw err
       }
     }
     return NextResponse.json({ message: 'Permanently deleted selected users.' }, { status: 200 })
   } catch (e: any) {
-    console.error('Recycle bin DELETE error:', e)
     return NextResponse.json({ message: e.message || 'Server error' }, { status: 500 })
   }
 }

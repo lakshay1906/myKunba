@@ -98,9 +98,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
           })
           if (rawRes.ok) setLoginDetail(null)
         })
-        .catch((error) => {
-          console.error('Error signing out:', error)
-        })
+        .catch(() => {})
     }
   }
 
@@ -128,8 +126,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
               id: data.id,
             })
         }
-      } catch (error) {
-        console.error('Error verifying token:', error)
+      } catch {
       } finally {
         setLoading(false)
       }

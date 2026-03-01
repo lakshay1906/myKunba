@@ -148,7 +148,6 @@ export const Posts: CollectionConfig = {
         if (!doc) return
         const userId = doc.author?.id
         if (!userId) {
-          console.warn('No user associated with post, skipping post-log creation')
           return
         }
         // ⏳ Defer log creation to next event loop
@@ -163,7 +162,6 @@ export const Posts: CollectionConfig = {
               },
             })
           } catch (error) {
-            console.error('Failed to create post log:', error)
           }
         }, 0)
       },

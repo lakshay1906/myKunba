@@ -127,7 +127,6 @@ export default function TagMain({
       setCurrentPage(data.page || page)
       setTotalPages(data.totalPages || 1)
     } catch (error) {
-      console.error('Error fetching tags:', error)
     } finally {
       setLoading(false)
     }

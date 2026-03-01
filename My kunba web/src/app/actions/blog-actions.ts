@@ -65,7 +65,6 @@ export async function fetchBlogPostBySlugInternal(
       faq: FAQItem[]
     })
   } catch (error) {
-    console.error('Error fetching blog post by slug:', error)
     return null
   }
 }
@@ -145,7 +144,6 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
 
     return featuredBlogs
   } catch (error) {
-    console.error('Error fetching featured blogs:', error)
     return []
   }
 }
@@ -278,7 +276,6 @@ export async function fetchRelatedArticles(
 
     return docs.slice(0, limit).map(mapDocToRelated)
   } catch (error) {
-    console.error('Error fetching related articles:', error)
     return []
   }
 }

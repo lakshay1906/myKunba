@@ -99,7 +99,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
         )
       }
     } catch (error) {
-      console.error('Error fetching posts:', error)
     } finally {
       setLoading(false)
     }
@@ -149,7 +148,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
           ? null
           : { id: Number(form.parentId), name: parentOptions.find((c) => c.id === Number(form.parentId))?.name }
     } catch (e) {
-      console.error(e)
     } finally {
       setSaveLoading(false)
     }

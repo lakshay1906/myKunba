@@ -83,9 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       }))
-      console.log(`[SITEMAP] Successfully fetched ${blogRoutes.length} blog posts`)
     } catch (error) {
-      console.error('[SITEMAP] Error fetching posts:', error)
       // Continue with other routes even if posts fail
     }
 
@@ -114,9 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       }))
-      console.log(`[SITEMAP] Successfully fetched ${categoryRoutes.length} category URLs`)
     } catch (error) {
-      console.error('[SITEMAP] Error fetching categories:', error)
     }
 
     // Fetch tags: one URL per localized slug
@@ -145,9 +141,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.6,
       }))
-      console.log(`[SITEMAP] Successfully fetched ${tagRoutes.length} tag URLs`)
     } catch (error) {
-      console.error('[SITEMAP] Error fetching tags:', error)
     }
 
     // Fetch authors
@@ -177,17 +171,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.6,
       }))
-      console.log(`[SITEMAP] Successfully fetched ${authorRoutes.length} authors`)
     } catch (error) {
-      console.error('[SITEMAP] Error fetching authors:', error)
       // Continue with other routes even if authors fail
     }
 
     const allRoutes = [...staticRoutes, ...blogRoutes, ...categoryRoutes, ...tagRoutes, ...authorRoutes]
-    console.log(`[SITEMAP] Generated sitemap with ${allRoutes.length} total URLs`)
     return allRoutes
   } catch (error) {
-    console.error('[SITEMAP] Critical error generating sitemap:', error)
     // Return static routes as fallback
     return staticRoutes
   }

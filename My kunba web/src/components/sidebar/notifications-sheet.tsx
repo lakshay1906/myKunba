@@ -82,7 +82,6 @@ export function NotificationsSheet() {
         setUnreadCount(unread)
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error)
       toast.error('Error', {
         description: 'Failed to load notifications',
       })
@@ -113,7 +112,6 @@ export function NotificationsSheet() {
         setUnreadCount((prev) => Math.max(0, prev - 1))
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
     }
   }
 
@@ -137,7 +135,6 @@ export function NotificationsSheet() {
         toast.success('All notifications marked as read')
       }
     } catch (error) {
-      console.error('Error marking all as read:', error)
       toast.error('Error', {
         description: 'Failed to mark all as read',
       })

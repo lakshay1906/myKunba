@@ -61,7 +61,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: unknown) {
-    console.error('Error fetching tag posts:', error)
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },
@@ -137,7 +136,6 @@ export async function PUT(req: NextRequest) {
             data: { tags: newTags },
           })
         } catch (err) {
-          console.error('Error updating post', postId, err)
         }
       }
     }
@@ -151,7 +149,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ message: 'Tag posts updated successfully' }, { status: 200 })
   } catch (error: unknown) {
-    console.error('Error updating tag posts:', error)
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },

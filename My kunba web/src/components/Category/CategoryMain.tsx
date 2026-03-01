@@ -116,7 +116,6 @@ export default function CategoryMain({
       setCurrentPage(data.page || page)
       setTotalPages(data.totalPages || 1)
     } catch (error) {
-      console.error('Error fetching categories:', error)
     } finally {
       setLoading(false)
     }

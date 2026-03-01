@@ -47,12 +47,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('💥 [JWT VERIFY API] Error occurred:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      errorName: error instanceof Error ? error.name : 'Unknown',
-      errorStack: error instanceof Error ? error.stack : 'No stack',
-      timestamp: new Date().toISOString(),
-    })
     return NextResponse.json({ message: 'Error verifying JWT' }, { status: 500 })
   }
 }

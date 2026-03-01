@@ -79,7 +79,6 @@ export async function GET(req: NextRequest) {
               } as any,
             })
           } catch (error) {
-            console.error('Error incrementing impressions:', error)
             // Silently fail
           }
         })().catch(() => {

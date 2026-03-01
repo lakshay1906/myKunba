@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ available }, { status: 200 })
   } catch (error: any) {
-    console.error('Username availability check error:', error)
     return NextResponse.json(
       { available: false, message: error.message || 'Failed to check username' },
       { status: 500 },

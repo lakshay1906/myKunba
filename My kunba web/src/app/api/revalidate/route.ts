@@ -28,7 +28,6 @@ export async function POST(request: NextRequest) {
 
     const expectedSecret = process.env.REVALIDATE_SECRET
     if (!expectedSecret) {
-      console.warn('[revalidate] REVALIDATE_SECRET is not set')
       return NextResponse.json(
         { message: 'Revalidation is not configured' },
         { status: 503 },
@@ -98,7 +97,6 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     )
   } catch (error) {
-    console.error('[revalidate] Error:', error)
     return NextResponse.json(
       { message: 'Invalid request body' },
       { status: 400 },

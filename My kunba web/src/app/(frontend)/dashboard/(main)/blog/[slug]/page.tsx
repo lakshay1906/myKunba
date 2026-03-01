@@ -21,7 +21,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
     return <BlogDetailPage id={slug} blogData={blogData} />
   } catch (error: any) {
-    console.error('Error loading blog:', error)
     // If unauthorized, redirect to unauthorized page
     if (error.message?.includes('authorized')) {
       redirect('/unauthorised')

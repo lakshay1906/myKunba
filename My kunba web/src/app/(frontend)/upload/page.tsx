@@ -10,7 +10,6 @@ import Image from 'next/image'
 //         endpoint="imageUploader"
 //         onClientUploadComplete={(res: any) => {
 //           // Do something with the response
-//           console.log('Files: ', res)
 //           alert('Upload Completed')
 //         }}
 //         onUploadError={(error: Error) => {

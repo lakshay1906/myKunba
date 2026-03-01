@@ -16,7 +16,6 @@ const POLL_MS = 2000
 async function waitForDb() {
   const connectionString = process.env.DATABASE_URI
   if (!connectionString) {
-    console.warn('DATABASE_URI not set; skipping DB wait and migration.')
     return
   }
 
@@ -29,28 +28,23 @@ async function waitForDb() {
     try {
       await client.connect()
       await client.end()
-      console.log('Database is ready.')
       return
     } catch (err) {
-      console.log(`Waiting for database... (${err.message})`)
       await new Promise((r) => setTimeout(r, POLL_MS))
     }
   }
 
-  console.error('Timeout waiting for database.')
   process.exit(1)
 }
 
 async function runMigration() {
   if (process.env.MIGRATE_SKIP === '1') {
-    console.log('MIGRATE_SKIP=1; skipping migrations.')
     return
   }
   try {
     const { execSync } = await import('child_process')
     execSync('node scripts/run-migration.js', { stdio: 'inherit', cwd: process.cwd() })
   } catch (err) {
-    console.error('Migration failed:', err.message)
     process.exit(1)
   }
 }
@@ -63,8 +57,7 @@ async function main() {
     stdio: 'inherit',
     cwd: process.cwd(),
   })
-  server.on('error', (err) => {
-    console.error('Failed to start server:', err)
+  server.on('error', () => {
     process.exit(1)
   })
   server.on('exit', (code) => process.exit(code ?? 0))

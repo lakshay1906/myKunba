@@ -52,7 +52,6 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (e: any) {
-    console.error('Role upgrade error:', e)
     return NextResponse.json(
       { message: e?.message || 'Upgrade failed' },
       { status: 500 },

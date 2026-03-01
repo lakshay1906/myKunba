@@ -74,7 +74,6 @@ export async function GET(
     if (result instanceof NextResponse) return result
     return NextResponse.json(result.doc)
   } catch (e) {
-    console.error('GET translation error:', e)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -113,7 +112,6 @@ export async function PATCH(
     })
     return NextResponse.json(updated)
   } catch (e) {
-    console.error('PATCH translation error:', e)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -137,7 +135,6 @@ export async function DELETE(
     })
     return NextResponse.json({ success: true })
   } catch (e) {
-    console.error('DELETE translation error:', e)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

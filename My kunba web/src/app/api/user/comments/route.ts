@@ -200,7 +200,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('Error fetching comments:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -318,7 +317,6 @@ export async function POST(req: NextRequest) {
         })
       } catch (notificationError) {
         // Log error but don't fail the comment creation
-        console.error('Error creating notification:', notificationError)
       }
     }
 
@@ -338,7 +336,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ comment: commentWithRelations }, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -440,7 +437,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ comment: commentWithRelations }, { status: 200 })
   } catch (error: any) {
-    console.error('Error updating comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -553,7 +549,6 @@ export async function DELETE(req: NextRequest) {
     // Regular users can only delete their own comments (already checked above)
     return NextResponse.json({ message: 'You can only delete your own comments' }, { status: 403 })
   } catch (error: any) {
-    console.error('Error deleting comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }

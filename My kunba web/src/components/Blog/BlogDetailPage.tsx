@@ -518,7 +518,6 @@ export default function EditBlogPage({
           const contentProcessingResult = await processContentImages(contentHtmlForSave)
           processedContent = contentProcessingResult.processedContent
         } catch (error: any) {
-          console.error('Error processing content images:', error)
           toast.warning('Some images failed to upload', {
             description:
               'The blog will be saved, but some images may need to be re-uploaded.',
@@ -590,20 +589,16 @@ export default function EditBlogPage({
 
       // Clean up removed images from Cloudflare R2 (non-blocking)
       if (removedImages.length > 0) {
-        console.log(`Cleaning up ${removedImages.length} removed images from Cloudflare R2...`)
         // Use the delete API endpoint
         import('@/utils/cleanup-orphaned-images')
           .then(({ cleanupOrphanedImages }) => {
             cleanupOrphanedImages(removedImages).then((cleanupResult) => {
               if (cleanupResult.failed.length > 0) {
-                console.warn('Failed to delete some removed images:', cleanupResult.failed)
               } else {
-                console.log(`✅ Successfully cleaned up ${cleanupResult.success.length} removed images`)
               }
             })
           })
           .catch((error) => {
-            console.error('Error during image cleanup:', error)
           })
       }
 
@@ -614,7 +609,6 @@ export default function EditBlogPage({
       // Optionally refresh the page or redirect
       router.push(`/dashboard/blog`)
     } catch (error: any) {
-      console.error('Error saving blog:', error)
       toast.error('Error saving blog', {
         description: error.message || 'There was an error saving your changes. Please try again.',
       })

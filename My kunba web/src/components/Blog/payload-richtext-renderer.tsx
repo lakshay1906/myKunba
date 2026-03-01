@@ -200,7 +200,6 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       return null
 
     default:
-      console.warn('Unknown node type:', node.type, node)
       // Fallback: try to render children if they exist
       const unknownNode = node as PayloadElementNode
       if (unknownNode.children && unknownNode.children.length > 0) {

@@ -26,7 +26,6 @@ export default async function page({ params }: { params: Promise<{ id: string }>
 
     return <CategoryDetailPage id={id} response={response} />
   } catch (error) {
-    console.error('Error loading category:', error)
     redirect('/dashboard/category')
   }
 }

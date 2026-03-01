@@ -169,15 +169,6 @@ export async function saveDraftToCookie(data: BlogDraftData) {
     )
 
     if (useIndexedDB) {
-      console.log('Using IndexedDB for draft storage:', {
-        hasImage,
-        contentSize,
-        imageSize,
-        totalSize: testJsonSize,
-      })
-    }
-
-    if (useIndexedDB) {
       // Verify IndexedDB is available before attempting save
       const isIndexedDBAvailable = await verifyIndexedDBAvailable()
 
@@ -185,8 +176,6 @@ export async function saveDraftToCookie(data: BlogDraftData) {
         // Save to IndexedDB (persistent, large capacity)
         try {
           await saveToIndexedDB(processedData)
-          const dataSize = JSON.stringify(processedData).length
-          console.log('✅ Draft saved to IndexedDB successfully, size:', dataSize, 'chars')
 
           // Save a small metadata cookie indicating IndexedDB is being used
           // This helps with quick checks and ensures we know where to look
@@ -198,22 +187,17 @@ export async function saveDraftToCookie(data: BlogDraftData) {
           setCookie(DRAFT_COOKIE_NAME, JSON.stringify(metadata), DRAFT_COOKIE_EXPIRY_DAYS)
           return
         } catch (storageError) {
-          console.error('❌ IndexedDB save failed, trying fallback:', storageError)
           // If IndexedDB fails and data is too large for cookies, we have a problem
           if (testJsonSize > 3000) {
-            console.error('⚠️ Data too large for cookies and IndexedDB failed - data may be lost!')
             throw new Error('Unable to save large draft data - IndexedDB unavailable')
           }
           // Fallback to cookie-only approach for small data
           return saveDraftFallback(data)
         }
       } else {
-        console.warn('⚠️ IndexedDB not available, using cookie fallback')
         // If data is too large, warn user
         if (testJsonSize > 3000) {
-          console.error(
-            '⚠️ Large data cannot be saved - IndexedDB unavailable and data exceeds cookie limit',
-          )
+          // Large data cannot be saved - IndexedDB unavailable and data exceeds cookie limit
         }
         return saveDraftFallback(data)
       }
@@ -222,7 +206,6 @@ export async function saveDraftToCookie(data: BlogDraftData) {
       return saveDraftFallback(data)
     }
   } catch (error) {
-    console.error('Error saving draft:', error)
     // Try fallback
     return saveDraftFallback(data)
   }
@@ -235,25 +218,12 @@ function saveDraftFallback(data: BlogDraftData) {
   try {
     const processedData = { ...data }
 
-    // Log data URL size for debugging
-    if (processedData.coverImage && processedData.coverImage.startsWith('data:')) {
-      const dataUrlSize = processedData.coverImage.length
-      console.log('Data URL size:', dataUrlSize, 'characters')
-    }
-
     const jsonData = JSON.stringify(processedData)
 
-    // localStorage should be preferred, but if we're here, warn about size
-    if (jsonData.length > 3000) {
-      console.warn('Draft data is large for cookie storage:', jsonData.length, 'chars')
-    }
-
     setCookie(DRAFT_COOKIE_NAME, jsonData, DRAFT_COOKIE_EXPIRY_DAYS)
-    console.log('✅ Draft saved to cookie fallback, size:', jsonData.length, 'chars')
   } catch (error) {
-    console.error('Error saving draft to cookie fallback:', error)
     if (error instanceof Error && error.name === 'QuotaExceededError') {
-      console.error('Cookie quota exceeded - draft data is too large to save')
+      // Cookie quota exceeded - draft data is too large to save
     }
   }
 }
@@ -289,11 +259,9 @@ export async function loadDraftFromCookie(): Promise<BlogDraftData | null> {
       try {
         const indexedDBData = await loadFromIndexedDB()
         if (indexedDBData) {
-          console.log('✅ Draft loaded from IndexedDB (persistent storage)')
           return indexedDBData
         }
       } catch (indexedDBError) {
-        console.warn('IndexedDB load failed, trying cookies:', indexedDBError)
       }
     }
 
@@ -304,7 +272,6 @@ export async function loadDraftFromCookie(): Promise<BlogDraftData | null> {
 
         // If this is just metadata, don't return it
         if (parsed.hasIndexedDBData && !parsed.title && !parsed.content) {
-          console.warn('Only metadata found in cookie, IndexedDB data missing')
           // Try to clean up stale metadata
           await clearDraftCookie()
           return null
@@ -325,17 +292,14 @@ export async function loadDraftFromCookie(): Promise<BlogDraftData | null> {
           (parsed.faq && parsed.faq.length > 0) ||
           (parsed.categories && parsed.categories.length > 0)
         if (hasDraftContent) {
-          console.log('✅ Draft loaded from cookie, size:', cookieData.length, 'chars')
           return parsed
         }
       } catch (parseError) {
-        console.error('Error parsing cookie data:', parseError)
       }
     }
 
     return null
   } catch (error) {
-    console.error('Error loading draft:', error)
     return null
   }
 }
@@ -352,26 +316,19 @@ export async function clearDraftCookie() {
   try {
     await clearIndexedDB()
     clearedIndexedDB = true
-    console.log('✅ IndexedDB draft cleared')
   } catch (error) {
-    console.warn('⚠️ Failed to clear IndexedDB draft (non-critical):', error)
   }
 
   // Clear cookies (always attempt, even if IndexedDB failed)
   try {
     deleteCookie(DRAFT_COOKIE_NAME)
     clearedCookie = true
-    console.log('✅ Cookie draft cleared')
   } catch (error) {
-    console.warn('⚠️ Failed to clear cookie draft (non-critical):', error)
   }
 
   if (clearedIndexedDB && clearedCookie) {
-    console.log('✅ Draft cleared from both IndexedDB and cookies')
   } else if (clearedIndexedDB || clearedCookie) {
-    console.log('⚠️ Draft partially cleared (some operations failed)')
   } else {
-    console.error('❌ Failed to clear draft from both storage locations')
   }
 }
 
@@ -387,7 +344,6 @@ function openIndexedDB(retries = 3): Promise<IDBDatabase> {
 
     request.onerror = () => {
       if (retries > 0) {
-        console.warn(`IndexedDB open failed, retrying... (${retries} attempts left)`)
         setTimeout(() => {
           openIndexedDB(retries - 1)
             .then(resolve)
@@ -402,7 +358,6 @@ function openIndexedDB(retries = 3): Promise<IDBDatabase> {
       const db = request.result
       // Handle database close events
       db.onerror = (event) => {
-        console.error('IndexedDB error:', event)
       }
       resolve(db)
     }
@@ -411,12 +366,10 @@ function openIndexedDB(retries = 3): Promise<IDBDatabase> {
       const db = (event.target as IDBOpenDBRequest).result
       if (!db.objectStoreNames.contains(DRAFT_STORE_NAME)) {
         const objectStore = db.createObjectStore(DRAFT_STORE_NAME)
-        console.log('IndexedDB object store created:', DRAFT_STORE_NAME)
       }
     }
 
     request.onblocked = () => {
-      console.warn('IndexedDB upgrade blocked - another tab may be open')
     }
   })
 }
@@ -432,7 +385,6 @@ async function saveToIndexedDB(data: BlogDraftData): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       // Set up transaction handlers first
       transaction.oncomplete = () => {
-        console.log('IndexedDB transaction completed successfully')
         resolve()
       }
 
@@ -449,7 +401,6 @@ async function saveToIndexedDB(data: BlogDraftData): Promise<void> {
 
       request.onsuccess = () => {
         // Put succeeded, but wait for transaction.oncomplete
-        console.log('IndexedDB put operation succeeded, waiting for transaction...')
       }
 
       request.onerror = () => {
@@ -457,7 +408,6 @@ async function saveToIndexedDB(data: BlogDraftData): Promise<void> {
       }
     })
   } catch (error) {
-    console.error('Error saving to IndexedDB:', error)
     throw error
   } finally {
     if (db) {
@@ -489,10 +439,8 @@ async function loadFromIndexedDB(): Promise<BlogDraftData | null> {
       request.onsuccess = () => {
         const result = request.result
         if (result) {
-          console.log('✅ Data found in IndexedDB')
           resolve(result)
         } else {
-          console.log('No data found in IndexedDB')
           resolve(null)
         }
       }
@@ -504,7 +452,6 @@ async function loadFromIndexedDB(): Promise<BlogDraftData | null> {
 
     return data
   } catch (error) {
-    console.error('Error loading from IndexedDB:', error)
     return null
   } finally {
     if (db) {
@@ -525,7 +472,6 @@ async function clearIndexedDB(): Promise<void> {
 
       request.onsuccess = () => {
         transaction.oncomplete = () => {
-          console.log('IndexedDB cleared successfully')
           resolve()
         }
         transaction.onerror = () => {
@@ -538,7 +484,6 @@ async function clearIndexedDB(): Promise<void> {
       }
     })
   } catch (error) {
-    console.error('Error clearing IndexedDB:', error)
   } finally {
     if (db) {
       db.close()
@@ -561,7 +506,6 @@ async function hasIndexedDBData(): Promise<boolean> {
 export async function verifyIndexedDBAvailable(): Promise<boolean> {
   try {
     if (typeof window === 'undefined' || !window.indexedDB) {
-      console.warn('IndexedDB not available in this environment')
       return false
     }
 
@@ -569,12 +513,10 @@ export async function verifyIndexedDBAvailable(): Promise<boolean> {
     const db = await openIndexedDB()
     if (db) {
       db.close()
-      console.log('✅ IndexedDB is available and working')
       return true
     }
     return false
   } catch (error) {
-    console.error('IndexedDB verification failed:', error)
     return false
   }
 }
@@ -593,22 +535,18 @@ export async function testDraftStorage(): Promise<boolean> {
 
     // Test save
     await saveDraftToCookie(testData)
-    console.log('✅ Test draft saved')
 
     // Test load
     const loaded = await loadDraftFromCookie()
     if (loaded && loaded.title === 'Test Draft') {
-      console.log('✅ Test draft loaded successfully - storage is working!')
 
       // Clean up test data
       await clearDraftCookie()
       return true
     } else {
-      console.error('❌ Test draft load failed - data mismatch')
       return false
     }
   } catch (error) {
-    console.error('❌ Storage test failed:', error)
     return false
   }
 }

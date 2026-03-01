@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
       resendAfterSeconds: RESEND_COOLDOWN_SECONDS,
     })
   } catch (e: any) {
-    console.error('Send OTP error:', e)
     return NextResponse.json(
       { message: e?.message || 'Failed to send verification code' },
       { status: 500 },

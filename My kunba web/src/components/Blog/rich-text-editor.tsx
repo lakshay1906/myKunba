@@ -178,11 +178,6 @@ export default function RichTextEditor({
       // Only set content if it's different from current content
       const currentContent = editor.getHTML()
       if (currentContent !== value) {
-        console.log('Setting editor content from value prop:', {
-          value: value?.substring(0, 100) + '...',
-          currentContent: currentContent?.substring(0, 100) + '...',
-          isDifferent: currentContent !== value,
-        })
         editor.commands.setContent(value)
       }
     }

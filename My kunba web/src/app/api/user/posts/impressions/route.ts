@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error incrementing impressions:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

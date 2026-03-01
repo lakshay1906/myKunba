@@ -168,7 +168,6 @@ export async function fetchComments(postId: number, limit: number = 10) {
       hasMore: initialComments.totalDocs > limit,
     }
   } catch (error) {
-    console.error('Error fetching comments:', error)
     return {
       comments: [],
       total: 0,

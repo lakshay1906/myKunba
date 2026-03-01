@@ -76,7 +76,6 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
         setLoginDetail(null)
       })
       .catch((err) => {
-        console.error('Failed to delete incomplete Firebase user:', err)
         setIsAuthenticated(false)
         setuserDetails({})
         setUser(null)

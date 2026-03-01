@@ -72,7 +72,6 @@ export default function Footer() {
         toast.error(data.message || 'Something went wrong. Please try again later.')
       }
     } catch (error) {
-      console.error('Error subscribing:', error)
       toast.error('An error occurred. Please try again later.')
     } finally {
       setIsSubmitting(false)

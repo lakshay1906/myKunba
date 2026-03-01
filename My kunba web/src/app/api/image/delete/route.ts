@@ -42,7 +42,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Image deleted successfully',
     })
   } catch (error: any) {
-    console.error('Error deleting image:', error)
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to delete image',

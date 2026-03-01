@@ -46,7 +46,6 @@ export default async function page({ searchParams }: { searchParams: Promise<{ p
       />
     )
   } catch (error) {
-    console.error('Error loading categories:', error)
     redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/category'))
   }
 }

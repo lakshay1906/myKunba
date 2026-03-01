@@ -122,7 +122,6 @@ export default function BlogMain({
 
       return { success: true }
     } catch (error: any) {
-      console.error('Error deleting blog:', error)
       const message = error.message || 'Failed to delete blog'
       if (!silent) toast.error('Error', { description: message })
       return { success: false, message }
@@ -169,7 +168,6 @@ export default function BlogMain({
         })
       }
     } catch (error) {
-      console.error('Error fetching blogs:', error)
       Toast({
         isSuccess: false,
         description: 'Failed to fetch blogs',

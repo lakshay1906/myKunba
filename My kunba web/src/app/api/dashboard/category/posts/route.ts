@@ -91,7 +91,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error fetching category posts:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
   }
 }
@@ -191,7 +190,6 @@ export async function PUT(req: NextRequest) {
             },
           })
         } catch (error) {
-          console.error(`Error updating post ${postId}:`, error)
         }
       }
     }
@@ -204,7 +202,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ message: 'Category posts updated successfully' }, { status: 200 })
   } catch (error: any) {
-    console.error('Error updating category posts:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
   }
 }

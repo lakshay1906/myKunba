@@ -58,7 +58,6 @@ async function uploadImageFromDataURL(dataUrl: string, alt: string): Promise<str
 
     return data.data.url
   } catch (error: any) {
-    console.error('Error uploading image from data URL:', error)
     throw error
   }
 }
@@ -123,7 +122,6 @@ export async function processContentImages(
             processedContent.substring(tagIndex + image.fullTag.length)
         }
       } catch (error: any) {
-        console.error(`Failed to upload image: ${error.message}`)
         // Continue processing other images even if one fails
         // The data URL will remain in the content
       }

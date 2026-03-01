@@ -100,16 +100,7 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
   if (process.env.NODE_ENV === 'development') {
     try {
       await transporter.verify()
-      console.log('✅ SMTP server is ready to send emails')
     } catch (verifyError: any) {
-      console.error('❌ SMTP verification failed:', {
-        message: verifyError?.message,
-        code: verifyError?.code,
-        response: verifyError?.response,
-        responseCode: verifyError?.responseCode,
-        command: verifyError?.command,
-      })
-      
       // Provide helpful error messages
       if (verifyError?.code === 'EAUTH') {
         throw new Error(
@@ -134,16 +125,7 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
       html,
     })
 
-    console.log('✅ Email sent successfully:', info.messageId)
   } catch (error: any) {
-    console.error('❌ Error sending email:', {
-      message: error?.message,
-      code: error?.code,
-      response: error?.response,
-      responseCode: error?.responseCode,
-      command: error?.command,
-    })
-
     // Provide helpful error messages
     if (error?.code === 'EAUTH') {
       const authError = new Error(

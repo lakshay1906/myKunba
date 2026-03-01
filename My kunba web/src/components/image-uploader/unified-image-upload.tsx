@@ -58,7 +58,6 @@ export default function UnifiedImageUpload({
           dimensions: imageDimensions,
         }))
       } catch (error) {
-        console.error('Failed to get image dimensions:', error)
       } finally {
         setImageUploadData((prev) => ({
           ...prev,
@@ -139,7 +138,6 @@ export default function UnifiedImageUpload({
         }))
       }
     } catch (error) {
-      console.error('Failed to get image dimensions from URL:', error)
       setImageUploadData((prev) => ({
         ...prev,
         dimensions: null,
@@ -266,7 +264,6 @@ export default function UnifiedImageUpload({
                   clearAll()
                 }
               } catch (error: any) {
-                console.error('Error uploading image:', error)
                 setImageUploadData((prev) => ({
                   ...prev,
                   uploading: false,

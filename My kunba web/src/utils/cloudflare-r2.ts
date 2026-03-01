@@ -163,7 +163,6 @@ export async function convertToWebP(
     const supportedFormats = ['jpeg', 'jpg', 'png', 'gif', 'tiff', 'bmp', 'avif', 'heic']
     if (format && !supportedFormats.includes(format.toLowerCase())) {
       // If format is not in supported list, return original
-      console.warn(`Unsupported format for WebP conversion: ${format}, using original image`)
       return {
         buffer,
         fileName: originalFileName,
@@ -208,7 +207,6 @@ export async function convertToWebP(
   } catch (error) {
     // If conversion fails, return original image
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.warn('Failed to convert image to WebP, using original:', errorMessage)
     return {
       buffer,
       fileName: originalFileName,

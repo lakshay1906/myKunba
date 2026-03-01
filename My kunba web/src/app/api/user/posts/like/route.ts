@@ -152,7 +152,6 @@ export async function POST(req: NextRequest) {
         })
       } catch (notificationError) {
         // Log error but don't fail the like/dislike operation
-        console.error('Error creating notification:', notificationError)
       }
     }
 
@@ -207,7 +206,6 @@ export async function POST(req: NextRequest) {
       userReaction: userLike.docs.length > 0 ? userLike.docs[0].type : null,
     })
   } catch (error: any) {
-    console.error('Error liking/disliking post:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -315,7 +313,6 @@ export async function GET(req: NextRequest) {
       userReaction: userReaction,
     })
   } catch (error: any) {
-    console.error('Error fetching like/dislike data:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

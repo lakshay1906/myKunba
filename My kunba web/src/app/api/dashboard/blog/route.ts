@@ -296,9 +296,6 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (error: any) {
-    console.error('Error creating blog post:', error)
-    console.error('Error stack:', error?.stack)
-    console.error('Error details:', JSON.stringify(error, null, 2))
 
     // Return more detailed error message
     let errorMessage = 'Internal server error'
@@ -464,7 +461,6 @@ export async function PUT(req: NextRequest) {
             }
           }
         } catch (error) {
-          console.error('Error handling image update:', error)
           updateData.media = coverImage
         }
       }
@@ -528,7 +524,6 @@ export async function PUT(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error updating blog:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
   }
 }
@@ -567,7 +562,6 @@ export async function DELETE(req: NextRequest) {
         id: Number(id),
       })
     } catch (findError) {
-      console.error('Error finding blog post:', findError)
       return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
     }
 
@@ -600,7 +594,6 @@ export async function DELETE(req: NextRequest) {
     revalidatePostsTag()
     return NextResponse.json({ message: 'Blog post deleted successfully' }, { status: 200 })
   } catch (error: any) {
-    console.error('Error in DELETE /api/dashboard/blog:', error)
     return NextResponse.json(
       { message: error.message || 'Internal server error' },
       { status: 500 },

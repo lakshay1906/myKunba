@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'Signing secret not provided' }, { status: 500 })
   }
 
-  let userData: JwtPayload & { email?: string; uid?: string }
+  let userData: (JwtPayload & { email?: string; uid?: string }) | null
   try {
     const decoded = jwt.verify(accessToken, secret)
     userData = typeof decoded === 'object' && decoded !== null ? (decoded as JwtPayload & { email?: string; uid?: string }) : null
@@ -32,7 +32,6 @@ export async function GET(req: NextRequest) {
     if (name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
-    console.error('[auth/login] JWT verify error:', err)
     return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
   }
 
@@ -74,7 +73,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(updated, { status: 200 })
   } catch (error) {
-    console.error('[auth/login] Error:', error)
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Error logging in' },
       { status: 500 },

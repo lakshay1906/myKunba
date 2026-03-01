@@ -80,7 +80,6 @@ export default function TagDetailPage({
         )
       }
     } catch (error) {
-      console.error('Error fetching posts:', error)
     } finally {
       setLoading(false)
     }
