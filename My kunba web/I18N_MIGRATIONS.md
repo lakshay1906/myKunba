@@ -21,6 +21,10 @@ This doc describes **idempotent** i18n migrations and how they run in Docker and
 
 - Adds `post_translation_entries_id` (nullable INTEGER) to `posts` if missing. Workaround for Payload queries that expect this column (e.g. when loading a single post with relationships for the dashboard edit form). **If you see "column ... post_translation_entries_id does not exist" when editing a blog, run this migration.** Existing rows are unchanged; safe for production.
 
+### 004_payload_locked_documents_rels_post_translation_entries_id.sql **(fixes login / API errors)**
+
+- Adds `post_translation_entries_id` (nullable INTEGER) to **`payload_locked_documents_rels`** if the table exists and the column is missing. Payload’s document-locking / polymorphic relations expect this column on that table; the error alias (e.g. `c339be9c_...`) refers to it. **If the column already exists on `posts` but the error persists (e.g. on login or other APIs), run this migration.** Idempotent; no-op if the table does not exist or the column is already present.
+
 - **Runner**: `scripts/run-migration.js` (Node + `pg`)
   - Reads `DATABASE_URI` from env and runs all `NNN_*.sql` files in order, or a single file if path is passed.
 - **Idempotent**: Safe to run multiple times (CREATE TABLE IF NOT EXISTS, ON CONFLICT DO NOTHING, index creation guarded).
