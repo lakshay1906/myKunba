@@ -156,7 +156,7 @@ body {
 
   .spinner-dot::before {
     content: '';
-    @apply h-[20%] w-[20%] rounded-full bg-[#183153];
+    @apply h-[20%] w-[20%] rounded-full bg-primary;
     box-shadow: 0 0 20px rgba(18, 31, 53, 0.3);
     animation: pulse-spinner 1s ease-in-out infinite;
   }

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table'
 import CurrentPageComponent from '@/components/CurrentPageComponent'
 import { Checkbox } from '@/components/ui/checkbox'
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import StatusTag from './StatusTag'
 import Loading from '@/components/Loading'
@@ -65,13 +65,30 @@ export default function DataTable({
   loading: boolean
   cardStyle?: string
 }) {
+  const [filterColumn, setFilterColumn] = useState<string | null>(null)
+  const [searchText, setSearchText] = useState('')
+
   const headers = Object.keys(data[0] ?? {}).filter(
     (key) => !endsWithId(key) && !startsWithLowercase(key),
   )
 
+  const filteredData = useMemo(() => {
+    const search = searchText.trim().toLowerCase()
+    if (!search) return data
+    const col = filterColumn && filterColumn !== '_all' ? filterColumn : null
+    if (col) {
+      return data.filter((row) =>
+        String(row[col] ?? '').toLowerCase().includes(search),
+      )
+    }
+    return data.filter((row) =>
+      headers.some((h) => String(row[h] ?? '').toLowerCase().includes(search)),
+    )
+  }, [data, searchText, filterColumn, headers])
+
   function handleParentCheckboxChange(value: string | boolean) {
     if (value) {
-      setSelectedProducts([...data])
+      setSelectedProducts([...filteredData])
     } else {
       setSelectedProducts([])
     }
@@ -118,13 +135,17 @@ export default function DataTable({
         </div>
       ) : (
         <>
-          <div className="p-3 sm:p-4 flex items-center justify-between">
-            <Select>
-              <SelectTrigger className="w-fit h-7 px-2">
+          <div className="p-3 sm:p-4 flex items-center justify-between flex-wrap gap-2">
+            <Select
+              value={filterColumn ?? ''}
+              onValueChange={(v) => setFilterColumn(v || null)}
+            >
+              <SelectTrigger className="w-fit h-7 px-2 min-w-[120px]">
                 <SelectValue placeholder="Add Filter" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  <SelectItem value="_all">All columns</SelectItem>
                   {headers.map((header) => {
                     if (header !== 'id') {
                       return (
@@ -139,19 +160,24 @@ export default function DataTable({
             </Select>
             <form
               className="flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault()
-              }}
+              onSubmit={(e) => e.preventDefault()}
             >
               <Input
                 type="text"
                 placeholder="Search"
                 className="h-7 sm:w-44 w-40 text-sm outline-none"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
               />
-              <Button variant={'outline'} className="px-2 h-7">
-                <ArrowDownWideNarrow />
+              <Button variant="outline" className="px-2 h-7" type="button" aria-label="Search">
+                <ArrowDownWideNarrow className="h-4 w-4" />
               </Button>
             </form>
+            {searchText.trim() && (
+              <span className="text-xs text-muted-foreground">
+                Showing {filteredData.length} of {data.length}
+              </span>
+            )}
           </div>
           <Separator />
           <Table className="overflow-y-auto">
@@ -160,7 +186,10 @@ export default function DataTable({
                 {isCheckBoxRequired && (
                   <TableHead className="my-auto">
                     <Checkbox
-                      checked={selectedProducts.length === data.length}
+                      checked={
+                        filteredData.length > 0 &&
+                        selectedProducts.length === filteredData.length
+                      }
                       onCheckedChange={(value) => handleParentCheckboxChange(value)}
                     />
                   </TableHead>
@@ -178,8 +207,19 @@ export default function DataTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((col: any, index: number) => {
-                return (
+              {filteredData.length === 0 && searchText.trim() ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={
+                      (isCheckBoxRequired ? 1 : 0) + headers.filter((h) => h !== 'id').length + (isEllipsisRequired ? 1 : 0)
+                    }
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    No matches for &quot;{searchText.trim()}&quot;
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredData.map((col: any, index: number) => (
                   // <motion.div
                   // initial={{ x: -50, opacity: 0 }}
                   // whileInView={{ x: 0, opacity: 1 }}
@@ -274,8 +314,8 @@ export default function DataTable({
                     )}
                   </TableRow>
                   // </motion.div>
-                )
-              })}
+                ))
+              )}
               {/* {totalPages > 1 && ( */}
               <TableRow>
                 <TableCell

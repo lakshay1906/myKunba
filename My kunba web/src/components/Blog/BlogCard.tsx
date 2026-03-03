@@ -84,28 +84,16 @@ export default function BlogCard({ post }: BlogCardProps) {
               {category.name}
             </Badge>
           ))}
-          {post.tags?.map((tag) => (
-            <Link
-              key={tag.id}
-              href={`/tag/${tag.slug || tag.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex"
-            >
-              <Badge variant="outline" className="cursor-pointer font-medium hover:bg-muted">
-                #{tag.name}
-              </Badge>
-            </Link>
-          ))}
         </div>
         <div>
           <CardHeader className="pt-0 pb-2">
             <h3 className="text-xl font-bold leading-tight transition-colors group-hover:text-primary">
-              {post.title.length > 32 ? `${post.title.substring(0, 32)}...` : post.title}
+              {post.title.length > 61 ? `${post.title.substring(0, 62)}...` : post.title}
             </h3>
           </CardHeader>
           <CardContent className="pb-4">
             <p className="text-muted-foreground line-clamp-3">
-              {post.excerpt.length > 70 ? `${post.excerpt.substring(0, 70)}...` : post.excerpt}
+              {post.excerpt.length > 70 ? `${post.excerpt.substring(0, 90)}...` : post.excerpt}
             </p>
           </CardContent>
           <CardFooter className="flex items-center justify-between border-t py-4">
@@ -114,9 +102,8 @@ export default function BlogCard({ post }: BlogCardProps) {
                 <AvatarImage
                   src={
                     post.author.profileImage === null
-                      ? `https://source.unsplash.com/featured/?portrait,${
-                          post.author.displayName?.replace(' ', '') || 'user'
-                        }`
+                      ? `https://source.unsplash.com/featured/?portrait,${post.author.displayName?.replace(' ', '') || 'user'
+                      }`
                       : post.author.profileImage.url
                   }
                   alt={post.author.displayName || 'Author'}

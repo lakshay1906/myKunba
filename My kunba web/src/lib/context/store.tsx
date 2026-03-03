@@ -169,3 +169,6 @@ export const useAppStore = () => {
   }
   return context
 }
+
+/** Use store when inside AppProvider; returns null when outside (e.g. some SSR/streaming cases). */
+export const useAppStoreOptional = () => useContext(AppContext) ?? null

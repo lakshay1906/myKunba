@@ -37,7 +37,7 @@ export default async function Home({
   searchParams: Promise<{ page?: string }>
 }) {
   const params = await searchParams
-  const page = params.page ? Number(params.page) : 1
+  const page = Math.max(1, params.page ? Number(params.page) : 1)
   const limit = 12
   const offset = (page - 1) * limit
   const headersList = await headers()
@@ -112,7 +112,8 @@ export default async function Home({
         initialAuthors={initialAuthors as unknown as Record<string, unknown>[]}
         total={posts.totalDocs || 0}
         limit={limit}
-        hasMore={posts.hasNextPage ?? false}
+        currentPage={page}
+        totalPages={Math.ceil((posts.totalDocs || 0) / limit) || 1}
       />
     </>
   )

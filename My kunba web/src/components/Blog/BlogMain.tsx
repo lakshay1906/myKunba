@@ -27,6 +27,15 @@ import Toast from '../Toast'
 import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
 
+function computeSeoScore(blog: Record<string, any>): number {
+  let score = 0
+  if (blog.metaTitle && String(blog.metaTitle).trim().length > 0) score += 25
+  if (blog.metaDescription && String(blog.metaDescription).trim().length > 0) score += 25
+  if (blog.focusKeyword && String(blog.focusKeyword).trim().length > 0) score += 25
+  if (blog.imageAltText && String(blog.imageAltText).trim().length > 0) score += 25
+  return score
+}
+
 interface BlogMainProps {
   initialBlogs?: Record<string, any>[]
   initialTotal?: number
@@ -272,12 +281,16 @@ export default function BlogMain({
       currentPage={currentPage}
       limit={limit}
       totalPages={totalPages}
-      data={blogs.map((blog) => ({
-        id: blog.id,
-        Title: blog.title,
-        Slug: `/${blog.slug}`,
-        Status: blog.status,
-      }))}
+      data={blogs.map((blog) => {
+        const score = computeSeoScore(blog)
+        return {
+          id: blog.id,
+          Title: blog.title,
+          Status: blog.status,
+          'SEO Score': score,
+          slug: blog.slug,
+        }
+      })}
       fetchDataFunction={fetchBlogs}
       EllipsisComponent={({ value }: { value: Record<string, any> }) => (
         <Popover>
