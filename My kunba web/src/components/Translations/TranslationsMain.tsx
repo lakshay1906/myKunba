@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -54,6 +54,9 @@ interface TranslationsMainProps {
   initialTotalPages: number
   initialLimit: number
   initialPosts: PostOption[]
+  initialLoadError?: boolean
+  /** Server-provided error message so we know the exact issue in production. */
+  initialLoadErrorMessage?: string | null
 }
 
 export default function TranslationsMain({
@@ -63,6 +66,8 @@ export default function TranslationsMain({
   initialTotalPages = 1,
   initialLimit = 20,
   initialPosts = [],
+  initialLoadError = false,
+  initialLoadErrorMessage = null,
 }: TranslationsMainProps) {
   const [translations, setTranslations] = useState<TranslationDoc[]>(initialTranslations)
   const [total, setTotal] = useState(initialTotal)
@@ -70,6 +75,16 @@ export default function TranslationsMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [posts, setPosts] = useState<PostOption[]>(initialPosts)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (initialLoadError) {
+      toast.error('Unable to load translations', {
+        description: initialLoadErrorMessage
+          ? initialLoadErrorMessage
+          : 'Please try again or contact support if the problem persists.',
+      })
+    }
+  }, [initialLoadError, initialLoadErrorMessage])
   const [createOpen, setCreateOpen] = useState(false)
   const [editDoc, setEditDoc] = useState<TranslationDoc | null>(null)
   const [form, setForm] = useState({

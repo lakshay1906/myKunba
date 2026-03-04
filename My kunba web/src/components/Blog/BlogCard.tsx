@@ -88,7 +88,7 @@ export default function BlogCard({ post }: BlogCardProps) {
         <div>
           <CardHeader className="pt-0 pb-2">
             <h3 className="text-xl font-bold leading-tight transition-colors group-hover:text-primary">
-              {post.title.length > 61 ? `${post.title.substring(0, 62)}...` : post.title}
+              {post.title.length > 62 ? `${post.title.substring(0, 62)}...` : post.title}
             </h3>
           </CardHeader>
           <CardContent className="pb-4">

@@ -74,7 +74,12 @@ export async function GET(
     if (result instanceof NextResponse) return result
     return NextResponse.json(result.doc)
   } catch (e) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[post-translations GET by id]', err.message, err.stack ?? '')
+    return NextResponse.json(
+      { message: err.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
 
@@ -112,7 +117,12 @@ export async function PATCH(
     })
     return NextResponse.json(updated)
   } catch (e) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[post-translations PATCH]', err.message, err.stack ?? '')
+    return NextResponse.json(
+      { message: err.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
 
@@ -135,6 +145,11 @@ export async function DELETE(
     })
     return NextResponse.json({ success: true })
   } catch (e) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[post-translations DELETE]', err.message, err.stack ?? '')
+    return NextResponse.json(
+      { message: err.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }

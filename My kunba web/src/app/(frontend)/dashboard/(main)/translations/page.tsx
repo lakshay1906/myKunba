@@ -9,12 +9,12 @@ export default async function TranslationsPage({
 }: {
   searchParams: Promise<{ page?: string; postId?: string }>
 }) {
-  try {
-    const params = await searchParams
-    const page = Math.max(1, Number(params.page) || 1)
-    const postId = params.postId ? Number(params.postId) : undefined
-    const limit = 20
+  const params = await searchParams
+  const page = Math.max(1, Number(params.page) || 1)
+  const postId = params.postId ? Number(params.postId) : undefined
+  const limit = 20
 
+  try {
     const [translationsData, postsData] = await Promise.all([
       fetchDashboardPostTranslations(page, limit, postId),
       fetchDashboardPostsForTranslations(),
@@ -36,6 +36,28 @@ export default async function TranslationsPage({
     if (isAuthError) {
       redirect('/unauthorised?redirect=' + encodeURIComponent('/dashboard/translations'))
     }
-    throw e
+    // Log full error server-side so production logs show the exact issue (e.g. docker logs).
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[TranslationsPage] Load failed:', err.message, err.stack ?? '')
+
+    // Safe message for client: truncate, no newlines (helps debugging in production UI).
+    const rawMessage = err.message || String(e)
+    const safeMessage = rawMessage
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 300)
+
+    return (
+      <TranslationsMain
+        initialTranslations={[]}
+        initialTotal={0}
+        initialPage={1}
+        initialTotalPages={1}
+        initialLimit={limit}
+        initialPosts={[]}
+        initialLoadError
+        initialLoadErrorMessage={safeMessage}
+      />
+    )
   }
 }

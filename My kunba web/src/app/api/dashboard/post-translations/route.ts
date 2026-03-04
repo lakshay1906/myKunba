@@ -64,7 +64,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (e) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[post-translations GET]', err.message, err.stack ?? '')
+    return NextResponse.json(
+      { message: err.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
 
@@ -143,6 +148,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(doc, { status: 201 })
   } catch (e) {
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('[post-translations POST]', err.message, err.stack ?? '')
+    return NextResponse.json(
+      { message: err.message || 'Internal server error' },
+      { status: 500 },
+    )
   }
 }

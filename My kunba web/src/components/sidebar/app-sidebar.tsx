@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/sidebar'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/lib/context/store'
+import Image from 'next/image'
+import Link from 'next/link'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { loginDetail } = useAppStore()
@@ -57,12 +59,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const data = {
     navMain: [
       {
-        title: 'Dashboard',
-        url: '/dashboard/blog',
-        icon: LayoutDashboardIcon,
-      },
-      {
-        title: 'Back to Frontend',
+        title: 'Back to UserFront',
         url: '/',
         icon: Reply,
       },
@@ -159,10 +156,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="">
-              <a href="#">
-                <ArrowUpCircleIcon className="h-5 w-5" />
+              <Link href="#">
+                <Image src="/logo.svg" alt="My Kunba" width={32} height={32} />
                 <span className="text-base font-semibold">My Kunba</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
