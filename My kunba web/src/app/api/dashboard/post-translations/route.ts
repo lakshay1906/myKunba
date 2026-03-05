@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { authenticateUser } from '@/utils/auth'
+import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 
 const ALLOWED_LOCALES = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
         collection: 'posts',
         where: { author: { equals: user.id }, deleted_at: { equals: null } },
         limit: 10000,
-        select: { id: true },
+        select: { id: true } as Parameters<typeof payload.find>[0]['select'],
         depth: 0,
       })
       const ids = myPosts.docs.map((p) => (p as { id: number }).id)
@@ -128,13 +129,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const contentValue = body.content
+    const contentLexical =
+      contentValue == null
+        ? null
+        : typeof contentValue === 'string'
+          ? (contentValue.trim() ? convertHtmlToLexicalWithParser(contentValue.trim()) : null)
+          : contentValue
+
     const data = {
       post: postId,
       locale,
       title: body.title ?? null,
       slug: body.slug ?? null,
       excerpt: body.excerpt ?? null,
-      content: body.content ?? null,
+      content: contentLexical,
       metaTitle: body.metaTitle ?? null,
       metaDescription: body.metaDescription ?? null,
       focusKeyword: body.focusKeyword ?? null,

@@ -1,10 +1,3 @@
-## Blog
-
-### 1. All Blogs => 1\*1-Img, Name, description, Likes, CreatedAt
-
-### 2. Trash Blogs => 1\*1-Img, Name, Scheduled Time, CreatedAt
-
-add loading in login process
-
-Meta title and description
 Scheduled blogs
+
+make sure that the user should not upload any new image. For example there's a ABC blog already upload with obviously one cover image and 2 more image (say XYZ, PQR for eg.) which resides between the content, in the component we do have Icon to upload image (lucide-image icon) on click of that icon that will open a dropdown that will list down that 2 image which was uploaded in that content now the admin can select from those image and once selected then remove that selected image from the dropdown so that user should not select the selected image next time. So by this admin cann't upload the new image in the translated blogs but he can surely change the order of the uploaded images, but the cover image should remain unchange.

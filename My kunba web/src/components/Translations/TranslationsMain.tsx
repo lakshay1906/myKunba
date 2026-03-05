@@ -22,9 +22,12 @@ import { Label } from '@/components/ui/label'
 import { useAppStore } from '@/lib/context/store'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import RichTextEditor, { type ContentImageOption } from '@/components/Blog/rich-text-editor'
+import { convertLexicalToHtml } from '@/utils/lexical-to-html'
 
+// Main post content is in English (Posts collection). Translations are for other locales only.
 const LOCALES = [
-  { value: 'en', label: 'English' },
   { value: 'zh', label: '中文' },
   { value: 'hi', label: 'Hindi' },
   { value: 'es', label: 'Español' },
@@ -85,8 +88,8 @@ export default function TranslationsMain({
       })
     }
   }, [initialLoadError, initialLoadErrorMessage])
-  const [createOpen, setCreateOpen] = useState(false)
   const [editDoc, setEditDoc] = useState<TranslationDoc | null>(null)
+  const [editContentImages, setEditContentImages] = useState<ContentImageOption[]>([])
   const [form, setForm] = useState({
     post: '',
     locale: '',
@@ -129,48 +132,6 @@ export default function TranslationsMain({
     }
   }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.post || !form.locale) {
-      toast.error('Select a post and locale')
-      return
-    }
-    setLoading(true)
-    try {
-      const body: Record<string, unknown> = {
-        post: Number(form.post),
-        locale: form.locale,
-        title: form.title || null,
-        slug: form.slug || null,
-        excerpt: form.excerpt || null,
-        metaTitle: form.metaTitle || null,
-        metaDescription: form.metaDescription || null,
-        focusKeyword: form.focusKeyword || null,
-        imageAltText: form.imageAltText || null,
-      }
-      try {
-        body.content = form.content ? JSON.parse(form.content) : null
-      } catch {
-        body.content = null
-      }
-      const res = await fetch('/api/dashboard/post-translations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getHeaders() },
-        body: JSON.stringify(body),
-      })
-      const err = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(err.message || 'Create failed')
-      toast.success('Translation created')
-      setCreateOpen(false)
-      setForm({ post: '', locale: '', title: '', slug: '', excerpt: '', content: '', metaTitle: '', metaDescription: '', focusKeyword: '', imageAltText: '' })
-      loadList(1)
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to create')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   async function openEdit(doc: TranslationDoc) {
     setEditDoc(doc)
     setForm({
@@ -185,14 +146,26 @@ export default function TranslationsMain({
       focusKeyword: doc.focusKeyword ?? '',
       imageAltText: doc.imageAltText ?? '',
     })
+    const postId = typeof doc.post === 'object' ? doc.post?.id : doc.post
+    if (postId != null) {
+      fetch(`/api/dashboard/post-content-images?postId=${postId}`, { headers: getHeaders() })
+        .then((res) => (res.ok ? res.json() : { images: [] }))
+        .then((data) => setEditContentImages(Array.isArray(data.images) ? data.images : []))
+        .catch(() => setEditContentImages([]))
+    } else {
+      setEditContentImages([])
+    }
     try {
       const res = await fetch(`/api/dashboard/post-translations/${doc.id}`, { headers: getHeaders() })
       if (res.ok) {
         const full = await res.json()
-        setForm((f) => ({
-          ...f,
-          content: full.content != null ? (typeof full.content === 'string' ? full.content : JSON.stringify(full.content, null, 2)) : '',
-        }))
+        const contentHtml =
+          full.content != null
+            ? typeof full.content === 'string'
+              ? full.content
+              : convertLexicalToHtml(full.content)
+            : ''
+        setForm((f) => ({ ...f, content: contentHtml }))
       }
     } catch {
       // keep form as-is
@@ -208,16 +181,12 @@ export default function TranslationsMain({
         title: form.title || null,
         slug: form.slug || null,
         excerpt: form.excerpt || null,
+        content: form.content?.trim() || null,
         metaTitle: form.metaTitle || null,
         metaDescription: form.metaDescription || null,
         focusKeyword: form.focusKeyword || null,
         imageAltText: form.imageAltText || null,
         locale: form.locale,
-      }
-      try {
-        if (form.content) body.content = JSON.parse(form.content)
-      } catch {
-        // leave content unchanged if invalid JSON
       }
       const res = await fetch(`/api/dashboard/post-translations/${editDoc.id}`, {
         method: 'PATCH',
@@ -314,8 +283,15 @@ export default function TranslationsMain({
         <Input value={form.imageAltText} onChange={(e) => setForm((f) => ({ ...f, imageAltText: e.target.value }))} placeholder="Alt text for cover image" />
       </div>
       <div className="grid gap-2">
-        <Label>Content (Lexical JSON, optional)</Label>
-        <textarea className="min-h-[120px] w-full rounded-md border px-3 py-2 font-mono text-xs" value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder='{"root":{...}} or leave empty' />
+        <Label>Content (optional)</Label>
+        <RichTextEditor
+          value={form.content}
+          onChange={(html) => setForm((f) => ({ ...f, content: html }))}
+          placeholder="Translated content..."
+          height="280px"
+          translationMode={!!editDoc}
+          existingContentImages={editDoc ? editContentImages : []}
+        />
       </div>
     </>
   )
@@ -329,10 +305,19 @@ export default function TranslationsMain({
             Add translated content and SEO fields per language. Only you (post author) and admins can add or edit translations for your posts.
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} disabled={posts.length === 0}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add translation
-        </Button>
+        {posts.length === 0 ? (
+          <Button disabled>
+            <Plus className="h-4 w-4 mr-2" />
+            Add translation
+          </Button>
+        ) : (
+          <Button asChild>
+            <Link href="/dashboard/translations/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add translation
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="rounded-md border">
@@ -378,22 +363,6 @@ export default function TranslationsMain({
           </div>
         </div>
       )}
-
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add translation</DialogTitle>
-            <DialogDescription>Only the post author or an admin can add translations. Select post and locale, then fill SEO and content.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            {formFields}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit">Create</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!editDoc} onOpenChange={(open) => !open && setEditDoc(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">

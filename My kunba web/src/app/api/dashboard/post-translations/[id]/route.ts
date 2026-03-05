@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { authenticateUser } from '@/utils/auth'
+import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
 
 const ALLOWED_LOCALES = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
 
@@ -101,7 +102,13 @@ export async function PATCH(
     if (body.title !== undefined) update.title = body.title
     if (body.slug !== undefined) update.slug = body.slug
     if (body.excerpt !== undefined) update.excerpt = body.excerpt
-    if (body.content !== undefined) update.content = body.content
+    if (body.content !== undefined) {
+      const contentValue = body.content
+      update.content =
+        typeof contentValue === 'string'
+          ? (contentValue.trim() ? convertHtmlToLexicalWithParser(contentValue.trim()) : null)
+          : contentValue
+    }
     if (body.metaTitle !== undefined) update.metaTitle = body.metaTitle
     if (body.metaDescription !== undefined) update.metaDescription = body.metaDescription
     if (body.focusKeyword !== undefined) update.focusKeyword = body.focusKeyword

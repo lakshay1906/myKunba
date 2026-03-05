@@ -54,6 +54,15 @@ import { useCallback, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { UploadResponse } from '@/lib/types'
 import UnifiedImageUpload from '@/components/image-uploader/unified-image-upload'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu'
+
+export type ContentImageOption = { src: string; alt?: string }
 
 interface RichTextEditorProps {
   value?: string
@@ -61,6 +70,10 @@ interface RichTextEditorProps {
   placeholder?: string
   height?: string
   onImageUpload?: (imageUrl: string, alt: string) => Promise<string> // Returns uploaded URL
+  /** When true, image button shows dropdown of existingContentImages only (no upload). Used for translations. */
+  translationMode?: boolean
+  /** Images from the original post content (excl. cover). Only used when translationMode is true. */
+  existingContentImages?: ContentImageOption[]
 }
 
 export default function RichTextEditor({
@@ -69,6 +82,8 @@ export default function RichTextEditor({
   placeholder = 'Start writing...',
   height = '400px',
   onImageUpload,
+  translationMode = false,
+  existingContentImages = [],
 }: RichTextEditorProps) {
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showHighlightPicker, setShowHighlightPicker] = useState(false)
@@ -87,6 +102,15 @@ export default function RichTextEditor({
     isOpen: false,
     coverImage: null,
   })
+  // In translation mode: list of content images not yet inserted (remove on select)
+  const [remainingContentImages, setRemainingContentImages] = useState<ContentImageOption[]>([])
+
+  // Sync remaining images when parent passes new existingContentImages (e.g. post changed)
+  useEffect(() => {
+    if (translationMode && existingContentImages.length >= 0) {
+      setRemainingContentImages(existingContentImages.map((img) => ({ ...img })))
+    }
+  }, [translationMode, existingContentImages])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -269,7 +293,7 @@ export default function RichTextEditor({
     [editor, clearImageUpload],
   )
 
-  // Open image upload dialog
+  // Open image upload dialog (normal mode only)
   const addImage = useCallback(() => {
     setShowImageDialog(true)
     setImageUploadData({
@@ -285,6 +309,19 @@ export default function RichTextEditor({
       coverImage: null,
     })
   }, [])
+
+  // Translation mode: insert content image and remove that entry from dropdown (by index so each use removes one)
+  const insertContentImageAt = useCallback(
+    (index: number) => {
+      if (!editor) return
+      const img = remainingContentImages[index]
+      if (!img) return
+      editor.chain().focus().setImage({ src: img.src, alt: img.alt || '' }).run()
+      setRemainingContentImages((prev) => prev.filter((_, i) => i !== index))
+      toast.success('Image inserted')
+    },
+    [editor, remainingContentImages],
+  )
 
   const insertTable = useCallback(() => {
     if (editor) {
@@ -599,9 +636,44 @@ export default function RichTextEditor({
         <Button type="button" variant="ghost" size="sm" onClick={addLink}>
           <LinkIcon className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={addImage}>
-          <ImageIcon className="h-4 w-4" />
-        </Button>
+        {translationMode ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="sm">
+                <ImageIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-[280px] overflow-y-auto min-w-[200px]">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Insert image from post content
+              </DropdownMenuLabel>
+              {remainingContentImages.length === 0 ? (
+                <DropdownMenuItem disabled className="text-muted-foreground">
+                  No images left (or none in this post)
+                </DropdownMenuItem>
+              ) : (
+                remainingContentImages.map((img, index) => (
+                  <DropdownMenuItem
+                    key={`${img.src}-${index}`}
+                    onClick={() => insertContentImageAt(index)}
+                    className="flex items-center gap-2 py-2"
+                  >
+                    <img
+                      src={img.src}
+                      alt={img.alt || ''}
+                      className="h-8 w-8 object-cover rounded border shrink-0"
+                    />
+                    <span className="truncate">{img.alt || `Image ${index + 1}`}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" onClick={addImage}>
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        )}
         <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
           <TableIcon className="h-4 w-4" />
         </Button>
