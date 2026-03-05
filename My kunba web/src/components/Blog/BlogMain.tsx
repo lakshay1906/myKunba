@@ -59,7 +59,8 @@ export default function BlogMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [authors, setAuthors] = useState<{ id: number; displayName: string; email?: string }[]>([])
-  const [selectedAuthorId, setSelectedAuthorId] = useState<number | null>(null)
+  // 'all' = show all blogs (admin only); number = filter by that author; null = not yet set
+  const [selectedAuthorId, setSelectedAuthorId] = useState<number | 'all' | null>(null)
   const { loginDetail } = useAppStore()
 
   const isAdmin = (loginDetail as { role?: string } | null)?.role === 'admin'
@@ -154,7 +155,7 @@ export default function BlogMain({
       const url = new URL('/api/dashboard/blog', window.location.origin)
       url.searchParams.set('page', String(page))
       url.searchParams.set('limit', String(limitParam))
-      if (isAdmin && selectedAuthorId != null) {
+      if (isAdmin && selectedAuthorId != null && selectedAuthorId !== 'all') {
         url.searchParams.set('authorId', String(selectedAuthorId))
       }
       const response = await fetch(url.toString(), {
@@ -223,10 +224,14 @@ export default function BlogMain({
       tableSubTitle="Explore all your blogs"
       AddProductButton={
         <div className="flex items-center gap-2 flex-wrap">
-          {isAdmin && authors.length > 0 && (
+          {isAdmin && (
             <Select
-              value={selectedAuthorId != null ? String(selectedAuthorId) : undefined}
+              value={selectedAuthorId == null ? undefined : String(selectedAuthorId)}
               onValueChange={(v) => {
+                if (v === 'all') {
+                  setSelectedAuthorId('all')
+                  return
+                }
                 const id = Number(v)
                 if (!Number.isNaN(id)) setSelectedAuthorId(id)
               }}
@@ -235,6 +240,7 @@ export default function BlogMain({
                 <SelectValue placeholder="Select author" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {authors.map((a) => (
                   <SelectItem key={a.id} value={String(a.id)}>
                     {a.displayName || a.email || `User ${a.id}`}
@@ -282,7 +288,7 @@ export default function BlogMain({
       limit={limit}
       totalPages={totalPages}
       data={blogs.map((blog) => {
-        const score = computeSeoScore(blog)
+        const score = blog.seoScore ?? computeSeoScore(blog)
         return {
           id: blog.id,
           Title: blog.title,

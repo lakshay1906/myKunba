@@ -1,6 +1,21 @@
 export const dynamic = 'force-dynamic'
 
 import type { Where } from 'payload'
+
+/** Compute SEO score 0–100 from meta title, description, focus keyword, image alt (25 each). */
+function computeSeoScore(meta: {
+  metaTitle?: string | null
+  metaDescription?: string | null
+  focusKeyword?: string | null
+  imageAltText?: string | null
+}): number {
+  let score = 0
+  if (meta.metaTitle && String(meta.metaTitle).trim().length > 0) score += 25
+  if (meta.metaDescription && String(meta.metaDescription).trim().length > 0) score += 25
+  if (meta.focusKeyword && String(meta.focusKeyword).trim().length > 0) score += 25
+  if (meta.imageAltText && String(meta.imageAltText).trim().length > 0) score += 25
+  return score
+}
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
@@ -81,27 +96,36 @@ export async function GET(req: NextRequest) {
         const pageNum = page ? Number(page) : 1
         const limitNum = limit ? Number(limit) : 10
 
-        // Admin can filter by authorId; author always sees only their own
+        // Admin can filter by authorId or see all (no authorId); author always sees only their own
         const isAdmin = userData.role === 'admin'
         const authorIdParam = req.nextUrl.searchParams.get('authorId')
+        const adminWantsAll =
+          isAdmin && (authorIdParam == null || authorIdParam === '')
+        const filterByAuthor =
+          !isAdmin || (!adminWantsAll && authorIdParam != null && authorIdParam !== '')
         const filterAuthorId =
           isAdmin && authorIdParam != null && authorIdParam !== ''
             ? Number(authorIdParam)
             : (userData.id as number)
-        if (isAdmin && authorIdParam != null && authorIdParam !== '' && isNaN(Number(authorIdParam))) {
+        if (
+          isAdmin &&
+          authorIdParam != null &&
+          authorIdParam !== '' &&
+          isNaN(Number(authorIdParam))
+        ) {
           return NextResponse.json({ message: 'Invalid authorId' }, { status: 400 })
+        }
+
+        const where: Where = {
+          deleted_at: { equals: null },
+        }
+        if (filterByAuthor) {
+          where.author = { equals: filterAuthorId }
         }
 
         const blog = await payload.find({
           collection: 'posts',
-          where: {
-            author: {
-              equals: filterAuthorId,
-            },
-            deleted_at: {
-              equals: null,
-            },
-          },
+          where,
           select: {
             id: true,
             title: true,
@@ -114,6 +138,7 @@ export async function GET(req: NextRequest) {
             metaDescription: true,
             focusKeyword: true,
             imageAltText: true,
+            seoScore: true,
           },
           limit: limitNum,
           page: pageNum,
@@ -273,6 +298,13 @@ export async function POST(req: NextRequest) {
     if (internalLinksStr != null) postData.internalLinks = internalLinksStr
     const faqStr = stringifyFaq(faq)
     if (faqStr != null) postData.faq = faqStr
+
+    postData.seoScore = computeSeoScore({
+      metaTitle: finalMetaTitle,
+      metaDescription: finalMetaDescription,
+      focusKeyword: focusKeyword ?? null,
+      imageAltText: imageAltText ?? null,
+    })
 
     // Add categories and tags - Payload accepts array of numbers for hasMany relationships
     postData.categories = categoriesData
@@ -508,6 +540,13 @@ export async function PUT(req: NextRequest) {
     if (faq !== undefined) {
       updateData.faq = stringifyFaq(faq) ?? null
     }
+
+    updateData.seoScore = computeSeoScore({
+      metaTitle: updateData.metaTitle ?? blogPost.metaTitle,
+      metaDescription: updateData.metaDescription ?? blogPost.metaDescription,
+      focusKeyword: updateData.focusKeyword ?? blogPost.focusKeyword,
+      imageAltText: updateData.imageAltText ?? blogPost.imageAltText,
+    })
 
     // Update the blog post
     const updatedPost = await payload.update({

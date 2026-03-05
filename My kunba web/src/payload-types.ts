@@ -304,6 +304,10 @@ export interface Post {
    * Number of times this blog has been viewed
    */
   impressions?: number | null;
+  /**
+   * SEO score 0–100 (meta title, description, focus keyword, image alt). Updated on create/update.
+   */
+  seoScore?: number | null;
   updatedAt: string;
   createdAt: string;
 }

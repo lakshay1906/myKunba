@@ -28,7 +28,6 @@ import CategorySelector from '@/components/Blog/category-selector'
 import TagSelector from '@/components/Blog/tag-selector'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { fetchAllTags } from '@/app/actions/tag-actions'
-import Toast from '../Toast'
 import Loading from '../Loading'
 import Link from 'next/link'
 import { convertLexicalToHtml } from '@/utils/lexical-to-html'
@@ -439,7 +438,7 @@ export default function EditBlogPage({
         blog.media && typeof blog.media === 'string' ? blog.media : null
       const existingCoverUrl =
         imageUploadData.coverImage &&
-        !imageUploadData.coverImage.startsWith('data:')
+          !imageUploadData.coverImage.startsWith('data:')
           ? imageUploadData.coverImage
           : null
       let finalImageUrl =

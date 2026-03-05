@@ -140,6 +140,13 @@ export const Posts: CollectionConfig = {
         description: 'Number of times this blog has been viewed',
       },
     },
+    {
+      name: 'seoScore',
+      type: 'number',
+      admin: {
+        description: 'SEO score 0–100 (meta title, description, focus keyword, image alt). Updated on create/update.',
+      },
+    },
   ],
   hooks: {
     afterChange: [

@@ -25,6 +25,7 @@ import CurrentPageComponent from '@/components/CurrentPageComponent'
 import { Checkbox } from '@/components/ui/checkbox'
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import StatusTag from './StatusTag'
 import Loading from '@/components/Loading'
 
@@ -158,26 +159,28 @@ export default function DataTable({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <form
-              className="flex gap-2"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <Input
-                type="text"
-                placeholder="Search"
-                className="h-7 sm:w-44 w-40 text-sm outline-none"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              <Button variant="outline" className="px-2 h-7" type="button" aria-label="Search">
-                <ArrowDownWideNarrow className="h-4 w-4" />
-              </Button>
-            </form>
-            {searchText.trim() && (
-              <span className="text-xs text-muted-foreground">
-                Showing {filteredData.length} of {data.length}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => e.preventDefault()}
+              >
+                <Input
+                  type="text"
+                  placeholder="Search"
+                  className="h-7 sm:w-44 w-40 text-sm outline-none"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
+                <Button variant="outline" className="px-2 h-7" type="button" aria-label="Search">
+                  <ArrowDownWideNarrow className="h-4 w-4" />
+                </Button>
+              </form>
+              {searchText.trim() && (
+                <span className="text-xs text-muted-foreground">
+                  Showing {filteredData.length} of {data.length}
+                </span>
+              )}
+            </div>
           </div>
           <Separator />
           <Table className="overflow-y-auto">
@@ -259,6 +262,28 @@ export default function DataTable({
                           ? `${detailPageLink}/${slug ? String(col.Slug ?? col.slug ?? '').replace(/^\//, '') : col.id}`
                           : null
                       const isFirstContentColumn = idx === 0
+                      if (header === 'SEO Score') {
+                        const score = Number(col['SEO Score'])
+                        const isNum = !Number.isNaN(score)
+                        return (
+                          <TableCell key={idx} className="text-nowrap">
+                            {isNum ? (
+                              <span
+                                className={cn(
+                                  'rounded px-1.5 py-0.5 text-xs font-medium',
+                                  score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                                  score >= 51 && score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                                  score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                                )}
+                              >
+                                {score} / 100
+                              </span>
+                            ) : (
+                              cellContent
+                            )}
+                          </TableCell>
+                        )
+                      }
                       if (header !== 'Status') {
                         return (
                           <TableCell key={idx} className="text-nowrap">

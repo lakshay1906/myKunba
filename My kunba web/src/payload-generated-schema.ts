@@ -306,6 +306,7 @@ export const posts = pgTable(
       }),
     deleted_at: timestamp('deleted_at', { mode: 'string', withTimezone: true, precision: 3 }),
     impressions: numeric('impressions').default('0'),
+    seoScore: integer('seo_score'),
     updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true, precision: 3 })
       .defaultNow()
       .notNull(),

@@ -50,7 +50,7 @@ import {
   SubscriptIcon,
   SuperscriptIcon,
 } from 'lucide-react'
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { UploadResponse } from '@/lib/types'
 import UnifiedImageUpload from '@/components/image-uploader/unified-image-upload'
@@ -63,6 +63,47 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export type ContentImageOption = { src: string; alt?: string }
+
+/** Get images currently in editor content (for translation mode). */
+function getImgsInDoc(editor: { state: { doc: { descendants: (f: (node: { type: { name: string }; attrs?: { src?: string; alt?: string } }) => void) => void } } }): ContentImageOption[] {
+  const out: ContentImageOption[] = []
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === 'image' && node.attrs?.src) {
+      out.push({ src: node.attrs.src, alt: node.attrs.alt })
+    }
+  })
+  return out
+}
+
+/** Get image src/alt from HTML string. */
+function getImgsFromHtml(html: string): ContentImageOption[] {
+  const out: ContentImageOption[] = []
+  const imgRe = /<img[^>]*>/gi
+  let imgMatch
+  while ((imgMatch = imgRe.exec(html)) !== null) {
+    const tag = imgMatch[0]
+    const srcMatch = tag.match(/\ssrc=["']([^"']+)["']/i)
+    const altMatch = tag.match(/\salt=["']([^"']*)["']/i)
+    if (srcMatch) out.push({ src: srcMatch[1], alt: altMatch?.[1] })
+  }
+  return out
+}
+
+/** Remaining = existing minus one instance per image currently in content (matched by src). */
+function computeRemaining(
+  existing: ContentImageOption[],
+  inContent: ContentImageOption[],
+): ContentImageOption[] {
+  const used = inContent.map((i) => i.src)
+  return existing.filter((img) => {
+    const idx = used.indexOf(img.src)
+    if (idx >= 0) {
+      used.splice(idx, 1)
+      return false
+    }
+    return true
+  })
+}
 
 interface RichTextEditorProps {
   value?: string
@@ -102,15 +143,18 @@ export default function RichTextEditor({
     isOpen: false,
     coverImage: null,
   })
-  // In translation mode: list of content images not yet inserted (remove on select)
+  // In translation mode: list of content images not yet inserted (returned to dropdown when removed from content)
   const [remainingContentImages, setRemainingContentImages] = useState<ContentImageOption[]>([])
+  const existingContentImagesRef = useRef(existingContentImages)
+  existingContentImagesRef.current = existingContentImages
 
-  // Sync remaining images when parent passes new existingContentImages (e.g. post changed)
+  // Sync remaining images from current value (initial load or when post/content changes)
   useEffect(() => {
-    if (translationMode && existingContentImages.length >= 0) {
-      setRemainingContentImages(existingContentImages.map((img) => ({ ...img })))
+    if (translationMode) {
+      const inValue = getImgsFromHtml(value)
+      setRemainingContentImages(computeRemaining(existingContentImages, inValue))
     }
-  }, [translationMode, existingContentImages])
+  }, [translationMode, existingContentImages, value])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -157,6 +201,11 @@ export default function RichTextEditor({
     content: value,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML())
+      const existing = existingContentImagesRef.current
+      if (translationMode && existing.length > 0) {
+        const inDoc = getImgsInDoc(editor)
+        setRemainingContentImages(computeRemaining(existing, inDoc))
+      }
     },
     onSelectionUpdate: ({ editor }) => {
       // Update toolbar state based on current selection
@@ -310,14 +359,13 @@ export default function RichTextEditor({
     })
   }, [])
 
-  // Translation mode: insert content image and remove that entry from dropdown (by index so each use removes one)
+  // Translation mode: insert content image at cursor (remaining list is updated in onUpdate)
   const insertContentImageAt = useCallback(
     (index: number) => {
       if (!editor) return
       const img = remainingContentImages[index]
       if (!img) return
       editor.chain().focus().setImage({ src: img.src, alt: img.alt || '' }).run()
-      setRemainingContentImages((prev) => prev.filter((_, i) => i !== index))
       toast.success('Image inserted')
     },
     [editor, remainingContentImages],
