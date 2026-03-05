@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
@@ -101,6 +102,8 @@ const formSchema = z.object({
       }),
     )
     .optional(),
+  commentsEnabled: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -165,6 +168,8 @@ export function CreatePostForm() {
       internalLinks: [],
       faq: [],
       status: 'draft',
+      commentsEnabled: true,
+      isFeatured: false,
     },
   })
 
@@ -198,8 +203,9 @@ export function CreatePostForm() {
         watchedValues.focusKeyword || '',
         {
           imageAltText: imageUploadData.alt || watchedValues.imageAltText,
-          externalLinksCount: watchedValues.externalLinks?.length ?? 0,
-          internalLinksCount: watchedValues.internalLinks?.length ?? 0,
+          externalLinks: watchedValues.externalLinks ?? [],
+          internalLinks: watchedValues.internalLinks ?? [],
+          faq: watchedValues.faq ?? [],
         },
       )
       setSeoScoreResult(scoreResult)
@@ -280,6 +286,8 @@ export function CreatePostForm() {
             internalLinks: normalizeLinks(draftData.internalLinks as BlogDraftData['internalLinks']),
             faq: normalizeFaq(draftData.faq),
             status: draftData.status || 'draft',
+            commentsEnabled: draftData.commentsEnabled !== false,
+            isFeatured: draftData.isFeatured === true,
           },
           { keepDefaultValues: false },
         )
@@ -350,6 +358,8 @@ export function CreatePostForm() {
           metaDescription: formValues.metaDescription?.trim() || undefined,
           focusKeyword: formValues.focusKeyword?.trim() || undefined,
           imageAltText: (imageUploadData.alt || formValues.imageAltText)?.trim() || undefined,
+          commentsEnabled: formValues.commentsEnabled,
+          isFeatured: formValues.isFeatured,
           externalLinks:
             formValues.externalLinks?.length && formValues.externalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
               ? formValues.externalLinks.map((l) => ({ url: l?.url?.trim() || '', anchorText: l?.anchorText?.trim() || '' }))
@@ -637,6 +647,8 @@ export function CreatePostForm() {
           internalLinks: [],
           faq: [],
           status: 'draft',
+          commentsEnabled: true,
+          isFeatured: false,
         },
         { keepDefaultValues: false },
       )
@@ -846,6 +858,8 @@ export function CreatePostForm() {
           internalLinks:
             data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
           faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
+          commentsEnabled: data.commentsEnabled !== false,
+          isFeatured: data.isFeatured === true,
         }),
       })
 
@@ -895,6 +909,8 @@ export function CreatePostForm() {
             internalLinks: [],
             faq: [],
             status: 'draft',
+            commentsEnabled: true,
+            isFeatured: false,
           },
           { keepDefaultValues: false },
         )
@@ -1782,6 +1798,52 @@ export function CreatePostForm() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Allow Comments & Featured Post */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="commentsEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Allow Comments</FormLabel>
+                            <FormDescription>
+                              Enable or disable comments on this blog post
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value !== false}
+                              onCheckedChange={field.onChange}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="isFeatured"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Featured Post</FormLabel>
+                            <FormDescription>
+                              Mark this post as featured on your blog
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value === true}
+                              onCheckedChange={field.onChange}
+                              disabled={isLoading}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   {/* Categories Field */}
                   <div className="space-y-2">

@@ -55,6 +55,8 @@ export interface BlogDraftData {
   categories?: number[]
   tags?: number[]
   coverImage?: string
+  commentsEnabled?: boolean
+  isFeatured?: boolean
   // Metadata properties (not part of actual draft data)
   hasIndexedDBData?: boolean
   timestamp?: number

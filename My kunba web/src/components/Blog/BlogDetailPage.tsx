@@ -37,6 +37,7 @@ import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
 import { processContentImages } from '@/utils/process-content-images'
 import { extractImageUrlsFromHtml } from '@/utils/cleanup-orphaned-images'
+import { extractContentImages } from '@/utils/content-images'
 import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
 import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
 import { cn } from '@/lib/utils'
@@ -57,9 +58,12 @@ const statuses = [
 export default function EditBlogPage({
   id,
   blogData,
+  restrictContentImages = false,
 }: {
   id: string
   blogData: Record<string, any>
+  /** When true, content editor only allows inserting existing content images (no new uploads); cover image is read-only. Use for scheduled/translated blogs. */
+  restrictContentImages?: boolean
 }) {
   const router = useRouter()
   const { loginDetail } = useAppStore()
@@ -67,6 +71,8 @@ export default function EditBlogPage({
   const [saving, setSaving] = useState(false)
   const [blog, setBlog] = useState<Record<string, any>>({})
   const [contentHtml, setContentHtml] = useState<string>('')
+  /** Images already in post content (for translation/restrict mode dropdown). Computed once on load. */
+  const [existingContentImages, setExistingContentImages] = useState<{ src: string; alt?: string }[]>([])
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [allTags, setAllTags] = useState<{ id: number; name: string; slug?: string }[]>([])
@@ -133,8 +139,9 @@ export default function EditBlogPage({
         blog.focusKeyword || '',
         {
           imageAltText: imageUploadData.alt,
-          externalLinksCount: (blog.externalLinks || []).length,
-          internalLinksCount: (blog.internalLinks || []).length,
+          externalLinks: blog.externalLinks || [],
+          internalLinks: blog.internalLinks || [],
+          faq: blog.faq || [],
         },
       )
       setSeoScoreResult(result)
@@ -150,6 +157,7 @@ export default function EditBlogPage({
     blog.focusKeyword,
     blog.externalLinks,
     blog.internalLinks,
+    blog.faq,
     imageUploadData.alt,
   ])
 
@@ -236,6 +244,11 @@ export default function EditBlogPage({
         coverImage: blogData.media && typeof blogData.media === 'string' ? blogData.media : null,
       }
 
+      // For restrict/translation mode: images that may be inserted in content (no new uploads)
+      if (restrictContentImages) {
+        setExistingContentImages(extractContentImages(blogData.content ?? htmlContent))
+      }
+
       // Fetch all categories and tags for selectors
       fetchAllCategories().then((result) => {
         setAllCategories(result.docs || [])
@@ -244,7 +257,7 @@ export default function EditBlogPage({
         setAllTags(result.docs || [])
       })
     }
-  }, [blogData])
+  }, [blogData, restrictContentImages])
 
   function handleContentChange(newContent: string) {
     setContentHtml(newContent)
@@ -813,16 +826,6 @@ export default function EditBlogPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  name="slug"
-                  value={blog.slug ?? ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter blog slug"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="excerpt">Excerpt</Label>
                 <Textarea
                   id="excerpt"
@@ -836,21 +839,48 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label>Featured Image</Label>
                 <div className="border rounded-md p-4">
-                  <ImageUploadDialog
-                    imageUploadData={imageUploadData}
-                    setImageUploadData={setImageUploadData}
-                    clearAll={clearImageUpload}
-                    placeholder={
-                      imageUploadData.coverImage || (blog.media && typeof blog.media === 'string')
-                        ? 'Change Image'
-                        : 'Upload Image'
-                    }
-                  />
+                  {restrictContentImages ? (
+                    <div className="flex flex-col gap-2">
+                      {imageUploadData.coverImage || (blog.media && typeof blog.media === 'string') ? (
+                        <>
+                          <img
+                            src={imageUploadData.coverImage || (typeof blog.media === 'string' ? blog.media : '')}
+                            alt={imageUploadData.alt || blog.title || ''}
+                            className="max-h-48 w-auto object-contain rounded border"
+                          />
+                          <p className="text-sm text-muted-foreground">Cover image cannot be changed in this mode.</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No cover image (cannot be changed in this mode).</p>
+                      )}
+                    </div>
+                  ) : (
+                    <ImageUploadDialog
+                      imageUploadData={imageUploadData}
+                      setImageUploadData={setImageUploadData}
+                      clearAll={clearImageUpload}
+                      placeholder={
+                        imageUploadData.coverImage || (blog.media && typeof blog.media === 'string')
+                          ? 'Change Image'
+                          : 'Upload Image'
+                      }
+                    />
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <RichTextEditor value={contentHtml} onChange={handleContentChange} />
+                {restrictContentImages && (
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Image button inserts only from existing post images; no new uploads. Cover image cannot be changed.
+                  </p>
+                )}
+                <RichTextEditor
+                  value={contentHtml}
+                  onChange={handleContentChange}
+                  translationMode={restrictContentImages}
+                  existingContentImages={restrictContentImages ? existingContentImages : []}
+                />
               </div>
             </div>
           </div>
@@ -864,6 +894,19 @@ export default function EditBlogPage({
               </p>
             </div>
             <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={blog.slug ?? ''}
+                  onChange={handleInputChange}
+                  placeholder="Enter blog slug"
+                />
+                <p className="text-sm text-muted-foreground">
+                  The URL-friendly version of the title. Used in the post URL.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="metaTitle">Meta Title</Label>
                 <Input
@@ -1188,8 +1231,8 @@ export default function EditBlogPage({
                   </div>
                   <Switch
                     id="comments"
-                    checked={blog.allowComments !== false}
-                    onCheckedChange={(checked) => setBlog({ ...blog, allowComments: checked })}
+                    checked={blog.commentsEnabled !== false}
+                    onCheckedChange={(checked) => setBlog({ ...blog, commentsEnabled: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">

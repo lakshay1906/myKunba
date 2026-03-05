@@ -1,3 +1,8 @@
-Scheduled blogs
+Scheduled / translated blogs (implemented)
 
-make sure that the user should not upload any new image. For example there's a ABC blog already upload with obviously one cover image and 2 more image (say XYZ, PQR for eg.) which resides between the content, in the component we do have Icon to upload image (lucide-image icon) on click of that icon that will open a dropdown that will list down that 2 image which was uploaded in that content now the admin can select from those image and once selected then remove that selected image from the dropdown so that user should not select the selected image next time. So by this admin cann't upload the new image in the translated blogs but he can surely change the order of the uploaded images, but the cover image should remain unchange.
+- **Restrict content images mode**: When editing a blog with `?restrictImages=1` (e.g. `/dashboard/blog/my-slug?restrictImages=1`), the content editor uses translation mode:
+  - The image icon (lucide Image) opens a **dropdown** listing only images already in the post content (no new uploads).
+  - Selecting an image inserts it at the cursor and removes it from the dropdown so it can’t be selected again (until removed from content).
+  - Admin can reorder images by moving/removing and re-inserting from the dropdown.
+  - **Cover image** is read-only: shown but cannot be changed.
+- Use this URL param when opening the blog edit page from scheduled or translated flows.

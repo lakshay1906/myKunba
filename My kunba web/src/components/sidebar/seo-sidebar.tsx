@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { X, ChevronUp, Check } from 'lucide-react'
+import { X, ChevronUp, Check, BadgeAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -35,15 +35,20 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 function CheckRow({ item }: { item: SEOCheckItem }) {
+  const status = item.status ?? (item.passed ? 'pass' : 'fail')
+  const icon =
+    status === 'pass' ? (
+      <Check className="size-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
+    ) : status === 'warn' ? (
+      <BadgeAlert className="size-4 shrink-0 text-amber-500 dark:text-amber-400 mt-0.5" />
+    ) : (
+      <span className="flex size-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
+        ✕
+      </span>
+    )
   return (
     <div className="flex items-start gap-2 py-1.5 text-sm">
-      {item.passed ? (
-        <Check className="size-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
-      ) : (
-        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
-          ✕
-        </span>
-      )}
+      {icon}
       <span
         className={cn(
           'flex-1',

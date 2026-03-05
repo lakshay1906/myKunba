@@ -3,6 +3,8 @@
  * Provides functions to validate and analyze SEO aspects of blog content
  */
 
+import { extractContentImages } from '@/utils/content-images'
+
 export interface SEOValidationResult {
   isValid: boolean
   warnings: string[]
@@ -111,6 +113,8 @@ export interface SEOCheckItem {
   id: string
   passed: boolean
   message: string
+  /** 'fail' | 'warn' | 'pass' - for icon styling (e.g. keyword density) */
+  status?: 'fail' | 'warn' | 'pass'
 }
 
 /** Rank Math-style analysis: score 0-100 + Basic SEO + Additional + Title Readability + Content Readability */
@@ -144,12 +148,15 @@ function hasTableOfContents(content: string | unknown): boolean {
   )
 }
 
-/** Count images and videos in HTML content */
+/** Count images and videos in content (HTML or Lexical). */
 function countMediaInContent(content: string | unknown): number {
-  if (content == null || typeof content !== 'string') return 0
-  const imgCount = (content.match(/<img\s/gi) || []).length
-  const videoCount = (content.match(/<video\s|<iframe[^>]*youtube|vimeo|embed/gi) || []).length
-  return imgCount + videoCount
+  if (content == null) return 0
+  const images = extractContentImages(content)
+  let videoCount = 0
+  if (typeof content === 'string') {
+    videoCount = (content.match(/<video\s|<iframe[^>]*(?:youtube|vimeo|embed)/gi) || []).length
+  }
+  return images.length + videoCount
 }
 
 /** Check if title has a number */
@@ -171,10 +178,18 @@ function anyKeywordInText(text: string, keywords: string[]): boolean {
   return keywords.some((k) => lower.includes(k))
 }
 
+/** Link shape: { url?: string; anchorText?: string } */
+type LinkItem = { url?: string; anchorText?: string }
+
+/** FAQ shape: { question?: string; answer?: string } */
+type FaqItem = { question?: string; answer?: string }
+
 /**
  * Get SEO score (0-100) and Basic SEO / Additional checks for Rank Math-style sidebar.
  * Focus keyword can be comma-separated; a check passes if any keyword satisfies it.
  * Does not modify content; suggestions only.
+ * Links count only when both url and anchorText are filled.
+ * DoFollow excludes links to mykunba.org (internal).
  */
 export function getSEOScoreAndChecks(
   metaTitle: string,
@@ -184,8 +199,9 @@ export function getSEOScoreAndChecks(
   focusKeyword: string,
   options?: {
     imageAltText?: string
-    externalLinksCount?: number
-    internalLinksCount?: number
+    externalLinks?: LinkItem[]
+    internalLinks?: LinkItem[]
+    faq?: FaqItem[]
   },
 ): SEOScoreResult {
   const title = metaTitle || ''
@@ -251,13 +267,11 @@ export function getSEOScoreAndChecks(
       : 'Use Focus Keyword in the content.',
   })
 
-  const contentLengthOk = wordCount >= 600 && wordCount <= 2500
+  const contentLengthOk = wordCount >= 600
   basicSEO.push({
     id: 'content-length',
     passed: contentLengthOk,
-    message: contentLengthOk
-      ? 'Content should be 600-2500 words long.'
-      : 'Content should be 600-2500 words long.',
+    message: `Content should be min. 600 words long. (Word Count: ${wordCount})`,
   })
 
   // --- Additional (wording matches WordPress Rank Math sidebar) ---
@@ -288,13 +302,14 @@ export function getSEOScoreAndChecks(
       ? keywords.map((k) => calculateKeywordDensity(plainText, k))
       : []
   const bestDensity = densities.length ? Math.max(...densities) : 0
-  const densityOk = hasKeyword && bestDensity >= 0.5 && bestDensity <= 2
+  const densityStatus: 'fail' | 'warn' | 'pass' =
+    !hasKeyword || bestDensity < 0.5 ? 'fail' : bestDensity < 1 ? 'warn' : 'pass'
+  const densityOk = densityStatus === 'pass'
   additional.push({
     id: 'keyword-density',
     passed: densityOk,
-    message: densityOk
-      ? `Keyword Density is ${bestDensity.toFixed(1)}%. Aim for around 1% Keyword Density.`
-      : `Keyword Density is ${bestDensity.toFixed(1)}%. Aim for around 1% Keyword Density.`,
+    status: densityStatus,
+    message: `Keyword Density is ${bestDensity.toFixed(1)}%. Aim for around 1% Keyword Density.`,
   })
 
   const slugVal = slug || ''
@@ -306,7 +321,21 @@ export function getSEOScoreAndChecks(
     message: urlOk ? 'Add a short URL.' : 'URL unavailable. Add a short URL.',
   })
 
-  const extCount = options?.externalLinksCount ?? 0
+  const extLinks = options?.externalLinks ?? []
+  const intLinks = options?.internalLinks ?? []
+  const extCount = extLinks.filter(
+    (l) => (l?.url ?? '').trim() && (l?.anchorText ?? '').trim(),
+  ).length
+  const intCount = intLinks.filter(
+    (l) => (l?.url ?? '').trim() && (l?.anchorText ?? '').trim(),
+  ).length
+  const dofollowCount = extLinks.filter((l) => {
+    const url = (l?.url ?? '').trim()
+    const anchor = (l?.anchorText ?? '').trim()
+    if (!url || !anchor) return false
+    return !url.toLowerCase().includes('mykunba.org')
+  }).length
+
   additional.push({
     id: 'external-links',
     passed: extCount >= 1,
@@ -315,14 +344,13 @@ export function getSEOScoreAndChecks(
 
   additional.push({
     id: 'dofollow-external',
-    passed: extCount >= 1,
+    passed: dofollowCount >= 1,
     message:
-      extCount >= 1
+      dofollowCount >= 1
         ? 'Add DoFollow links pointing to external resources.'
         : 'Add DoFollow links pointing to external resources.',
   })
 
-  const intCount = options?.internalLinksCount ?? 0
   additional.push({
     id: 'internal-links',
     passed: intCount >= 1,
@@ -336,6 +364,19 @@ export function getSEOScoreAndChecks(
     message: hasKeyword
       ? 'Focus Keyword is set for this content.'
       : 'Set a Focus Keyword for this content.',
+  })
+
+  const faqItems = options?.faq ?? []
+  const faqFilledCount = faqItems.filter(
+    (f) => (f?.question ?? '').trim() && (f?.answer ?? '').trim(),
+  ).length
+  additional.push({
+    id: 'faq',
+    passed: faqFilledCount >= 1,
+    message:
+      faqFilledCount >= 1
+        ? 'Add FAQs to improve SEO and rich snippets.'
+        : 'Add FAQs to improve SEO and rich snippets.',
   })
 
   // --- Title Readability (wording matches WordPress Rank Math sidebar) ---
@@ -371,7 +412,8 @@ export function getSEOScoreAndChecks(
   })
   const paragraphs = extractParagraphs(content)
   const longParagraphs = paragraphs.filter((p) => countWords(p) > 120)
-  const shortParagraphsOk = longParagraphs.length === 0
+  const hasContentToRead = wordCount > 0
+  const shortParagraphsOk = hasContentToRead && longParagraphs.length === 0
   contentReadability.push({
     id: 'short-paragraphs',
     passed: shortParagraphsOk,
