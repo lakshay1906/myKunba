@@ -85,6 +85,7 @@ export async function generateMetadata({
       description: bio
         ? `${bio} Read articles by ${displayName} on My Kunba.`
         : `Read articles and blog posts by ${displayName} on My Kunba.`,
+      robots: { index: true, follow: true },
       keywords: [displayName, 'author', 'blogger', 'writer', 'articles'],
       authors: [{ name: displayName }],
       openGraph: {

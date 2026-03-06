@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
             media: true,
             status: true,
             publishDate: true,
+            adminComment: true,
             metaTitle: true,
             metaDescription: true,
             commentsEnabled: true,
@@ -218,8 +219,21 @@ export async function POST(req: NextRequest) {
 
     const author = { docs: [authorData] }
     const isDraft = status === 'draft'
+    const isAuthor = authorData.role !== 'admin'
+    // Authors submitting for publish go to pending_approval; admins go directly to published
+    const effectiveStatus = isDraft ? 'draft' : isAuthor ? 'pending_approval' : status
     if (!isDraft && !coverImage) {
       return NextResponse.json({ message: 'Cover image is required for publishing' }, { status: 400 })
+    }
+    // Validate publishDate is not in the past when publishing
+    if (publishDate && !isDraft) {
+      const pubDate = new Date(publishDate)
+      if (pubDate.getTime() < Date.now()) {
+        return NextResponse.json(
+          { message: 'Publish date and time must be in the future.' },
+          { status: 400 },
+        )
+      }
     }
 
     const contentStr = content != null && typeof content === 'string' ? content : ''
@@ -275,7 +289,7 @@ export async function POST(req: NextRequest) {
       title: finalTitle,
       author: author.docs[0].id,
       slug: finalSlug,
-      status,
+      status: effectiveStatus,
       content: lexicalContent,
       media: coverImage || null, // Draft may have no cover image
       excerpt: excerpt || '',
@@ -322,6 +336,36 @@ export async function POST(req: NextRequest) {
     })
     revalidateBlogPost(createdPost.slug ?? '')
     revalidatePostsTag()
+
+    // When author submits for publish, notify all admins
+    if (effectiveStatus === 'pending_approval') {
+      try {
+        const adminUsers = await payload.find({
+          collection: 'users',
+          where: { role: { equals: 'admin' }, deleted_at: { equals: null } },
+          limit: 100,
+        })
+        const authorName =
+          (authorData.displayName as string) || (authorData.email as string) || 'An author'
+        for (const admin of adminUsers.docs) {
+          await payload.create({
+            collection: 'notifications',
+            data: {
+              user: admin.id,
+              title: 'Blog post submitted for approval',
+              message: `"${finalTitle}" by ${authorName} is awaiting your approval.`,
+              type: 'post_submission',
+              read: false,
+              relatedPost: createdPost.id,
+              fromUser: authorData.id,
+            },
+          })
+        }
+      } catch (notifyErr) {
+        // Don't fail the request if notification fails
+      }
+    }
+
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -329,6 +373,9 @@ export async function POST(req: NextRequest) {
         title: createdPost.title,
         slug: createdPost.slug,
         status: createdPost.status,
+        ...(effectiveStatus === 'pending_approval' && {
+          message: 'Your blog has been submitted for admin approval.',
+        }),
       },
       { status: 201 },
     )
@@ -440,13 +487,28 @@ export async function PUT(req: NextRequest) {
     const finalMetaTitle = metaTitle || title
     const finalMetaDescription = metaDescription || excerpt
 
+    // Authors submitting for publish go to pending_approval; admins go directly to published
+    const effectiveStatus =
+      status === 'published' && !isAdmin ? 'pending_approval' : status ?? blogPost.status
+
+    // Validate publishDate is not in the past when publishing
+    if (publishDate && (effectiveStatus === 'published' || effectiveStatus === 'pending_approval')) {
+      const pubDate = new Date(publishDate)
+      if (pubDate.getTime() < Date.now()) {
+        return NextResponse.json(
+          { message: 'Publish date and time must be in the future.' },
+          { status: 400 },
+        )
+      }
+    }
+
     // Prepare update data
     const updateData: any = {
       title,
       slug,
       excerpt,
       content: lexicalContent,
-      status,
+      status: effectiveStatus,
       metaDescription: finalMetaDescription,
       metaTitle: finalMetaTitle,
       commentsEnabled: commentsEnabled !== undefined ? commentsEnabled : blogPost.commentsEnabled,
@@ -557,6 +619,36 @@ export async function PUT(req: NextRequest) {
     revalidateBlogPost(updatedPost.slug ?? '')
     revalidatePostsTag()
 
+    // When author submits for publish (status changed to pending_approval), notify admins
+    const wasPending = blogPost.status === 'pending_approval'
+    if (effectiveStatus === 'pending_approval' && !wasPending) {
+      try {
+        const adminUsers = await payload.find({
+          collection: 'users',
+          where: { role: { equals: 'admin' }, deleted_at: { equals: null } },
+          limit: 100,
+        })
+        const authorName =
+          (currentUser.displayName as string) || (currentUser.email as string) || 'An author'
+        for (const admin of adminUsers.docs) {
+          await payload.create({
+            collection: 'notifications',
+            data: {
+              user: admin.id,
+              title: 'Blog post submitted for approval',
+              message: `"${title}" by ${authorName} is awaiting your approval.`,
+              type: 'post_submission',
+              read: false,
+              relatedPost: updatedPost.id,
+              fromUser: currentUser.id,
+            },
+          })
+        }
+      } catch (notifyErr) {
+        // Don't fail the request if notification fails
+      }
+    }
+
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -564,6 +656,9 @@ export async function PUT(req: NextRequest) {
         title: updatedPost.title,
         slug: updatedPost.slug,
         status: updatedPost.status,
+        ...(effectiveStatus === 'pending_approval' && !wasPending && {
+          message: 'Your blog has been submitted for admin approval.',
+        }),
       },
       { status: 200 },
     )

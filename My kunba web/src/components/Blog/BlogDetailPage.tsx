@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { CalendarIcon, X, Save, ArrowLeft, ImagePlus, BarChart3 } from 'lucide-react'
+import { CalendarIcon, X, Save, ArrowLeft, ImagePlus, BarChart3, CheckCircle, XCircle } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import CategorySelector from '@/components/Blog/category-selector'
@@ -41,6 +41,14 @@ import { extractContentImages } from '@/utils/content-images'
 import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
 import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
 import { cn } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 // const templates = [
 //   { id: 'standard', name: 'Standard' },
@@ -77,6 +85,7 @@ export default function EditBlogPage({
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [allTags, setAllTags] = useState<{ id: number; name: string; slug?: string }[]>([])
   const [date, setDate] = useState<Date | undefined>(undefined)
+  const [publishTime, setPublishTime] = useState<string>('12:00')
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [allCategories, setAllCategories] = useState<Record<string, any>[]>([])
   const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
@@ -118,6 +127,10 @@ export default function EditBlogPage({
   } | null>(null)
   const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [adminComment, setAdminComment] = useState('')
+  const [approvalLoading, setApprovalLoading] = useState(false)
 
   // Sync SEO result to layout context so the right sidebar (rendered in layout) can show it
   useEffect(() => {
@@ -188,9 +201,19 @@ export default function EditBlogPage({
       if (catIds.length) setSelectedCategories(catIds)
       if (tagIds.length) setSelectedTags(tagIds)
 
-      // Set publish date
+      // Set publish date and time
       if (blogData.publishDate) {
-        setDate(new Date(blogData.publishDate))
+        const d = new Date(blogData.publishDate)
+        setDate(d)
+        setPublishTime(
+          `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+        )
+      } else {
+        const now = new Date()
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        setPublishTime(
+          `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        )
       }
 
       // Show date picker if status is published or pending_approval
@@ -299,7 +322,87 @@ export default function EditBlogPage({
 
   function handleDateSelect(selectedDate: Date | undefined) {
     setDate(selectedDate)
-    setBlog({ ...blog, publishDate: selectedDate ? selectedDate.toISOString() : null })
+    if (selectedDate) {
+      const [h, m] = publishTime.split(':').map(Number)
+      const combined = new Date(selectedDate)
+      combined.setHours(h ?? 0, m ?? 0, 0, 0)
+      setBlog({ ...blog, publishDate: combined.toISOString() })
+    } else {
+      setBlog({ ...blog, publishDate: null })
+    }
+  }
+
+  function handleTimeChange(timeStr: string) {
+    setPublishTime(timeStr)
+    if (date) {
+      const [h, m] = timeStr.split(':').map(Number)
+      const combined = new Date(date)
+      combined.setHours(h ?? 0, m ?? 0, 0, 0)
+      setBlog({ ...blog, publishDate: combined.toISOString() })
+    }
+  }
+
+  async function handleApprove() {
+    if (!loginDetail?.token) return
+    setApprovalLoading(true)
+    try {
+      const res = await fetch('/api/dashboard/blog/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({
+          postId: blog.id,
+          action: 'approve',
+          adminComment: adminComment.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to approve')
+      setApproveDialogOpen(false)
+      setAdminComment('')
+      setBlog({ ...blog, status: 'published' })
+      toast.success('Post approved', { description: data.message })
+      router.push('/dashboard/blog')
+    } catch (err: any) {
+      toast.error('Failed to approve', { description: err.message })
+    } finally {
+      setApprovalLoading(false)
+    }
+  }
+
+  async function handleReject() {
+    if (!loginDetail?.token || !adminComment.trim()) {
+      toast.error('Please provide a rejection reason')
+      return
+    }
+    setApprovalLoading(true)
+    try {
+      const res = await fetch('/api/dashboard/blog/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${loginDetail.token}`,
+        },
+        body: JSON.stringify({
+          postId: blog.id,
+          action: 'reject',
+          adminComment: adminComment.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to reject')
+      setRejectDialogOpen(false)
+      setAdminComment('')
+      setBlog({ ...blog, status: 'draft', adminComment: adminComment.trim() })
+      toast.success('Post rejected', { description: data.message })
+      router.push('/dashboard/blog')
+    } catch (err: any) {
+      toast.error('Failed to reject', { description: err.message })
+    } finally {
+      setApprovalLoading(false)
+    }
   }
 
   async function handleSave() {
@@ -568,9 +671,20 @@ export default function EditBlogPage({
       updateData.categories = selectedCategories
       updateData.tags = selectedTags
 
-      // Add publish date if set
+      // Add publish date and time if set (only current/future allowed)
       if (date) {
-        updateData.publishDate = date.toISOString()
+        const [h, m] = publishTime.split(':').map(Number)
+        const combined = new Date(date)
+        combined.setHours(h ?? 0, m ?? 0, 0, 0)
+        if (combined.getTime() < Date.now()) {
+          toast.error('Invalid publish date', {
+            description: 'Only current and future date/time are allowed.',
+            duration: 5000,
+          })
+          setSaving(false)
+          return
+        }
+        updateData.publishDate = combined.toISOString()
       }
 
       // Add cover image if exists
@@ -1159,6 +1273,46 @@ export default function EditBlogPage({
               </p>
             </div>
             <div className="space-y-6">
+              {(blog.status === 'pending_approval' || blog.status === 'draft') &&
+                blog.adminComment && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Admin feedback
+                    </p>
+                    <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                      {blog.adminComment}
+                    </p>
+                  </div>
+                )}
+              {loginDetail?.role === 'admin' && blog.status === 'pending_approval' && (
+                <div className="flex flex-wrap gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                  <p className="w-full text-sm font-medium text-blue-800 dark:text-blue-200">
+                    This post is awaiting your approval
+                  </p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => setApproveDialogOpen(true)}
+                    disabled={approvalLoading}
+                  >
+                    <CheckCircle className="mr-1 h-4 w-4" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setAdminComment('')
+                      setRejectDialogOpen(true)
+                    }}
+                    disabled={approvalLoading}
+                  >
+                    <XCircle className="mr-1 h-4 w-4" />
+                    Reject
+                  </Button>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -1195,10 +1349,28 @@ export default function EditBlogPage({
                         mode="single"
                         selected={date}
                         onSelect={handleDateSelect}
+                        disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
+                  <div className="space-y-1">
+                    <Label>Publish Time</Label>
+                    <Input
+                      type="time"
+                      value={publishTime}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      min={
+                        date &&
+                        format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+                          ? format(new Date(), 'HH:mm')
+                          : undefined
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Only current and future date/time allowed.
+                    </p>
+                  </div>
                 </div>
               )}
               {/* <Separator />
@@ -1299,6 +1471,65 @@ export default function EditBlogPage({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Admin Approve Dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve post</DialogTitle>
+            <DialogDescription>
+              This will publish the post. You can optionally add feedback for the author.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Feedback (optional)</Label>
+            <Textarea
+              placeholder="Suggestions for improvement..."
+              value={adminComment}
+              onChange={(e) => setAdminComment(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveDialogOpen(false)} disabled={approvalLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleApprove} disabled={approvalLoading}>
+              {approvalLoading ? 'Approving...' : 'Approve & Publish'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Reject Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject post</DialogTitle>
+            <DialogDescription>
+              The post will be moved back to draft. You must provide a reason for the author.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Rejection reason (required)</Label>
+            <Textarea
+              placeholder="Explain why the post was rejected and how the author can improve..."
+              value={adminComment}
+              onChange={(e) => setAdminComment(e.target.value)}
+              rows={4}
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={approvalLoading}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={approvalLoading || !adminComment.trim()}>
+              {approvalLoading ? 'Rejecting...' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -94,6 +94,7 @@ export async function generateMetadata({
   return {
     title: metaTitle,
     description: metaDescription,
+    robots: { index: true, follow: true },
     keywords: keywords.length > 0 ? keywords : undefined,
     authors: metaAuthor ? [{ name: metaAuthor }] : undefined,
     openGraph: {

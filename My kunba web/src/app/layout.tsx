@@ -98,8 +98,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const feedUrl = `${getPublicUrl()}/feed`
+
   return (
     <html lang="en-US" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="My Kunba Blog"
+          href={feedUrl}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         cz-shortcut-listen="false"

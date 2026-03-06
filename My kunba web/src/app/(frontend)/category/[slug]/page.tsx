@@ -32,6 +32,7 @@ export async function generateMetadata({
       return {
         title: `${cat.name} - Blog Posts | My Kunba`,
         description: `Explore all blog posts in the ${cat.name} category.`,
+        robots: { index: true, follow: true },
         keywords: [cat.name, 'blog', 'articles', 'category'],
         openGraph: { title: `${cat.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${cat.name} category.`, url: categoryUrl, type: 'website' },
         twitter: { card: 'summary', title: `${cat.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${cat.name} category.` },
@@ -44,6 +45,7 @@ export async function generateMetadata({
     return {
       title: `${resolved.name} - Blog Posts | My Kunba`,
       description: `Explore all blog posts in the ${resolved.name} category.`,
+      robots: { index: true, follow: true },
       keywords: [resolved.name, 'blog', 'articles', 'category'],
       openGraph: { title: `${resolved.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${resolved.name} category.`, url: categoryUrl, type: 'website' },
       twitter: { card: 'summary', title: `${resolved.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${resolved.name} category.` },

@@ -1,5 +1,7 @@
 Scheduled / translated blogs (implemented)
 
+RSS feed: Provide an RSS feed for blog posts for syndication and discovery.
+
 - **Restrict content images mode**: When editing a blog with `?restrictImages=1` (e.g. `/dashboard/blog/my-slug?restrictImages=1`), the content editor uses translation mode:
   - The image icon (lucide Image) opens a **dropdown** listing only images already in the post content (no new uploads).
   - Selecting an image inserts it at the cursor and removes it from the dropdown so it can’t be selected again (until removed from content).

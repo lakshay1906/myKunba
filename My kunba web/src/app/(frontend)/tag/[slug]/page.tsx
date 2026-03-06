@@ -31,6 +31,7 @@ export async function generateMetadata({
     return {
       title: `${tagName} - Blog Posts | My Kunba`,
       description: `Explore blog posts tagged with ${tagName}.`,
+      robots: { index: true, follow: true },
       keywords: [tagName, 'blog', 'articles', 'tag'],
       openGraph: { title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.`, url: tagUrl, type: 'website' },
       twitter: { card: 'summary', title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.` },

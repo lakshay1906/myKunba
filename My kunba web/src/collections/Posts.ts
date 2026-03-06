@@ -58,6 +58,16 @@ export const Posts: CollectionConfig = {
     {
       name: 'publishDate',
       type: 'date',
+      admin: {
+        description: 'Date and time when the post should be published. Only current or future dates are allowed.',
+      },
+    },
+    {
+      name: 'adminComment',
+      type: 'textarea',
+      admin: {
+        description: 'Admin feedback for improvement or rejection reason. Visible to author when status is pending_approval or after rejection.',
+      },
     },
     {
       name: 'metaTitle',

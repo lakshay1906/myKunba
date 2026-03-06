@@ -46,7 +46,12 @@ const nextConfig = {
   // Exclude pg from Turbopack bundling (resolve at runtime on server)
   serverExternalPackages: ['pg'],
   // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
-  // async redirects() { ... } removed
+  async redirects() {
+    return [
+      { source: '/feed.xml', destination: '/feed', permanent: true },
+      { source: '/rss', destination: '/feed', permanent: true },
+    ]
+  },
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },

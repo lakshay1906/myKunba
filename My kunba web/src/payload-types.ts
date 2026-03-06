@@ -273,7 +273,14 @@ export interface Post {
    */
   media?: string | null;
   status?: ('draft' | 'published' | 'pending_approval') | null;
+  /**
+   * Date and time when the post should be published. Only current or future dates are allowed.
+   */
   publishDate?: string | null;
+  /**
+   * Admin feedback for improvement or rejection reason. Visible to author when status is pending_approval or after rejection.
+   */
+  adminComment?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   /**
@@ -443,7 +450,7 @@ export interface Notification {
   /**
    * Type of notification
    */
-  type: 'comment' | 'reply' | 'system';
+  type: 'comment' | 'reply' | 'system' | 'post_submission' | 'post_rejected';
   /**
    * Whether the notification has been read
    */
@@ -703,6 +710,7 @@ export interface PostsSelect<T extends boolean = true> {
   media?: T;
   status?: T;
   publishDate?: T;
+  adminComment?: T;
   metaTitle?: T;
   metaDescription?: T;
   focusKeyword?: T;
@@ -715,6 +723,7 @@ export interface PostsSelect<T extends boolean = true> {
   tags?: T;
   deleted_at?: T;
   impressions?: T;
+  seoScore?: T;
   updatedAt?: T;
   createdAt?: T;
 }

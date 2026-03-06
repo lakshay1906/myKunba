@@ -74,6 +74,7 @@ const formSchema = z.object({
   content: z.string().optional(),
   status: z.enum(['draft', 'published']),
   publishDate: z.date().optional(),
+  publishTime: z.string().optional(), // HH:mm format for time picker
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   focusKeyword: z.string().optional(),
@@ -159,7 +160,17 @@ export function CreatePostForm() {
       slug: '',
       excerpt: '',
       content: '',
-      publishDate: new Date(),
+      publishDate: (() => {
+        const now = new Date()
+        // Default to next hour to ensure future time when publishing today
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return now
+      })(),
+      publishTime: (() => {
+        const now = new Date()
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      })(),
       metaTitle: '',
       metaDescription: '',
       focusKeyword: '',
@@ -170,6 +181,11 @@ export function CreatePostForm() {
       status: 'draft',
       commentsEnabled: true,
       isFeatured: false,
+      publishTime: (() => {
+        const now = new Date()
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      })(),
     },
   })
 
@@ -271,13 +287,22 @@ export function CreatePostForm() {
             : []
 
         // Reset form with draft data (this won't trigger watch during reset)
+        const draftPublishDate = draftData.publishDate ? new Date(draftData.publishDate) : null
+        const defaultPublish = (() => {
+          const now = new Date()
+          now.setHours(now.getHours() + 1, 0, 0, 0)
+          return now
+        })()
         form.reset(
           {
             title: draftData.title || '',
             slug: draftData.slug || '',
             excerpt: draftData.excerpt || '',
             content: draftData.content || '',
-            publishDate: draftData.publishDate ? new Date(draftData.publishDate) : new Date(),
+            publishDate: draftPublishDate && draftPublishDate.getTime() >= Date.now() ? draftPublishDate : defaultPublish,
+            publishTime: draftPublishDate
+              ? `${String(draftPublishDate.getHours()).padStart(2, '0')}:${String(draftPublishDate.getMinutes()).padStart(2, '0')}`
+              : `${String(defaultPublish.getHours()).padStart(2, '0')}:${String(defaultPublish.getMinutes()).padStart(2, '0')}`,
             metaTitle: draftData.metaTitle || '',
             metaDescription: draftData.metaDescription || '',
             focusKeyword: (draftData.focusKeyword ?? '').toString(),
@@ -373,7 +398,18 @@ export function CreatePostForm() {
               ? formValues.faq.map((f) => ({ question: f?.question?.trim() || '', answer: f?.answer?.trim() || '' }))
               : undefined,
           status: formValues.status,
-          publishDate: formValues.publishDate ? formValues.publishDate.toISOString() : undefined,
+          publishDate: (() => {
+            const d = formValues.publishDate
+            const t = formValues.publishTime
+            if (!d) return undefined
+            if (t) {
+              const [h, m] = t.split(':').map(Number)
+              const combined = new Date(d)
+              combined.setHours(h ?? 0, m ?? 0, 0, 0)
+              return combined.toISOString()
+            }
+            return d.toISOString()
+          })(),
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
           coverImage: imageUploadData.coverImage || undefined,
@@ -632,13 +668,19 @@ export function CreatePostForm() {
       setHasDraftData(false)
 
       // Reset form to default values
+      const defaultPublish = (() => {
+        const now = new Date()
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return now
+      })()
       form.reset(
         {
           title: '',
           slug: '',
           excerpt: '',
           content: '',
-          publishDate: new Date(),
+          publishDate: defaultPublish,
+          publishTime: `${String(defaultPublish.getHours()).padStart(2, '0')}:${String(defaultPublish.getMinutes()).padStart(2, '0')}`,
           metaTitle: '',
           metaDescription: '',
           focusKeyword: '',
@@ -836,6 +878,20 @@ export function CreatePostForm() {
         description: 'Saving your blog post...',
       })
 
+      // Combine date and time for publishDate (only current/future allowed)
+      const combinedPublishDate = (() => {
+        const d = data.publishDate
+        const t = data.publishTime
+        if (!d) return undefined
+        if (t) {
+          const [h, m] = t.split(':').map(Number)
+          const combined = new Date(d)
+          combined.setHours(h ?? 0, m ?? 0, 0, 0)
+          return combined.toISOString()
+        }
+        return d.toISOString()
+      })()
+
       const response = await fetch(`/api/dashboard/blog`, {
         method: 'POST',
         headers: {
@@ -844,6 +900,7 @@ export function CreatePostForm() {
         },
         body: JSON.stringify({
           ...data,
+          publishDate: combinedPublishDate,
           content: processedContent, // Use processed content with uploaded image URLs
           // NEW: Cloudflare R2 storage - ACTIVE
           coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
@@ -863,9 +920,9 @@ export function CreatePostForm() {
         }),
       })
 
-      if (!response.ok) {
-        const res = await response.json()
+      const res = await response.json()
 
+      if (!response.ok) {
         // If blog creation failed but images were uploaded, cleanup orphaned images
         if (uploadedImages.length > 0) {
           // Attempt cleanup (non-blocking)
@@ -900,7 +957,17 @@ export function CreatePostForm() {
             slug: '',
             excerpt: '',
             content: '',
-            publishDate: new Date(),
+            publishDate: (() => {
+        const now = new Date()
+        // Default to next hour to ensure future time when publishing today
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return now
+      })(),
+      publishTime: (() => {
+        const now = new Date()
+        now.setHours(now.getHours() + 1, 0, 0, 0)
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      })(),
             metaTitle: '',
             metaDescription: '',
             focusKeyword: '',
@@ -942,7 +1009,7 @@ export function CreatePostForm() {
       isSubmittingRef.current = false
 
       toast.success('Success', {
-        description: 'Post created successfully. Draft has been cleared.',
+        description: res.message || 'Post created successfully. Draft has been cleared.',
       })
 
       // Small delay to ensure draft clearing is complete before navigation
@@ -989,6 +1056,33 @@ export function CreatePostForm() {
     try {
       // Published: require title, slug, excerpt, content
       if (data.status === 'published') {
+        // Validate publish date/time is not in the past
+        const combinedPublish = (() => {
+          const d = data.publishDate
+          const t = data.publishTime
+          if (!d) return null
+          if (t) {
+            const [h, m] = t.split(':').map(Number)
+            const combined = new Date(d)
+            combined.setHours(h ?? 0, m ?? 0, 0, 0)
+            return combined
+          }
+          return d
+        })()
+        if (combinedPublish && combinedPublish.getTime() < Date.now()) {
+          form.setError('publishDate', {
+            type: 'manual',
+            message: 'Publish date and time must be in the future. Please select a current or future date and time.',
+          })
+          setCurrentTab('settings')
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          toast.error('Invalid publish date', {
+            description: 'Only current and future date/time are allowed.',
+          })
+          return
+        }
+
         const required: { field: keyof FormValues; label: string }[] = []
         if (!data.title?.trim()) required.push({ field: 'title', label: 'Title' })
         if (!data.slug?.trim()) required.push({ field: 'slug', label: 'Slug' })
@@ -1756,48 +1850,75 @@ export function CreatePostForm() {
                     )}
                   />
 
-                  {/* Publish Date Field */}
-                  <FormField
-                    control={form.control}
-                    name="publishDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Publish Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground',
-                                )}
-                                disabled={isLoading}
-                              >
-                                {field.value ? (
-                                  format(field.value, 'PPP')
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                              initialFocus
+                  {/* Publish Date & Time Field - only current and future allowed */}
+                  <div className="space-y-2">
+                    <FormField
+                      control={form.control}
+                      name="publishDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Publish Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={'outline'}
+                                  className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground',
+                                  )}
+                                  disabled={isLoading}
+                                >
+                                  {field.value ? (
+                                    format(field.value, 'PPP')
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="publishTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Publish Time</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="time"
+                              {...field}
+                              disabled={isLoading}
+                              min={
+                                form.watch('publishDate') &&
+                                format(form.watch('publishDate')!, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+                                  ? format(new Date(), 'HH:mm')
+                                  : undefined
+                              }
                             />
-                          </PopoverContent>
-                        </Popover>
-                        <FormDescription>When the post should be published.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormDescription>
+                            Only current and future date/time allowed. When publishing today, select a time that hasn&apos;t passed yet.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   {/* Allow Comments & Featured Post */}
                   <div className="space-y-4">
