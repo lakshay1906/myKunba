@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
-import { getCategoryByLocalizedSlug } from '@/lib/category-translations'
+import { getCategoryByLocalizedSlug, getCategoryTranslation } from '@/lib/category-translations'
+import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -17,6 +18,11 @@ export async function generateMetadata({
 
   try {
     const resolved = await getCategoryByLocalizedSlug(slug)
+    const siteUrl = getPublicUrl()
+    let categoryId: number
+    let categoryName: string
+    let canonicalSlug: string
+
     if (!resolved) {
       const category = await payload.find({
         collection: 'categories',
@@ -26,30 +32,35 @@ export async function generateMetadata({
       if (!category.docs.length) {
         return { title: 'Category Not Found', robots: { index: false, follow: false } }
       }
-      const cat = category.docs[0]
-      const siteUrl = getPublicUrl()
-      const categoryUrl = `${siteUrl}/category/${slug}`
-      return {
-        title: `${cat.name} - Blog Posts | My Kunba`,
-        description: `Explore all blog posts in the ${cat.name} category.`,
-        robots: { index: true, follow: true },
-        keywords: [cat.name, 'blog', 'articles', 'category'],
-        openGraph: { title: `${cat.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${cat.name} category.`, url: categoryUrl, type: 'website' },
-        twitter: { card: 'summary', title: `${cat.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${cat.name} category.` },
-        alternates: { canonical: categoryUrl },
-      }
+      const cat = category.docs[0] as { id: number; name: string; slug: string }
+      categoryId = cat.id
+      categoryName = cat.name
+      canonicalSlug = slug
+    } else {
+      categoryId = resolved.categoryId
+      categoryName = resolved.name
+      canonicalSlug = slug
     }
 
-    const siteUrl = getPublicUrl()
-    const categoryUrl = `${siteUrl}/category/${slug}`
+    const categoryUrl = `${siteUrl}/category/${canonicalSlug}`
+    const languages: Record<string, string> = {}
+    for (const loc of SEO_LOCALES) {
+      const tr = await getCategoryTranslation(categoryId, loc)
+      const slugForLoc = tr?.slug ?? canonicalSlug
+      const path = `/category/${slugForLoc}`
+      const url = loc === 'en' ? `${siteUrl}${path}` : `${siteUrl}${path}?locale=${loc}`
+      languages[HREFLANG_CODES[loc]] = url
+    }
+    languages['x-default'] = categoryUrl
+
     return {
-      title: `${resolved.name} - Blog Posts | My Kunba`,
-      description: `Explore all blog posts in the ${resolved.name} category.`,
+      title: `${categoryName} - Blog Posts | My Kunba`,
+      description: `Explore all blog posts in the ${categoryName} category.`,
       robots: { index: true, follow: true },
-      keywords: [resolved.name, 'blog', 'articles', 'category'],
-      openGraph: { title: `${resolved.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${resolved.name} category.`, url: categoryUrl, type: 'website' },
-      twitter: { card: 'summary', title: `${resolved.name} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${resolved.name} category.` },
-      alternates: { canonical: categoryUrl },
+      keywords: [categoryName, 'blog', 'articles', 'category'],
+      openGraph: { title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.`, url: categoryUrl, type: 'website' },
+      twitter: { card: 'summary', title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.` },
+      alternates: { canonical: categoryUrl, languages },
     }
   } catch {
     return { title: 'Category', robots: { index: false, follow: false } }

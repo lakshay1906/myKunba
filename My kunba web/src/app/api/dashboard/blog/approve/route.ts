@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { authenticateUser } from '@/utils/auth'
 import { revalidateBlogPost, revalidatePostsTag } from '@/lib/revalidate-website'
+import { notifyGoogle } from '@/lib/indexing'
+import { getPublicUrl } from '@/lib/env'
 
 /**
  * POST /api/dashboard/blog/approve
@@ -76,6 +78,9 @@ export async function POST(req: NextRequest) {
           ...(adminComment && adminComment.trim() ? { adminComment: adminComment.trim() } : {}),
         },
       })
+      if (post.slug) {
+        notifyGoogle(`${getPublicUrl()}/${post.slug}`).catch(() => {})
+      }
     } else {
       await payload.update({
         collection: 'posts',

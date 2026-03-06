@@ -48,8 +48,7 @@ const nextConfig = {
   // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
   async redirects() {
     return [
-      { source: '/feed.xml', destination: '/feed', permanent: true },
-      { source: '/rss', destination: '/feed', permanent: true },
+      { source: '/rss', destination: '/feed.xml', permanent: true },
     ]
   },
   sassOptions: {

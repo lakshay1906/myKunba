@@ -48,7 +48,7 @@ export async function GET() {
         updatedAt: true,
       },
       sort: '-publishDate',
-      limit: 30,
+      limit: 20,
       pagination: false,
     })
 

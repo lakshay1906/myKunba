@@ -5,9 +5,12 @@ import FloatingShare from '@/components/FloatingShare'
 import type { Metadata } from 'next'
 import type { ComponentProps } from 'react'
 import { getPublicUrl } from '@/lib/env'
+import { buildAlternateLanguages } from '@/lib/i18n/seo'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
 import { fetchBlogPostBySlug, getCachedRelatedArticles } from '@/app/actions/blog-actions'
 import { getPostTranslation } from '@/lib/post-translations'
+import { getCategoryTranslation } from '@/lib/category-translations'
+import { getTagTranslation } from '@/lib/tag-translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 
@@ -116,7 +119,10 @@ export async function generateMetadata({
       description: metaDescription,
       images: imageUrl ? [imageUrl] : [],
     },
-    alternates: { canonical: postUrl },
+    alternates: {
+      canonical: postUrl,
+      languages: buildAlternateLanguages(`/${post.slug}`),
+    },
   }
 }
 
@@ -143,6 +149,39 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         metaDescription: tr.meta_description ?? blog.metaDescription,
         focusKeyword: tr.focus_keyword ?? blog.focusKeyword,
         imageAltText: tr.image_alt_text ?? blog.imageAltText,
+      }
+    }
+    // Resolve category and tag names/slugs from translation tables for this locale
+    const catIds =
+      blog.categories?.map((c) =>
+        typeof c === 'object' && c !== null && 'id' in c ? (c as { id: number }).id : (c as number),
+      ) ?? []
+    const tagIds =
+      blog.tags?.map((t) =>
+        typeof t === 'object' && t !== null && 'id' in t ? (t as { id: number }).id : (t as number),
+      ) ?? []
+    const [localizedCats, localizedTags] = await Promise.all([
+      Promise.all(catIds.map((id) => getCategoryTranslation(id, locale))),
+      Promise.all(tagIds.map((id) => getTagTranslation(id, locale))),
+    ])
+    if (localizedCats.some(Boolean)) {
+      blog = {
+        ...blog,
+        categories: blog.categories?.map((c, i) => {
+          const cat = c as { id: number; name: string; slug: string }
+          const tr = localizedCats[i]
+          return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
+        }) ?? [],
+      }
+    }
+    if (localizedTags.some(Boolean)) {
+      blog = {
+        ...blog,
+        tags: blog.tags?.map((t, i) => {
+          const tag = t as { id: number; name: string; slug: string }
+          const tr = localizedTags[i]
+          return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
+        }) ?? [],
       }
     }
   }

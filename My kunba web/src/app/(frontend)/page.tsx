@@ -1,5 +1,6 @@
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { buildAlternateLanguages } from '@/lib/i18n/seo'
 import { getCachedFeaturedBlogs } from '@/app/actions/blog-actions'
 import { getCachedAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/',
+    languages: buildAlternateLanguages('/'),
   },
 }
 

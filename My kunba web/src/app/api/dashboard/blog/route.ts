@@ -27,6 +27,8 @@ import {
   stringifyInternalLinks,
   stringifyFaq,
 } from '@/lib/utils/posts-json-fields'
+import { notifyGoogle } from '@/lib/indexing'
+import { getPublicUrl } from '@/lib/env'
 
 export async function GET(req: NextRequest) {
   try {
@@ -337,6 +339,11 @@ export async function POST(req: NextRequest) {
     revalidateBlogPost(createdPost.slug ?? '')
     revalidatePostsTag()
 
+    // Notify Google Indexing API when a post is published (so it can be indexed promptly)
+    if (effectiveStatus === 'published' && createdPost.slug) {
+      notifyGoogle(`${getPublicUrl()}/${createdPost.slug}`).catch(() => {})
+    }
+
     // When author submits for publish, notify all admins
     if (effectiveStatus === 'pending_approval') {
       try {
@@ -618,6 +625,11 @@ export async function PUT(req: NextRequest) {
     })
     revalidateBlogPost(updatedPost.slug ?? '')
     revalidatePostsTag()
+
+    // Notify Google Indexing API when a post is published/updated (so it can be re-indexed)
+    if (effectiveStatus === 'published' && updatedPost.slug) {
+      notifyGoogle(`${getPublicUrl()}/${updatedPost.slug}`).catch(() => {})
+    }
 
     // When author submits for publish (status changed to pending_approval), notify admins
     const wasPending = blogPost.status === 'pending_approval'

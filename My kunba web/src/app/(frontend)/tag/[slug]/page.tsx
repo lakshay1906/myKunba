@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
-import { getTagByLocalizedSlug } from '@/lib/tag-translations'
+import { getTagByLocalizedSlug, getTagTranslation } from '@/lib/tag-translations'
+import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -15,19 +16,36 @@ export async function generateMetadata({
   const { slug } = await params
   try {
     const resolved = await getTagByLocalizedSlug(slug)
+    let tagId: number
     let tagName: string
-    if (resolved) tagName = resolved.name
-    else {
+    let canonicalSlug: string
+    if (resolved) {
+      tagId = resolved.tagId
+      tagName = resolved.name
+      canonicalSlug = slug
+    } else {
       const tagResult = await payload.find({
         collection: 'tags',
         where: { slug: { equals: slug }, deleted_at: { equals: null } },
         limit: 1,
       })
       if (!tagResult.docs.length) return { title: 'Tag Not Found', robots: { index: false, follow: false } }
-      tagName = (tagResult.docs[0] as { name: string }).name
+      const tag = tagResult.docs[0] as { id: number; name: string; slug: string }
+      tagId = tag.id
+      tagName = tag.name
+      canonicalSlug = slug
     }
     const siteUrl = getPublicUrl()
-    const tagUrl = `${siteUrl}/tag/${slug}`
+    const tagUrl = `${siteUrl}/tag/${canonicalSlug}`
+    const languages: Record<string, string> = {}
+    for (const loc of SEO_LOCALES) {
+      const tr = await getTagTranslation(tagId, loc)
+      const slugForLoc = tr?.slug ?? canonicalSlug
+      const path = `/tag/${slugForLoc}`
+      const url = loc === 'en' ? `${siteUrl}${path}` : `${siteUrl}${path}?locale=${loc}`
+      languages[HREFLANG_CODES[loc]] = url
+    }
+    languages['x-default'] = tagUrl
     return {
       title: `${tagName} - Blog Posts | My Kunba`,
       description: `Explore blog posts tagged with ${tagName}.`,
@@ -35,7 +53,7 @@ export async function generateMetadata({
       keywords: [tagName, 'blog', 'articles', 'tag'],
       openGraph: { title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.`, url: tagUrl, type: 'website' },
       twitter: { card: 'summary', title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.` },
-      alternates: { canonical: tagUrl },
+      alternates: { canonical: tagUrl, languages },
     }
   } catch {
     return { title: 'Tag', robots: { index: false, follow: false } }

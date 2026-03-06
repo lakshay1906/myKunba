@@ -1,10 +1,39 @@
 export const dynamic = 'force-dynamic'
 
 import { payload } from '@/payload-client'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getTagTranslationsForLocale } from '@/lib/tag-translations'
 
-export async function GET() {
+const ALLOWED_LOCALES = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+
+export async function GET(req: NextRequest) {
   try {
+    const locale = req.nextUrl.searchParams.get('locale') ?? 'en'
+    const useLocale = ALLOWED_LOCALES.includes(locale) ? locale : 'en'
+
+    const translated = await getTagTranslationsForLocale(useLocale)
+    if (translated.length > 0) {
+      return NextResponse.json(
+        {
+          docs: translated.map((t) => ({
+            id: t.tagId,
+            name: t.name,
+            slug: t.slug,
+          })),
+          totalDocs: translated.length,
+          limit: translated.length,
+          totalPages: 1,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        },
+        { status: 200 },
+      )
+    }
+
     const data = await payload.find({
       collection: 'tags',
       depth: 0,

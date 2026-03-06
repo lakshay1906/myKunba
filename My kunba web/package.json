@@ -86,6 +86,7 @@
     "embla-carousel-react": "8.5.1",
     "firebase": "^11.2.0",
     "framer-motion": "^12.23.25",
+    "googleapis": "^171.4.0",
     "graphql": "^16.8.1",
     "input-otp": "1.4.1",
     "jsonwebtoken": "^9.0.2",

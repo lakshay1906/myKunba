@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { buildAlternateLanguages } from '@/lib/i18n/seo'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -114,6 +115,7 @@ export async function generateMetadata({
       },
       alternates: {
         canonical: authorUrl,
+        languages: buildAlternateLanguages(`/author/${authorSlug}`),
       },
     }
   } catch (error) {
