@@ -28,9 +28,10 @@ jobs:
           GOOGLE_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
           echo "$GOOGLE_JSON" > _google_json.txt
-          echo "b64<<EOF" >> $GITHUB_OUTPUT
+          # Delimiter must not appear in base64 (base64 uses only A-Za-z0-9+/=); hyphen is safe
+          echo "b64<<---END-B64---" >> $GITHUB_OUTPUT
           base64 -w0 _google_json.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "---END-B64---" >> $GITHUB_OUTPUT
           rm -f _google_json.txt
 
       # 5️⃣ Copy image tar to EC2
