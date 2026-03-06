@@ -25,6 +25,8 @@ function toRfc2822(date: Date | string | null | undefined): string {
   return d.toUTCString()
 }
 
+/** Force dynamic so feed is generated at request time (Payload needs PAYLOAD_SECRET, not available at Docker build). */
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export async function GET() {
