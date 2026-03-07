@@ -21,18 +21,10 @@ jobs:
       - name: Save Docker image
         run: docker save mykunba:latest > mykunba.tar
 
-      # 4️⃣ Prepare Google credentials (base64) so they can be written safely on EC2
-      - name: Prepare Google credentials
-        id: prepare-google
-        env:
-          GOOGLE_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      # 4️⃣ Create the credentials file (Directly avoids delimiter issues)
+      - name: Create Google credentials file
         run: |
-          echo "$GOOGLE_JSON" > _google_json.txt
-          # Delimiter must not appear in base64 (base64 uses only A-Za-z0-9+/=); hyphen is safe
-          echo "b64<<---END-B64---" >> $GITHUB_OUTPUT
-          base64 -w0 _google_json.txt >> $GITHUB_OUTPUT
-          echo "---END-B64---" >> $GITHUB_OUTPUT
-          rm -f _google_json.txt
+          echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google_creds.json
 
       # 5️⃣ Copy image tar to EC2
       - name: Copy image to EC2
@@ -44,25 +36,32 @@ jobs:
           source: mykunba.tar
           target: /home/ec2-user
 
-      # 6️⃣ Load image, Setup Secrets & run container on EC2
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          GOOGLE_JSON_B64: ${{ steps.prepare-google.outputs.b64 }}
+      # 5b Copy Google credentials file to EC2
+      - name: Copy Google credentials to EC2
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GOOGLE_JSON_B64
+          source: google_creds.json
+          target: /home/ec2-user
+
+      # 6️⃣ Load image, Setup Secrets & run container on EC2
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
 
-            # Create secrets directory if it doesn't exist
+            # Setup directory and move the secret file
             mkdir -p /home/ec2-user/mykunba/secrets
-
-            # Write the Google JSON secret from base64 (avoids corruption from special chars/newlines)
-            echo "$GOOGLE_JSON_B64" | base64 -d > /home/ec2-user/mykunba/secrets/service-account.json
-            chmod 600 /home/ec2-user/mykunba/secrets/service-account.json
+            if [ -f /home/ec2-user/google_creds.json ]; then
+              mv /home/ec2-user/google_creds.json /home/ec2-user/mykunba/secrets/service-account.json
+              chmod 600 /home/ec2-user/mykunba/secrets/service-account.json
+            fi
 
             echo "Loading Docker image..."
             docker load < /home/ec2-user/mykunba.tar
@@ -87,11 +86,11 @@ jobs:
             echo "Waiting for app to be ready..."
             sleep 15
 
-            echo "Running i18n migrations (idempotent)..."
+            echo "Running i18n migrations..."
             docker exec mykunba node scripts/run-migration.js || true
 
-            # Trigger the bulk indexing for existing 40 blogs (idempotent)
-            echo "Submitting existing URLs to Google Indexing API..."
+            # Trigger the 2026 Strategy: Bulk Indexing for 40 existing blogs
+            echo "Submitting URLs to Google Indexing API..."
             docker exec mykunba node scripts/submit-blog-urls-to-google.js || true
 
             echo "Cleaning up tar file..."
