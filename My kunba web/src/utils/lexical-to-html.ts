@@ -121,7 +121,7 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
         const imageAlt = (elementNode as any).alt || ''
         const imageWidth = (elementNode as any).width
         const imageHeight = (elementNode as any).height
-        
+
         if (imageUrl) {
           let imgTag = `<img src="${imageUrl}" alt="${imageAlt.replace(/"/g, '&quot;')}"`
           if (imageWidth) imgTag += ` width="${imageWidth}"`

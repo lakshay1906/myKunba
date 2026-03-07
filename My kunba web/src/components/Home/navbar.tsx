@@ -169,7 +169,7 @@ export default function Navbar({
   }
 
   return (
-    <div className='w-full border-b fixed top-0 z-50 bg-background'>
+    <div className="w-full border-b fixed top-0 z-50 bg-background">
       <section className="p-4 container mx-auto! px-3!">
         <nav className="hidden justify-between lg:flex w-full container mx-auto">
           <div className="flex items-center gap-6">
@@ -242,8 +242,8 @@ export default function Navbar({
         <div className="block lg:hidden w-full container mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-between flex-1 min-w-0">
-              <a href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
-                <span className="inline-block shrink-0 dark:invert">
+              <Link href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
+                <span className="inline-block shrink-0">
                   <Image
                     src={logo.src}
                     width={32}
@@ -253,7 +253,7 @@ export default function Navbar({
                   />
                 </span>
                 <span className="text-lg font-semibold truncate">{logo.title}</span>
-              </a>
+              </Link>
               <div className="flex gap-5 justify-center items-center shrink-0">
                 <ThemeToggle />
                 <Sheet>
@@ -266,7 +266,7 @@ export default function Navbar({
                     <SheetHeader>
                       <SheetTitle>
                         <a href={logo.url} className="flex items-center gap-2">
-                          <span className="inline-block dark:invert">
+                          <span className="inline-block">
                             <Image
                               src={logo.src}
                               width={32}
@@ -311,8 +311,16 @@ export default function Navbar({
                           </div>
                         ) : (
                           <div className="flex flex-col gap-3.5 mt-3">
-                            <SignInButton btnText={t('nav_login') as 'Login' | 'Sign Up'} size="sm" className="w-full" />
-                            <SignInButton btnText={t('nav_sign_up') as 'Login' | 'Sign Up'} size="sm" className="w-full" />
+                            <SignInButton
+                              btnText={t('nav_login') as 'Login' | 'Sign Up'}
+                              size="sm"
+                              className="w-full"
+                            />
+                            <SignInButton
+                              btnText={t('nav_sign_up') as 'Login' | 'Sign Up'}
+                              size="sm"
+                              className="w-full"
+                            />
                           </div>
                         )}
                       </div>
