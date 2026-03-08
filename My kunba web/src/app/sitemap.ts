@@ -19,11 +19,8 @@ function alternatesForPath(path: string): Record<string, string> {
   return languages
 }
 
-/** Force dynamic so sitemap is generated at request time (Payload needs PAYLOAD_SECRET, not available at Docker build). */
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+/** Build sitemap entries (used by both metadata route and XML route handler for proper XML output when dynamic). */
+export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = []
 
   // ——— Static / home ———
