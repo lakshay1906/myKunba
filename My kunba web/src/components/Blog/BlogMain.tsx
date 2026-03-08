@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import DataTable from '../DataTable'
 import Link from 'next/link'
 import { Button } from '../ui/button'
@@ -26,6 +26,7 @@ import { EllipsisVertical, Trash2 } from 'lucide-react'
 import Toast from '../Toast'
 import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
+import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
 
 function computeSeoScore(blog: Record<string, any>): number {
   let score = 0
@@ -59,9 +60,10 @@ export default function BlogMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [authors, setAuthors] = useState<{ id: number; displayName: string; email?: string }[]>([])
-  // 'all' = show all blogs (admin only); number = filter by that author; null = not yet set
   const [selectedAuthorId, setSelectedAuthorId] = useState<number | 'all' | null>(null)
   const { loginDetail } = useAppStore()
+  const { listPages, setListPage } = useDashboardListPage()
+  const restoreAttempted = useRef(false)
 
   const isAdmin = (loginDetail as { role?: string } | null)?.role === 'admin'
   const currentUserId = (loginDetail as { id?: number } | null)?.id
@@ -170,6 +172,7 @@ export default function BlogMain({
         setTotal(res.total || 0)
         setCurrentPage(res.currentPage || page)
         setTotalPages(res.totalPages || 1)
+        setListPage('blog', res.currentPage || page)
       } else {
         Toast({
           isSuccess: false,
@@ -187,6 +190,17 @@ export default function BlogMain({
       setLoading(false)
     }
   }
+
+  // Restore saved list page when returning from detail (e.g. back from /dashboard/blog/[slug])
+  useEffect(() => {
+    if (restoreAttempted.current) return
+    const savedPage = listPages['blog']
+    if (savedPage != null && savedPage >= 1 && savedPage !== initialCurrentPage) {
+      restoreAttempted.current = true
+      const offset = (savedPage - 1) * limit
+      fetchBlogs(limit, offset, false, savedPage)
+    }
+  }, [listPages['blog'], initialCurrentPage, limit])
 
   useEffect(() => {
     if (!loginDetail || !isAdmin) return

@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import DataTable from '@/components/DataTable'
 import Create from './Create'
 import { Category } from '@/lib/types'
 import { popoverEllipsis, type CategoryRow } from './categoryEdit'
 import { useAppStore } from '@/lib/context/store'
+import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -45,6 +46,8 @@ export default function CategoryMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
   const { loginDetail } = useAppStore()
+  const { listPages, setListPage } = useDashboardListPage()
+  const restoreAttempted = useRef(false)
 
   const currentUserId = (loginDetail as { id?: number } | null)?.id
   const isAuthor = (loginDetail as { role?: string } | null)?.role === 'author'
@@ -115,11 +118,21 @@ export default function CategoryMain({
       setTotal(data.totalDocs || 0)
       setCurrentPage(data.page || page)
       setTotalPages(data.totalPages || 1)
+      setListPage('category', data.page || page)
     } catch (error) {
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (restoreAttempted.current) return
+    const savedPage = listPages['category']
+    if (savedPage != null && savedPage >= 1 && savedPage !== initialCurrentPage) {
+      restoreAttempted.current = true
+      fetchCategories(limit, (savedPage - 1) * limit, false, savedPage)
+    }
+  }, [listPages['category'], initialCurrentPage, limit])
 
 
   return (

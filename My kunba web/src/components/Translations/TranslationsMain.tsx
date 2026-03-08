@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,11 +20,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAppStore } from '@/lib/context/store'
+import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, EllipsisVertical } from 'lucide-react'
 import Link from 'next/link'
 import RichTextEditor, { type ContentImageOption } from '@/components/Blog/rich-text-editor'
 import { convertLexicalToHtml } from '@/utils/lexical-to-html'
+import DataTable from '@/components/DataTable'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Main post content is in English (Posts collection). Translations are for other locales only.
 const LOCALES = [
@@ -78,6 +81,7 @@ export default function TranslationsMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [posts, setPosts] = useState<PostOption[]>(initialPosts)
   const [loading, setLoading] = useState(false)
+  const [selectedTranslations, setSelectedTranslations] = useState<Record<string, any>[]>([])
 
   useEffect(() => {
     if (initialLoadError) {
@@ -88,6 +92,20 @@ export default function TranslationsMain({
       })
     }
   }, [initialLoadError, initialLoadErrorMessage])
+
+  const tableRows = React.useMemo(() => {
+    return translations.map((doc) => ({
+      id: doc.id,
+      Post: getPostTitle(doc),
+      Locale: LOCALES.find((l) => l.value === doc.locale)?.label ?? doc.locale,
+      Title: doc.title ?? '—',
+      Updated: doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString() : '—',
+      _raw: doc,
+    }))
+  }, [translations, posts])
+  const [limit] = useState(initialLimit)
+  const { listPages, setListPage } = useDashboardListPage()
+  const restoreAttempted = useRef(false)
   const [editDoc, setEditDoc] = useState<TranslationDoc | null>(null)
   const [editContentImages, setEditContentImages] = useState<ContentImageOption[]>([])
   const [form, setForm] = useState({
@@ -116,21 +134,41 @@ export default function TranslationsMain({
   async function loadList(page: number = currentPage) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/post-translations?page=${page}&limit=${initialLimit}`, {
+      const res = await fetch(`/api/dashboard/post-translations?page=${page}&limit=${limit}`, {
         headers: getHeaders(),
       })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Failed to load')
       const data = await res.json()
+      const pageNum = data.page ?? page
       setTranslations(data.docs ?? [])
       setTotal(data.totalDocs ?? 0)
-      setCurrentPage(data.page ?? page)
+      setCurrentPage(pageNum)
       setTotalPages(data.totalPages ?? 1)
+      setListPage('translations', pageNum)
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to load translations')
     } finally {
       setLoading(false)
     }
   }
+
+  const fetchDataFunction = async (
+    limitParam: number,
+    _offset: number,
+    _skipScroll: boolean,
+    page: number,
+  ) => {
+    await loadList(page)
+  }
+
+  useEffect(() => {
+    if (restoreAttempted.current) return
+    const savedPage = listPages['translations']
+    if (savedPage != null && savedPage >= 1 && savedPage !== initialPage) {
+      restoreAttempted.current = true
+      loadList(savedPage)
+    }
+  }, [listPages['translations'], initialPage])
 
   async function openEdit(doc: TranslationDoc) {
     setEditDoc(doc)
@@ -298,71 +336,73 @@ export default function TranslationsMain({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Post translations</h1>
-          <p className="text-muted-foreground text-sm">
-            Add translated content and SEO fields per language. Only you (post author) and admins can add or edit translations for your posts.
-          </p>
-        </div>
-        {posts.length === 0 ? (
-          <Button disabled>
-            <Plus className="h-4 w-4 mr-2" />
-            Add translation
-          </Button>
-        ) : (
-          <Button asChild>
-            <Link href="/dashboard/translations/new">
+      <DataTable
+        tableTitle="Post translations"
+        tableSubTitle="Add translated content and SEO fields per language."
+        AddProductButton={
+          posts.length === 0 ? (
+            <Button disabled>
               <Plus className="h-4 w-4 mr-2" />
               Add translation
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      <div className="rounded-md border">
-        {loading && translations.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">Loading…</div>
-        ) : translations.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">No translations yet. Create a blog post first, then add a translation.</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="p-3 text-left font-medium">Post</th>
-                <th className="p-3 text-left font-medium">Locale</th>
-                <th className="p-3 text-left font-medium">Title</th>
-                <th className="p-3 text-left font-medium">Updated</th>
-                <th className="p-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {translations.map((doc) => (
-                <tr key={doc.id} className="border-b">
-                  <td className="p-3">{getPostTitle(doc)}</td>
-                  <td className="p-3">{LOCALES.find((l) => l.value === doc.locale)?.label ?? doc.locale}</td>
-                  <td className="p-3 max-w-[200px] truncate">{doc.title ?? '—'}</td>
-                  <td className="p-3 text-muted-foreground">{doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString() : '—'}</td>
-                  <td className="p-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(doc)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(doc)}><Trash2 className="h-4 w-4" /></Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Page {currentPage} of {totalPages} ({total} total)</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => loadList(currentPage - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => loadList(currentPage + 1)}>Next</Button>
-          </div>
-        </div>
-      )}
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href="/dashboard/translations/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add translation
+              </Link>
+            </Button>
+          )
+        }
+        detailPageLink=""
+        selectedProductsState={{ selectedProducts: selectedTranslations, setSelectedProducts: setSelectedTranslations }}
+        total={total}
+        currentPage={currentPage}
+        limit={limit}
+        totalPages={totalPages}
+        data={tableRows}
+        isCheckBoxRequired={false}
+        isEllipsisRequired={true}
+        EllipsisComponent={({
+          value,
+        }: {
+          value: { id: number; Post?: string; Locale?: string; Title?: string; Updated?: string; _raw?: TranslationDoc }
+        }) => {
+          const doc = value._raw
+          if (!doc) return null
+          return (
+            <Popover>
+              <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <EllipsisVertical className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => openEdit(doc)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-destructive"
+                  onClick={() => handleDelete(doc)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </PopoverContent>
+            </Popover>
+          )
+        }}
+        fetchDataFunction={fetchDataFunction}
+        loading={loading}
+      />
 
       <Dialog open={!!editDoc} onOpenChange={(open) => !open && setEditDoc(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
