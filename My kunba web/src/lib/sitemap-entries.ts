@@ -1,4 +1,4 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
 import { payload } from '@/payload-client'
 import { getPublicUrl } from '@/lib/env'
 import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
@@ -7,7 +7,6 @@ import { getTagTranslation } from '@/lib/tag-translations'
 
 const BASE = getPublicUrl()
 
-/** Build alternates.languages for a path that uses ?locale= for non-en (e.g. posts, authors). */
 function alternatesForPath(path: string): Record<string, string> {
   const pathNorm = path.startsWith('/') ? path : `/${path}`
   const languages: Record<string, string> = {}
@@ -19,11 +18,10 @@ function alternatesForPath(path: string): Record<string, string> {
   return languages
 }
 
-/** Build sitemap entries (used by both metadata route and XML route handler for proper XML output when dynamic). */
+/** Build sitemap entries for the XML route handler (not used by Next.js metadata route). */
 export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = []
 
-  // ——— Static / home ———
   entries.push({
     url: BASE,
     lastModified: new Date(),
@@ -32,7 +30,6 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     alternates: { languages: alternatesForPath('/') },
   })
 
-  // ——— Published blog posts (all 6 languages via ?locale=) ———
   const posts = await payload.find({
     collection: 'posts',
     where: { status: { equals: 'published' }, deleted_at: { equals: null } },
@@ -58,7 +55,6 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     })
   }
 
-  // ——— Categories (localized slugs per locale) ———
   const categories = await payload.find({
     collection: 'categories',
     where: { deleted_at: { equals: null } },
@@ -88,7 +84,6 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     })
   }
 
-  // ——— Tags (localized slugs per locale) ———
   const tags = await payload.find({
     collection: 'tags',
     where: { deleted_at: { equals: null } },
@@ -118,7 +113,6 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     })
   }
 
-  // ——— Authors (path + ?locale= for all 6) ———
   const users = await payload.find({
     collection: 'users',
     where: {

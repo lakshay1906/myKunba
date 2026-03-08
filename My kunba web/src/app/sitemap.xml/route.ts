@@ -1,12 +1,10 @@
 /**
- * Sitemap XML route: returns proper application/xml so crawlers and browsers see
- * the XML tree. Using a Route Handler instead of the metadata sitemap.ts default
- * when dynamic, because force-dynamic can cause Next.js to serve the sitemap as
- * plain text instead of XML.
+ * Sitemap XML route: returns proper application/xml so crawlers and browsers
+ * render the XML tree. Sitemap data lives in lib/sitemap-entries.ts so Next.js
+ * does not use a metadata sitemap route that can output plain text.
  */
 
-import { NextResponse } from 'next/server'
-import { getSitemapEntries } from '@/app/sitemap'
+import { getSitemapEntries } from '@/lib/sitemap-entries'
 
 function escapeXml(unsafe: string): string {
   return unsafe
@@ -57,20 +55,22 @@ export async function GET() {
   </url>`
     })
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="${urlsetNs}" xmlns:xhtml="${xhtmlNs}">
-${urlNodes.join('\n')}
-</urlset>`
+    // Build XML as a single string with explicit newlines so browsers render tree
+    const xml =
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      `<urlset xmlns="${urlsetNs}" xmlns:xhtml="${xhtmlNs}">\n` +
+      urlNodes.join('\n') +
+      '\n</urlset>\n'
 
-    return new NextResponse(xml, {
+    return new Response(xml, {
       status: 200,
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': `public, max-age=${3600}, s-maxage=${3600}, stale-while-revalidate=${3600}`,
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600',
       },
     })
   } catch (err) {
     console.error('[sitemap.xml]', err)
-    return new NextResponse('Failed to generate sitemap', { status: 500 })
+    return new Response('Failed to generate sitemap', { status: 500 })
   }
 }
