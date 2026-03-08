@@ -4,6 +4,7 @@ import * as React from 'react'
 import {
   ArrowUpCircleIcon,
   CameraIcon,
+  DatabaseZap,
   FileCodeIcon,
   FileTextIcon,
   ImageIcon,
@@ -36,8 +37,8 @@ import Link from 'next/link'
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { loginDetail } = useAppStore()
   const [userData, setUserData] = useState({
-    name: 'Lakshay Bhati',
-    email: 'll3162@srmist.edu.in',
+    name: 'Demo User',
+    email: 'demo_user@gmail.com',
     avatar: 'https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png',
   })
 
@@ -58,16 +59,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const data = {
     navMain: [
+      ...(loginDetail?.role === 'admin'
+        ? [{ title: 'CMS Dashboard', url: '/admin', icon: DatabaseZap }]
+        : []),
       {
         title: 'Back to UserFront',
         url: '/',
         icon: Reply,
       },
-      // {
-      //   title: 'Team',
-      //   url: '#',
-      //   icon: UsersIcon,
-      // },
     ],
     navClouds: [
       {

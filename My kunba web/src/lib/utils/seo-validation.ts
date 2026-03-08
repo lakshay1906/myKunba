@@ -366,9 +366,21 @@ export function getSEOScoreAndChecks(
       : 'Set a Focus Keyword for this content.',
   })
 
-  const faqItems = options?.faq ?? []
+  const rawFaq = options?.faq
+  const faqItems: FaqItem[] = Array.isArray(rawFaq)
+    ? rawFaq
+    : typeof rawFaq === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(rawFaq) as unknown
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        })()
+      : []
   const faqFilledCount = faqItems.filter(
-    (f) => (f?.question ?? '').trim() && (f?.answer ?? '').trim(),
+    (f) => (String(f?.question ?? '').trim() && String(f?.answer ?? '').trim()),
   ).length
   additional.push({
     id: 'faq',
@@ -402,11 +414,15 @@ export function getSEOScoreAndChecks(
 
   // --- Content Readability (wording matches WordPress Rank Math sidebar) ---
   const contentReadability: SEOCheckItem[] = []
+  const mediaCount = countMediaInContent(content)
+  const hasMedia = mediaCount >= 1
   const hasTOC = hasTableOfContents(content)
+  // When user adds images/videos, also count TOC as passed so both pointers get checked
+  const tocOrMediaOk = hasTOC || hasMedia
   contentReadability.push({
     id: 'toc',
-    passed: hasTOC,
-    message: hasTOC
+    passed: tocOrMediaOk,
+    message: tocOrMediaOk
       ? 'Use Table of Content to break-down your text.'
       : 'Use Table of Content to break-down your text.',
   })
@@ -421,8 +437,6 @@ export function getSEOScoreAndChecks(
       ? 'Add short and concise paragraphs for better readability and UX.'
       : 'Add short and concise paragraphs for better readability and UX.',
   })
-  const mediaCount = countMediaInContent(content)
-  const hasMedia = mediaCount >= 1
   contentReadability.push({
     id: 'media',
     passed: hasMedia,

@@ -54,16 +54,21 @@ export async function GET() {
       pagination: false,
     })
 
+    const now = Date.now()
+    const visibleDocs = (posts.docs || []).filter(
+      (doc) => !doc.publishDate || new Date(doc.publishDate as string).getTime() <= now,
+    )
+
     const lastBuildDate =
-      posts.docs.length > 0
-        ? toRfc2822(posts.docs[0]?.updatedAt || posts.docs[0]?.publishDate)
+      visibleDocs.length > 0
+        ? toRfc2822(visibleDocs[0]?.updatedAt || visibleDocs[0]?.publishDate)
         : toRfc2822(new Date())
 
     const channelTitle = 'My Kunba - Blog'
     const channelDescription =
       'Discover the latest articles, insights, and stories on technology, design, and personal development. An open blogging platform where writers share knowledge and stories.'
 
-    const items = posts.docs.map((post) => {
+    const items = visibleDocs.map((post) => {
       const link = `${baseUrl}/${post.slug}`
       const title = escapeXml((post.metaTitle || post.title || 'Untitled').trim())
       const description = escapeXml(

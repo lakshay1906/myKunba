@@ -671,20 +671,14 @@ export default function EditBlogPage({
       updateData.categories = selectedCategories
       updateData.tags = selectedTags
 
-      // Add publish date and time if set (only current/future allowed)
       if (date) {
         const [h, m] = publishTime.split(':').map(Number)
         const combined = new Date(date)
         combined.setHours(h ?? 0, m ?? 0, 0, 0)
-        if (combined.getTime() < Date.now()) {
-          toast.error('Invalid publish date', {
-            description: 'Only current and future date/time are allowed.',
-            duration: 5000,
-          })
-          setSaving(false)
-          return
-        }
         updateData.publishDate = combined.toISOString()
+      }
+      if (typeof seoScoreResult?.score === 'number') {
+        updateData.seoScore = seoScoreResult.score
       }
 
       // Add cover image if exists
@@ -1349,7 +1343,6 @@ export default function EditBlogPage({
                         mode="single"
                         selected={date}
                         onSelect={handleDateSelect}
-                        disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                         initialFocus
                       />
                     </PopoverContent>
@@ -1360,15 +1353,9 @@ export default function EditBlogPage({
                       type="time"
                       value={publishTime}
                       onChange={(e) => handleTimeChange(e.target.value)}
-                      min={
-                        date &&
-                        format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                          ? format(new Date(), 'HH:mm')
-                          : undefined
-                      }
                     />
                     <p className="text-xs text-muted-foreground">
-                      Only current and future date/time allowed.
+                      You can set any date and time. Posts with a future publish date will appear to visitors once that time is reached.
                     </p>
                   </div>
                 </div>

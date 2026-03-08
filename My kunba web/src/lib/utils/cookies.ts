@@ -44,6 +44,7 @@ export interface BlogDraftData {
   excerpt?: string
   content?: string
   status?: 'draft' | 'published'
+  publishImmediately?: boolean
   publishDate?: string
   metaTitle?: string
   metaDescription?: string

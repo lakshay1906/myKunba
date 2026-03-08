@@ -73,6 +73,7 @@ const formSchema = z.object({
   excerpt: z.string().optional(),
   content: z.string().optional(),
   status: z.enum(['draft', 'published']),
+  publishImmediately: z.boolean().optional(),
   publishDate: z.date().optional(),
   publishTime: z.string().optional(), // HH:mm format for time picker
   metaTitle: z.string().optional(),
@@ -145,6 +146,7 @@ export function CreatePostForm() {
   const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
   const [titleExistsDialogOpen, setTitleExistsDialogOpen] = useState(false)
   const pendingDraftDataRef = useRef<FormValues | null>(null)
+  const submittedSuccessfullyRef = useRef(false)
 
   // Sync SEO result to layout context so the right sidebar (rendered in layout) can show it
   useEffect(() => {
@@ -160,15 +162,10 @@ export function CreatePostForm() {
       slug: '',
       excerpt: '',
       content: '',
-      publishDate: (() => {
-        const now = new Date()
-        // Default to next hour to ensure future time when publishing today
-        now.setHours(now.getHours() + 1, 0, 0, 0)
-        return now
-      })(),
+      publishImmediately: true,
+      publishDate: new Date(),
       publishTime: (() => {
         const now = new Date()
-        now.setHours(now.getHours() + 1, 0, 0, 0)
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
       })(),
       metaTitle: '',
@@ -181,11 +178,6 @@ export function CreatePostForm() {
       status: 'draft',
       commentsEnabled: true,
       isFeatured: false,
-      publishTime: (() => {
-        const now = new Date()
-        now.setHours(now.getHours() + 1, 0, 0, 0)
-        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-      })(),
     },
   })
 
@@ -239,6 +231,7 @@ export function CreatePostForm() {
     watchedValues.imageAltText,
     watchedValues.externalLinks,
     watchedValues.internalLinks,
+    watchedValues.faq,
     imageUploadData.alt,
   ])
 
@@ -299,7 +292,8 @@ export function CreatePostForm() {
             slug: draftData.slug || '',
             excerpt: draftData.excerpt || '',
             content: draftData.content || '',
-            publishDate: draftPublishDate && draftPublishDate.getTime() >= Date.now() ? draftPublishDate : defaultPublish,
+            publishImmediately: (draftData as any).publishImmediately !== false,
+            publishDate: draftPublishDate ?? defaultPublish,
             publishTime: draftPublishDate
               ? `${String(draftPublishDate.getHours()).padStart(2, '0')}:${String(draftPublishDate.getMinutes()).padStart(2, '0')}`
               : `${String(defaultPublish.getHours()).padStart(2, '0')}:${String(defaultPublish.getMinutes()).padStart(2, '0')}`,
@@ -398,6 +392,7 @@ export function CreatePostForm() {
               ? formValues.faq.map((f) => ({ question: f?.question?.trim() || '', answer: f?.answer?.trim() || '' }))
               : undefined,
           status: formValues.status,
+          publishImmediately: formValues.publishImmediately !== false,
           publishDate: (() => {
             const d = formValues.publishDate
             const t = formValues.publishTime
@@ -539,6 +534,8 @@ export function CreatePostForm() {
 
     // Cleanup on unmount (when navigating away)
     return () => {
+      // Don't save draft or show "Draft Saved" when we just successfully created a post
+      if (submittedSuccessfullyRef.current) return
       // Only show toast if not submitting (i.e., user is leaving without creating)
       if (!isSubmittingRef.current) {
         checkAndSaveDraft(true) // Show toast when component unmounts (navigating away)
@@ -878,8 +875,9 @@ export function CreatePostForm() {
         description: 'Saving your blog post...',
       })
 
-      // Combine date and time for publishDate (only current/future allowed)
+      // When Publish Immediately: use current date/time; otherwise use selected date & time
       const combinedPublishDate = (() => {
+        if (data.publishImmediately !== false) return new Date().toISOString()
         const d = data.publishDate
         const t = data.publishTime
         if (!d) return undefined
@@ -902,12 +900,9 @@ export function CreatePostForm() {
           ...data,
           publishDate: combinedPublishDate,
           content: processedContent, // Use processed content with uploaded image URLs
-          // NEW: Cloudflare R2 storage - ACTIVE
-          coverImage: coverImageUrl, // NEW: URL string from Cloudflare R2 or external URL
-          // Add categories and tags from state
+          coverImage: coverImageUrl,
           categories: selectedCategories.length > 0 ? selectedCategories : undefined,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
-          // SEO fields
           focusKeyword: data.focusKeyword || undefined,
           imageAltText: imageUploadData.alt?.trim() || undefined,
           externalLinks:
@@ -917,6 +912,7 @@ export function CreatePostForm() {
           faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
           commentsEnabled: data.commentsEnabled !== false,
           isFeatured: data.isFeatured === true,
+          seoScore: seoScoreResult?.score,
         }),
       })
 
@@ -941,9 +937,8 @@ export function CreatePostForm() {
       }
 
       // Blog created successfully - clear draft data BEFORE navigation
-      // Flow: Submit => Image upload => blog created => draft deleted
+      submittedSuccessfullyRef.current = true
       try {
-        // Disable draft saving before clearing
         setIsDraftLoaded(false)
 
         // Clear draft from storage
@@ -957,17 +952,12 @@ export function CreatePostForm() {
             slug: '',
             excerpt: '',
             content: '',
-            publishDate: (() => {
-        const now = new Date()
-        // Default to next hour to ensure future time when publishing today
-        now.setHours(now.getHours() + 1, 0, 0, 0)
-        return now
-      })(),
-      publishTime: (() => {
-        const now = new Date()
-        now.setHours(now.getHours() + 1, 0, 0, 0)
-        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-      })(),
+            publishImmediately: true,
+            publishDate: new Date(),
+            publishTime: (() => {
+              const now = new Date()
+              return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+            })(),
             metaTitle: '',
             metaDescription: '',
             focusKeyword: '',
@@ -1009,7 +999,10 @@ export function CreatePostForm() {
       isSubmittingRef.current = false
 
       toast.success('Success', {
-        description: res.message || 'Post created successfully. Draft has been cleared.',
+        description:
+          data.status === 'published'
+            ? res.message || 'Blog published successfully.'
+            : res.message || 'Post created successfully. Draft has been cleared.',
       })
 
       // Small delay to ensure draft clearing is complete before navigation
@@ -1035,6 +1028,7 @@ export function CreatePostForm() {
       form,
       router,
       handleImageUploadDataChange,
+      seoScoreResult?.score,
     ],
   )
 
@@ -1054,35 +1048,7 @@ export function CreatePostForm() {
     isSubmittingRef.current = true
 
     try {
-      // Published: require title, slug, excerpt, content
       if (data.status === 'published') {
-        // Validate publish date/time is not in the past
-        const combinedPublish = (() => {
-          const d = data.publishDate
-          const t = data.publishTime
-          if (!d) return null
-          if (t) {
-            const [h, m] = t.split(':').map(Number)
-            const combined = new Date(d)
-            combined.setHours(h ?? 0, m ?? 0, 0, 0)
-            return combined
-          }
-          return d
-        })()
-        if (combinedPublish && combinedPublish.getTime() < Date.now()) {
-          form.setError('publishDate', {
-            type: 'manual',
-            message: 'Publish date and time must be in the future. Please select a current or future date and time.',
-          })
-          setCurrentTab('settings')
-          isSubmittingRef.current = false
-          setIsLoading(false)
-          toast.error('Invalid publish date', {
-            description: 'Only current and future date/time are allowed.',
-          })
-          return
-        }
-
         const required: { field: keyof FormValues; label: string }[] = []
         if (!data.title?.trim()) required.push({ field: 'title', label: 'Title' })
         if (!data.slug?.trim()) required.push({ field: 'slug', label: 'Slug' })
@@ -1850,75 +1816,88 @@ export function CreatePostForm() {
                     )}
                   />
 
-                  {/* Publish Date & Time Field - only current and future allowed */}
-                  <div className="space-y-2">
-                    <FormField
-                      control={form.control}
-                      name="publishDate"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Publish Date</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={'outline'}
-                                  className={cn(
-                                    'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground',
-                                  )}
-                                  disabled={isLoading}
-                                >
-                                  {field.value ? (
-                                    format(field.value, 'PPP')
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="publishTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Publish Time</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="time"
-                              {...field}
-                              disabled={isLoading}
-                              min={
-                                form.watch('publishDate') &&
-                                format(form.watch('publishDate')!, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                                  ? format(new Date(), 'HH:mm')
-                                  : undefined
-                              }
-                            />
-                          </FormControl>
+                  {/* Publish Immediately: when true, use current date/time on create; when false, show date/time picker */}
+                  <FormField
+                    control={form.control}
+                    name="publishImmediately"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Publish Immediately</FormLabel>
                           <FormDescription>
-                            Only current and future date/time allowed. When publishing today, select a time that hasn&apos;t passed yet.
+                            When on, the post will use the current date and time when published. Turn off to schedule a date and time.
                           </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value !== false}
+                            onCheckedChange={field.onChange}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  {form.watch('publishImmediately') === false && (
+                    <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="publishDate"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Publish Date</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                      'w-full pl-3 text-left font-normal',
+                                      !field.value && 'text-muted-foreground',
+                                    )}
+                                    disabled={isLoading}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, 'PPP')
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="publishTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Publish Time</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="time"
+                                {...field}
+                                disabled={isLoading}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
                   {/* Allow Comments & Featured Post */}
                   <div className="space-y-4">

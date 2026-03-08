@@ -224,6 +224,13 @@ export async function GET(req: NextRequest) {
         page: page,
         sort: '-publishDate',
       })
+      // Only show posts whose publishDate has passed (or no publishDate)
+      const now = Date.now()
+      const visibleDocs = (data.docs || []).filter(
+        (doc: { publishDate?: string | null }) =>
+          !doc.publishDate || new Date(doc.publishDate).getTime() <= now,
+      )
+      data = { ...data, docs: visibleDocs }
     }
     return NextResponse.json(data, { status: 200 })
   } catch (error) {

@@ -187,6 +187,7 @@ export async function POST(req: NextRequest) {
       externalLinks,
       internalLinks,
       faq,
+      seoScore: clientSeoScore,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -226,16 +227,6 @@ export async function POST(req: NextRequest) {
     const effectiveStatus = isDraft ? 'draft' : isAuthor ? 'pending_approval' : status
     if (!isDraft && !coverImage) {
       return NextResponse.json({ message: 'Cover image is required for publishing' }, { status: 400 })
-    }
-    // Validate publishDate is not in the past when publishing
-    if (publishDate && !isDraft) {
-      const pubDate = new Date(publishDate)
-      if (pubDate.getTime() < Date.now()) {
-        return NextResponse.json(
-          { message: 'Publish date and time must be in the future.' },
-          { status: 400 },
-        )
-      }
     }
 
     const contentStr = content != null && typeof content === 'string' ? content : ''
@@ -315,7 +306,11 @@ export async function POST(req: NextRequest) {
     const faqStr = stringifyFaq(faq)
     if (faqStr != null) postData.faq = faqStr
 
-    postData.seoScore = computeSeoScore({
+    const savedSeoScore =
+      typeof clientSeoScore === 'number' && clientSeoScore >= 0 && clientSeoScore <= 100
+        ? Math.round(clientSeoScore)
+        : null
+    postData.seoScore = savedSeoScore ?? computeSeoScore({
       metaTitle: finalMetaTitle,
       metaDescription: finalMetaDescription,
       focusKeyword: focusKeyword ?? null,
@@ -439,6 +434,7 @@ export async function PUT(req: NextRequest) {
       externalLinks,
       internalLinks,
       faq,
+      seoScore: clientSeoScore,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -497,17 +493,6 @@ export async function PUT(req: NextRequest) {
     // Authors submitting for publish go to pending_approval; admins go directly to published
     const effectiveStatus =
       status === 'published' && !isAdmin ? 'pending_approval' : status ?? blogPost.status
-
-    // Validate publishDate is not in the past when publishing
-    if (publishDate && (effectiveStatus === 'published' || effectiveStatus === 'pending_approval')) {
-      const pubDate = new Date(publishDate)
-      if (pubDate.getTime() < Date.now()) {
-        return NextResponse.json(
-          { message: 'Publish date and time must be in the future.' },
-          { status: 400 },
-        )
-      }
-    }
 
     // Prepare update data
     const updateData: any = {
@@ -610,12 +595,18 @@ export async function PUT(req: NextRequest) {
       updateData.faq = stringifyFaq(faq) ?? null
     }
 
-    updateData.seoScore = computeSeoScore({
-      metaTitle: updateData.metaTitle ?? blogPost.metaTitle,
-      metaDescription: updateData.metaDescription ?? blogPost.metaDescription,
-      focusKeyword: updateData.focusKeyword ?? blogPost.focusKeyword,
-      imageAltText: updateData.imageAltText ?? blogPost.imageAltText,
-    })
+    const patchSeoScore =
+      typeof clientSeoScore === 'number' && clientSeoScore >= 0 && clientSeoScore <= 100
+        ? Math.round(clientSeoScore)
+        : null
+    updateData.seoScore =
+      patchSeoScore ??
+      computeSeoScore({
+        metaTitle: updateData.metaTitle ?? blogPost.metaTitle,
+        metaDescription: updateData.metaDescription ?? blogPost.metaDescription,
+        focusKeyword: updateData.focusKeyword ?? blogPost.focusKeyword,
+        imageAltText: updateData.imageAltText ?? blogPost.imageAltText,
+      })
 
     // Update the blog post
     const updatedPost = await payload.update({

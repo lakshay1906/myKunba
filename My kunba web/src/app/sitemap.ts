@@ -41,7 +41,11 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     pagination: false,
     sort: '-publishDate',
   })
-  for (const post of posts.docs) {
+  const now = Date.now()
+  const visiblePosts = (posts.docs || []).filter(
+    (doc) => !doc.publishDate || new Date((doc.publishDate as string)).getTime() <= now,
+  )
+  for (const post of visiblePosts) {
     const slug = post.slug ?? ''
     if (!slug) continue
     const path = `/${slug}`

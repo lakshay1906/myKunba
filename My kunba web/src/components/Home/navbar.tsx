@@ -160,7 +160,7 @@ export default function Navbar({
     },
   ],
 }: NavbarProps) {
-  const { loginDetail, logout } = useAppStore()
+  const { loginDetail } = useAppStore()
   const { t } = useLocale()
 
   const menuLabel = (title: string) => {
@@ -205,14 +205,6 @@ export default function Navbar({
                   </Link>
                 )}
 
-                <Button
-                  onClick={async () => {
-                    await logout()
-                  }}
-                  variant="outline"
-                >
-                  {t('nav_sign_out')}
-                </Button>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -298,16 +290,6 @@ export default function Navbar({
                                 Profile
                               </Button>
                             </Link>
-                            <Button
-                              onClick={async () => {
-                                await logout()
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                            >
-                              Sign Out
-                            </Button>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-3.5 mt-3">
