@@ -31,7 +31,7 @@ function getAuthOptions(): { keyFile: string } | { credentials: object } {
  * Call this when a blog post is published or updated so the URL is indexed promptly.
  * Safe to call in production; logs and ignores errors so the main flow is not blocked.
  *
- * @param url - Full public URL (e.g. https://new.mykunba.org/my-post-slug)
+ * @param url - Full public URL (e.g. https://mykunba.org/my-post-slug)
  * @returns true if notification was sent, false otherwise
  */
 export async function notifyGoogle(url: string): Promise<boolean> {

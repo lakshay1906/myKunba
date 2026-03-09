@@ -9,7 +9,7 @@
  * - Indexing API enabled for the service account
  *
  * Usage: node scripts/submit-blog-urls-to-google.js
- *        BASE_URL=https://new.mykunba.org node scripts/submit-blog-urls-to-google.js
+ *        BASE_URL=https://mykunba.org node scripts/submit-blog-urls-to-google.js
  */
 
 import 'dotenv/config'
@@ -20,8 +20,10 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(__dirname, '..')
-const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(root, 'new-mykunba-analytics-5fa24078d7b7.json')
-const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_PUBLIC_URL || 'https://new.mykunba.org'
+const keyPath =
+  process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+  path.join(root, 'new-mykunba-analytics-5fa24078d7b7.json')
+const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_PUBLIC_URL || 'https://mykunba.org'
 const LOCALES = ['en', 'hi', 'es', 'fr', 'ar', 'zh']
 
 function getAuthOptions() {
