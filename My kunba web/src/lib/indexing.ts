@@ -45,7 +45,8 @@ export async function notifyGoogle(url: string): Promise<boolean> {
       scopes: ['https://www.googleapis.com/auth/indexing'],
     })
     const authClient = await auth.getClient()
-    const indexing = google.indexing({ version: 'v3', auth: authClient })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const indexing = google.indexing({ version: 'v3', auth: authClient as any })
 
     await indexing.urlNotifications.publish({
       requestBody: {

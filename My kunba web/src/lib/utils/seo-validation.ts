@@ -151,7 +151,7 @@ function hasTableOfContents(content: string | unknown): boolean {
 /** Count images and videos in content (HTML or Lexical). */
 function countMediaInContent(content: string | unknown): number {
   if (content == null) return 0
-  const images = extractContentImages(content)
+  const images = extractContentImages(content as string | null | undefined)
   let videoCount = 0
   if (typeof content === 'string') {
     videoCount = (content.match(/<video\s|<iframe[^>]*(?:youtube|vimeo|embed)/gi) || []).length

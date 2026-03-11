@@ -359,7 +359,7 @@ export async function POST(req: NextRequest) {
               type: 'post_submission',
               read: false,
               relatedPost: createdPost.id,
-              fromUser: authorData.id,
+              fromUser: Number(authorData.id),
             },
           })
         }
@@ -643,7 +643,7 @@ export async function PUT(req: NextRequest) {
               type: 'post_submission',
               read: false,
               relatedPost: updatedPost.id,
-              fromUser: currentUser.id,
+              fromUser: Number(currentUser.id),
             },
           })
         }

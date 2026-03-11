@@ -49,7 +49,7 @@ export async function GET() {
         updatedAt: true,
         author: {
           select: { displayName: true },
-        },
+        } as unknown as true,
       },
       sort: '-publishDate',
       limit: 50,

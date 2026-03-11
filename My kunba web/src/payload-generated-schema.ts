@@ -1034,6 +1034,8 @@ type DatabaseSchema = {
   relations_payload_migrations: typeof relations_payload_migrations
 }
 
+// Augmentation for Payload Postgres adapter (module may not be resolved at type-check time)
+// @ts-expect-error - @payloadcms/db-postgres/types may not be present in all environments
 declare module '@payloadcms/db-postgres/types' {
   export interface GeneratedDatabaseSchema {
     schema: DatabaseSchema

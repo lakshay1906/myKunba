@@ -30,39 +30,41 @@ export async function GET() {
     const urlsetNs = 'http://www.sitemaps.org/schemas/sitemap/0.9'
     const xhtmlNs = 'http://www.w3.org/1999/xhtml'
 
-    const urlNodes = entries.map((entry) => {
+    const lines: string[] = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="' + urlsetNs + '" xmlns:xhtml="' + xhtmlNs + '">',
+    ]
+
+    for (const entry of entries) {
       const loc = escapeXml(entry.url)
       const lastmod = toLastMod(entry.lastModified)
       const changefreq = entry.changeFrequency ?? 'weekly'
       const priority = String(entry.priority ?? 0.5)
 
-      const alternateLinks =
-        entry.alternates?.languages &&
-        Object.entries(entry.alternates.languages).map(
-          ([hreflang, href]) =>
-            `    <xhtml:link rel="alternate" hreflang="${escapeXml(hreflang)}" href="${escapeXml(href)}"/>`,
-        )
+      lines.push('  <url>')
+      lines.push('    <loc>' + loc + '</loc>')
 
-      const alternatesBlock =
-        alternateLinks && alternateLinks.length > 0
-          ? '\n' + alternateLinks.join('\n') + '\n  '
-          : ''
+      if (entry.alternates?.languages && Object.keys(entry.alternates.languages).length > 0) {
+        for (const [hreflang, href] of Object.entries(entry.alternates.languages)) {
+          if (hreflang != null && href != null) {
+            lines.push('    <xhtml:link rel="alternate" hreflang="' + escapeXml(hreflang) + '" href="' + escapeXml(href) + '"/>')
+          }
+        }
+      }
 
-      return `  <url>
-    <loc>${loc}</loc>${alternatesBlock}<lastmod>${lastmod}</lastmod>
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>
-  </url>`
-    })
+      lines.push('    <lastmod>' + lastmod + '</lastmod>')
+      lines.push('    <changefreq>' + changefreq + '</changefreq>')
+      lines.push('    <priority>' + priority + '</priority>')
+      lines.push('  </url>')
+    }
 
-    // Build XML as a single string with explicit newlines so browsers render tree
-    const xml =
-      '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      `<urlset xmlns="${urlsetNs}" xmlns:xhtml="${xhtmlNs}">\n` +
-      urlNodes.join('\n') +
-      '\n</urlset>\n'
+    lines.push('</urlset>')
+    const xml = lines.join('\n')
 
-    return new Response(xml, {
+    // Send as UTF-8 bytes so no layer can reinterpret or strip the XML tags
+    const body = new TextEncoder().encode(xml)
+
+    return new Response(body, {
       status: 200,
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',

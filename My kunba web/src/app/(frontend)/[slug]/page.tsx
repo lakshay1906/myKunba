@@ -165,24 +165,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       Promise.all(tagIds.map((id) => getTagTranslation(id, locale))),
     ])
     if (localizedCats.some(Boolean)) {
-      blog = {
-        ...blog,
-        categories: blog.categories?.map((c, i) => {
-          const cat = c as { id: number; name: string; slug: string }
-          const tr = localizedCats[i]
-          return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
-        }) ?? [],
-      }
+      const mappedCats = blog.categories?.map((c, i) => {
+        const cat = c as { id: number; name: string; slug: string }
+        const tr = localizedCats[i]
+        return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
+      }) ?? []
+      blog = { ...blog, categories: mappedCats as typeof blog.categories }
     }
-    if (localizedTags.some(Boolean)) {
-      blog = {
-        ...blog,
-        tags: blog.tags?.map((t, i) => {
-          const tag = t as { id: number; name: string; slug: string }
-          const tr = localizedTags[i]
-          return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
-        }) ?? [],
-      }
+    if (localizedTags.some(Boolean) && blog) {
+      const mappedTags = blog.tags?.map((t, i) => {
+        const tag = t as { id: number; name: string; slug: string }
+        const tr = localizedTags[i]
+        return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
+      }) ?? []
+      blog = { ...blog, tags: mappedTags as typeof blog.tags }
     }
   }
 

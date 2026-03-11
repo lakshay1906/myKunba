@@ -126,9 +126,10 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   for (const user of users.docs) {
     const slug = (user as { username?: string }).username ?? String(user.id)
     const path = `/author/${slug}`
+    const updatedAt = (user as { updatedAt?: string }).updatedAt
     entries.push({
       url: `${BASE}${path}`,
-      lastModified: (user as { updatedAt?: string }).updatedAt ? new Date((user as { updatedAt?: string }).updatedAt) : new Date(),
+      lastModified: updatedAt ? new Date(updatedAt) : new Date(),
       changeFrequency: 'weekly',
       priority: 0.5,
       alternates: { languages: alternatesForPath(path) },
