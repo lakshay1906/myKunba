@@ -165,7 +165,10 @@ export interface User {
   username: string;
   bio?: string | null;
   verified: boolean;
-  profileImage?: (number | null) | Media;
+  /**
+   * Profile picture URL (uploaded to Cloudflare R2 as WebP, max 500KB). Set via profile page upload.
+   */
+  profileImage?: string | null;
   role: 'admin' | 'author' | 'user';
   /**
    * JSON string of array of { platform, url }. e.g. [{"platform":"Twitter","url":"https://..."}]

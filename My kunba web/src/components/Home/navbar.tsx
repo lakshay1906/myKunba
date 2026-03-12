@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  Book,
   ContactRound,
   FileWarning,
   Menu,
@@ -90,15 +89,15 @@ export default function Navbar({
   menu = [
     { title: 'Home', url: '/' },
     {
-      title: 'Products',
+      title: 'Upcoming Features',
       url: '/',
       items: [
-        {
-          title: 'Blog',
-          description: 'The latest industry news, updates, and info',
-          icon: <Book className="size-5 shrink-0" />,
-          url: '/',
-        },
+        // {
+        //   title: 'Blog',
+        //   description: 'The latest industry news, updates, and info',
+        //   icon: <Book className="size-5 shrink-0" />,
+        //   url: '/',
+        // },
         {
           title: 'Quiz',
           description: 'Test your knowledge and skills with our quizzes',

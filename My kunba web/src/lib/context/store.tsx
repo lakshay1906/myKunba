@@ -122,7 +122,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
               email: data.email,
               name: data.displayName,
               role: data.role,
-              profile_pic: data.profileImage ? data.profileImage.url : null,
+              profile_pic: typeof data.profileImage === 'string' ? data.profileImage : (data.profileImage?.url ?? null),
               id: data.id,
             })
         }

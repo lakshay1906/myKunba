@@ -15,7 +15,11 @@ function escapeXml(text: string): string {
 /** Strip HTML tags and trim; used for plain-text description */
 function stripHtml(html: string): string {
   if (!html || typeof html !== 'string') return ''
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500)
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 500)
 }
 
 /** Format date as RFC 2822 for RSS pubDate */
@@ -56,11 +60,10 @@ export async function GET() {
       pagination: false,
     })
 
-    const lastBuildDate = posts.docs.length > 0
-      ? toRfc2822(
-          posts.docs[0]?.updatedAt || posts.docs[0]?.publishDate,
-        )
-      : toRfc2822(new Date())
+    const lastBuildDate =
+      posts.docs.length > 0
+        ? toRfc2822(posts.docs[0]?.updatedAt || posts.docs[0]?.publishDate)
+        : toRfc2822(new Date())
 
     const channelTitle = 'My Kunba - Blog'
     const channelDescription =
@@ -70,9 +73,8 @@ export async function GET() {
       const postUrl = `${baseUrl}/${post.slug}`
       const title = escapeXml((post.metaTitle || post.title || 'Untitled').trim())
       const description = escapeXml(
-        stripHtml(
-          (post.metaDescription || post.excerpt || '').toString(),
-        ) || 'Read more on My Kunba.',
+        stripHtml((post.metaDescription || post.excerpt || '').toString()) ||
+          'Read more on My Kunba.',
       )
       const pubDate = toRfc2822(post.publishDate || post.updatedAt)
       const authorName =

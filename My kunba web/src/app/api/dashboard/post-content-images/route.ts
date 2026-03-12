@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-content-images GET]', err.message)
-    return NextResponse.json({ message: err.message || 'Failed to load content images' }, { status: 500 })
+    return NextResponse.json(
+      { message: err.message || 'Failed to load content images' },
+      { status: 500 },
+    )
   }
 }

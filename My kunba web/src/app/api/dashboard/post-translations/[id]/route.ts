@@ -61,10 +61,7 @@ async function assertCanEditTranslation(
   return { user, doc: doc as Record<string, unknown> }
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const numId = Number(id)
@@ -77,17 +74,11 @@ export async function GET(
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-translations GET by id]', err.message, err.stack ?? '')
-    return NextResponse.json(
-      { message: err.message || 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: err.message || 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const numId = Number(id)
@@ -106,7 +97,9 @@ export async function PATCH(
       const contentValue = body.content
       update.content =
         typeof contentValue === 'string'
-          ? (contentValue.trim() ? convertHtmlToLexicalWithParser(contentValue.trim()) : null)
+          ? contentValue.trim()
+            ? convertHtmlToLexicalWithParser(contentValue.trim())
+            : null
           : contentValue
     }
     if (body.metaTitle !== undefined) update.metaTitle = body.metaTitle
@@ -126,17 +119,11 @@ export async function PATCH(
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-translations PATCH]', err.message, err.stack ?? '')
-    return NextResponse.json(
-      { message: err.message || 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: err.message || 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const numId = Number(id)
@@ -154,9 +141,6 @@ export async function DELETE(
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-translations DELETE]', err.message, err.stack ?? '')
-    return NextResponse.json(
-      { message: err.message || 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: err.message || 'Internal server error' }, { status: 500 })
   }
 }

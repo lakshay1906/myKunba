@@ -47,7 +47,13 @@ export async function GET() {
       if (entry.alternates?.languages && Object.keys(entry.alternates.languages).length > 0) {
         for (const [hreflang, href] of Object.entries(entry.alternates.languages)) {
           if (hreflang != null && href != null) {
-            lines.push('    <xhtml:link rel="alternate" hreflang="' + escapeXml(hreflang) + '" href="' + escapeXml(href) + '"/>')
+            lines.push(
+              '    <xhtml:link rel="alternate" hreflang="' +
+                escapeXml(hreflang) +
+                '" href="' +
+                escapeXml(href) +
+                '"/>',
+            )
           }
         }
       }

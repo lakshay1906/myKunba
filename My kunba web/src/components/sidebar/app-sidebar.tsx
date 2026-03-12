@@ -2,13 +2,11 @@
 
 import * as React from 'react'
 import {
-  ArrowUpCircleIcon,
   CameraIcon,
   DatabaseZap,
   FileCodeIcon,
   FileTextIcon,
   ImageIcon,
-  LayoutDashboardIcon,
   MessageCircleHeart,
   Reply,
   Shapes,

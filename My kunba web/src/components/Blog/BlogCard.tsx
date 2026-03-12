@@ -101,10 +101,11 @@ export default function BlogCard({ post }: BlogCardProps) {
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src={
-                    post.author.profileImage === null
-                      ? `https://source.unsplash.com/featured/?portrait,${post.author.displayName?.replace(' ', '') || 'user'
-                      }`
-                      : post.author.profileImage.url
+                    post.author.profileImage && typeof post.author.profileImage === 'string'
+                      ? post.author.profileImage
+                      : typeof post.author.profileImage === 'object' && post.author.profileImage?.url
+                        ? post.author.profileImage.url
+                        : `https://source.unsplash.com/featured/?portrait,${post.author.displayName?.replace(' ', '') || 'user'}`
                   }
                   alt={post.author.displayName || 'Author'}
                 />

@@ -88,9 +88,7 @@ export const users = pgTable(
     username: varchar('username').notNull(),
     bio: varchar('bio'),
     verified: boolean('verified').notNull().default(false),
-    profileImage: integer('profile_image_id').references(() => media.id, {
-      onDelete: 'set null',
-    }),
+    profileImage: varchar('profile_image'),
     role: enum_users_role('role').notNull().default('user'),
     socialLinks: varchar('social_links'),
     email: varchar('email').notNull(),
@@ -743,13 +741,7 @@ export const payload_migrations = pgTable(
 )
 
 export const relations_admin = relations(admin, () => ({}))
-export const relations_users = relations(users, ({ one }) => ({
-  profileImage: one(media, {
-    fields: [users.profileImage],
-    references: [media.id],
-    relationName: 'profileImage',
-  }),
-}))
+export const relations_users = relations(users, () => ({}))
 export const relations_media = relations(media, () => ({}))
 export const relations_categories = relations(categories, ({ one }) => ({
   parent: one(categories, {

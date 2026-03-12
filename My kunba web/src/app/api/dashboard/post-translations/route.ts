@@ -67,10 +67,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-translations GET]', err.message, err.stack ?? '')
-    return NextResponse.json(
-      { message: err.message || 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: err.message || 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -112,7 +109,10 @@ export async function POST(req: NextRequest) {
 
     const locale = body.locale && ALLOWED_LOCALES.includes(body.locale) ? body.locale : null
     if (!locale) {
-      return NextResponse.json({ message: 'locale is required and must be one of: ' + ALLOWED_LOCALES.join(', ') }, { status: 400 })
+      return NextResponse.json(
+        { message: 'locale is required and must be one of: ' + ALLOWED_LOCALES.join(', ') },
+        { status: 400 },
+      )
     }
 
     const existing = await payload.find({
@@ -134,7 +134,9 @@ export async function POST(req: NextRequest) {
       contentValue == null
         ? null
         : typeof contentValue === 'string'
-          ? (contentValue.trim() ? convertHtmlToLexicalWithParser(contentValue.trim()) : null)
+          ? contentValue.trim()
+            ? convertHtmlToLexicalWithParser(contentValue.trim())
+            : null
           : contentValue
 
     const data = {
@@ -159,9 +161,6 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error('[post-translations POST]', err.message, err.stack ?? '')
-    return NextResponse.json(
-      { message: err.message || 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: err.message || 'Internal server error' }, { status: 500 })
   }
 }

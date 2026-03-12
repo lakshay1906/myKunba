@@ -208,7 +208,7 @@ export default async function AuthorPage({
         description: profile.bio,
       }),
       ...(profile.profileImage && {
-        image: profile.profileImage,
+        image: typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url,
       }),
       jobTitle: profile.role === 'admin' ? 'Administrator' : profile.role === 'author' ? 'Content Author' : 'User',
       worksFor: {
@@ -269,7 +269,7 @@ export default async function AuthorPage({
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="size-24 border-4 border-background shadow-lg">
                 <AvatarImage
-                  src={typeof profile.profileImage === 'string' ? profile.profileImage : ''}
+                  src={typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url ?? ''}
                   alt={profile.displayName ?? undefined}
                 />
                 <AvatarFallback className="text-2xl">

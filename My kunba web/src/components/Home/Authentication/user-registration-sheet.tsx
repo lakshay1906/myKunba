@@ -42,7 +42,9 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
   const closeAndMaybeRedirect = useCallback(() => {
     onOpenChange(false)
     try {
-      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+      const params = new URLSearchParams(
+        typeof window !== 'undefined' ? window.location.search : '',
+      )
       const r = params.get('redirect')
       if (r && r.startsWith('/') && !r.startsWith('//')) {
         router.push(r)
@@ -150,7 +152,10 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                 token: token,
                 email: data.email,
                 name: data.displayName,
-                profile_pic: data.profileImage ? data.profileImage.url : null,
+                profile_pic:
+                  typeof data.profileImage === 'string'
+                    ? data.profileImage
+                    : (data.profileImage?.url ?? null),
                 role: data.role,
                 id: data.id,
               })
@@ -208,7 +213,10 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                       token: token,
                       email: userData.email,
                       name: userData.displayName,
-                      profile_pic: userData.profileImage ? userData.profileImage.url : null,
+                      profile_pic:
+                        typeof userData.profileImage === 'string'
+                          ? userData.profileImage
+                          : (userData.profileImage?.url ?? null),
                       role: userData.role,
                       id: userData.id,
                     })
@@ -373,7 +381,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                     if (btnText === 'Login' || loginForm.password === loginForm.confirmPassword) {
                       handleAuthSuccess('emailPass')
                     } else {
-                      ; <Toast
+                      ;<Toast
                         isSuccess={false}
                         message="Error"
                         description="Confirm password doesn't match"

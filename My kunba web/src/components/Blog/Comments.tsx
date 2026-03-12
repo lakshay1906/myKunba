@@ -114,9 +114,11 @@ function CommentItem({
         <Avatar className={`${depth === 0 ? 'h-10 w-10' : 'h-8 w-8'} shrink-0`}>
           <AvatarImage
             src={
-              typeof comment.user.profileImage === 'object' && comment.user.profileImage?.url
-                ? comment.user.profileImage.url
-                : ''
+              typeof comment.user.profileImage === 'string'
+                ? comment.user.profileImage
+                : typeof comment.user.profileImage === 'object' && comment.user.profileImage?.url
+                  ? comment.user.profileImage.url
+                  : ''
             }
             alt={comment.user.displayName}
           />
