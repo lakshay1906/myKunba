@@ -21,7 +21,16 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { CalendarIcon, X, Save, ArrowLeft, ImagePlus, BarChart3, CheckCircle, XCircle } from 'lucide-react'
+import {
+  CalendarIcon,
+  X,
+  Save,
+  ArrowLeft,
+  ImagePlus,
+  BarChart3,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import CategorySelector from '@/components/Blog/category-selector'
@@ -80,7 +89,9 @@ export default function EditBlogPage({
   const [blog, setBlog] = useState<Record<string, any>>({})
   const [contentHtml, setContentHtml] = useState<string>('')
   /** Images already in post content (for translation/restrict mode dropdown). Computed once on load. */
-  const [existingContentImages, setExistingContentImages] = useState<{ src: string; alt?: string }[]>([])
+  const [existingContentImages, setExistingContentImages] = useState<
+    { src: string; alt?: string }[]
+  >([])
   const [selectedCategories, setSelectedCategories] = useState<number[]>([])
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [allTags, setAllTags] = useState<{ id: number; name: string; slug?: string }[]>([])
@@ -125,8 +136,14 @@ export default function EditBlogPage({
     publishDate: string | null
     coverImage: string | null
   } | null>(null)
-  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
-  const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<
+    typeof getSEOScoreAndChecks
+  > | null>(null)
+  const {
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    setSeoScoreResult: setContextSeoResult,
+  } = useDashboardLayout()
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [adminComment, setAdminComment] = useState('')
@@ -192,12 +209,14 @@ export default function EditBlogPage({
       const originalImages = extractImageUrlsFromHtml(htmlContent)
       originalContentImagesRef.current = originalImages
 
-      const catIds = blogData.categories && Array.isArray(blogData.categories)
-        ? blogData.categories.map((cat: any) => cat.id ?? cat)
-        : []
-      const tagIds = blogData.tags && Array.isArray(blogData.tags)
-        ? blogData.tags.map((t: any) => t.id ?? t)
-        : []
+      const catIds =
+        blogData.categories && Array.isArray(blogData.categories)
+          ? blogData.categories.map((cat: any) => cat.id ?? cat)
+          : []
+      const tagIds =
+        blogData.tags && Array.isArray(blogData.tags)
+          ? blogData.tags.map((t: any) => t.id ?? t)
+          : []
       if (catIds.length) setSelectedCategories(catIds)
       if (tagIds.length) setSelectedTags(tagIds)
 
@@ -243,9 +262,7 @@ export default function EditBlogPage({
       }
 
       // Snapshot for change detection (compare with current state before calling API)
-      const publishDate = blogData.publishDate
-        ? new Date(blogData.publishDate).toISOString()
-        : null
+      const publishDate = blogData.publishDate ? new Date(blogData.publishDate).toISOString() : null
       initialSnapshotRef.current = {
         title: (blogData.title ?? '').toString(),
         slug: (blogData.slug ?? '').toString(),
@@ -493,9 +510,11 @@ export default function EditBlogPage({
       const initial = initialSnapshotRef.current
       if (initial) {
         const currentCover =
-          (imageUploadData.coverImage && imageUploadData.coverImage.trim() !== '')
+          imageUploadData.coverImage && imageUploadData.coverImage.trim() !== ''
             ? imageUploadData.coverImage
-            : (blog.media && typeof blog.media === 'string' ? blog.media : null)
+            : blog.media && typeof blog.media === 'string'
+              ? blog.media
+              : null
         const currentPublishDate = date ? date.toISOString() : null
         const currentCategories = JSON.stringify([...selectedCategories].sort((a, b) => a - b))
         const currentTags = JSON.stringify([...selectedTags].sort((a, b) => a - b))
@@ -550,18 +569,18 @@ export default function EditBlogPage({
 
       // Upload image if a new one was selected (file upload or URL).
       // Prefer ref (set on load and when user picks new image) so content-only saves never lose the cover.
-      const existingMediaUrl =
-        blog.media && typeof blog.media === 'string' ? blog.media : null
+      const existingMediaUrl = blog.media && typeof blog.media === 'string' ? blog.media : null
       const existingCoverUrl =
-        imageUploadData.coverImage &&
-          !imageUploadData.coverImage.startsWith('data:')
+        imageUploadData.coverImage && !imageUploadData.coverImage.startsWith('data:')
           ? imageUploadData.coverImage
           : null
-      let finalImageUrl =
-        currentCoverUrlRef.current || existingMediaUrl || existingCoverUrl || null
+      let finalImageUrl = currentCoverUrlRef.current || existingMediaUrl || existingCoverUrl || null
 
       // Check if user selected a new image
-      if (imageUploadData.coverImage && imageUploadData.coverImage !== (currentCoverUrlRef.current || existingMediaUrl)) {
+      if (
+        imageUploadData.coverImage &&
+        imageUploadData.coverImage !== (currentCoverUrlRef.current || existingMediaUrl)
+      ) {
         // If it's a data URL, it means a file was selected and needs to be uploaded
         if (
           imageUploadData.coverImage.startsWith('data:') &&
@@ -634,8 +653,7 @@ export default function EditBlogPage({
           processedContent = contentProcessingResult.processedContent
         } catch (error: any) {
           toast.warning('Some images failed to upload', {
-            description:
-              'The blog will be saved, but some images may need to be re-uploaded.',
+            description: 'The blog will be saved, but some images may need to be re-uploaded.',
           })
         }
       }
@@ -645,7 +663,7 @@ export default function EditBlogPage({
 
       // Find removed images (images that were in original but not in new content)
       const removedImages = originalContentImagesRef.current.filter(
-        (originalUrl) => !newContentImages.includes(originalUrl)
+        (originalUrl) => !newContentImages.includes(originalUrl),
       )
 
       // Prepare data for API
@@ -718,8 +736,7 @@ export default function EditBlogPage({
               }
             })
           })
-          .catch((error) => {
-          })
+          .catch((error) => {})
       }
 
       toast.success('Blog saved successfully', {
@@ -858,7 +875,6 @@ export default function EditBlogPage({
   return (
     <div className="container mx-auto relative">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4 lg:gap-0">
-
         <div className="flex items-center space-x-2">
           <Link href={'/dashboard/blog'}>
             <Button variant="ghost" size="sm">
@@ -881,9 +897,13 @@ export default function EditBlogPage({
               <span
                 className={cn(
                   'rounded px-1.5 py-0.5 text-xs font-medium',
-                  seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-                  seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-                  seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                  seoScoreResult.score >= 81 &&
+                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                  seoScoreResult.score >= 51 &&
+                    seoScoreResult.score < 81 &&
+                    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                  seoScoreResult.score < 51 &&
+                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
                 )}
               >
                 {seoScoreResult.score} / 100
@@ -949,17 +969,25 @@ export default function EditBlogPage({
                 <div className="border rounded-md p-4">
                   {restrictContentImages ? (
                     <div className="flex flex-col gap-2">
-                      {imageUploadData.coverImage || (blog.media && typeof blog.media === 'string') ? (
+                      {imageUploadData.coverImage ||
+                      (blog.media && typeof blog.media === 'string') ? (
                         <>
                           <img
-                            src={imageUploadData.coverImage || (typeof blog.media === 'string' ? blog.media : '')}
+                            src={
+                              imageUploadData.coverImage ||
+                              (typeof blog.media === 'string' ? blog.media : '')
+                            }
                             alt={imageUploadData.alt || blog.title || ''}
                             className="max-h-48 w-auto object-contain rounded border"
                           />
-                          <p className="text-sm text-muted-foreground">Cover image cannot be changed in this mode.</p>
+                          <p className="text-sm text-muted-foreground">
+                            Cover image cannot be changed in this mode.
+                          </p>
                         </>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No cover image (cannot be changed in this mode).</p>
+                        <p className="text-sm text-muted-foreground">
+                          No cover image (cannot be changed in this mode).
+                        </p>
                       )}
                     </div>
                   ) : (
@@ -980,7 +1008,8 @@ export default function EditBlogPage({
                 <Label htmlFor="content">Content</Label>
                 {restrictContentImages && (
                   <p className="text-sm text-muted-foreground mb-1">
-                    Image button inserts only from existing post images; no new uploads. Cover image cannot be changed.
+                    Image button inserts only from existing post images; no new uploads. Cover image
+                    cannot be changed.
                   </p>
                 )}
                 <RichTextEditor
@@ -1003,19 +1032,6 @@ export default function EditBlogPage({
             </div>
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  name="slug"
-                  value={blog.slug ?? ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter blog slug"
-                />
-                <p className="text-sm text-muted-foreground">
-                  The URL-friendly version of the title. Used in the post URL.
-                </p>
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="metaTitle">Meta Title</Label>
                 <Input
                   id="metaTitle"
@@ -1033,6 +1049,19 @@ export default function EditBlogPage({
                 <p className="text-sm text-muted-foreground">
                   {(blog.metaTitle || blog.title || '').length}/60 characters. Defaults to blog
                   title if empty.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={blog.slug ?? ''}
+                  onChange={handleInputChange}
+                  placeholder="Enter blog slug"
+                />
+                <p className="text-sm text-muted-foreground">
+                  The URL-friendly version of the title. Used in the post URL.
                 </p>
               </div>
               <div className="space-y-2">
@@ -1076,9 +1105,7 @@ export default function EditBlogPage({
                   id="imageAltText"
                   name="imageAltText"
                   value={imageUploadData.alt ?? ''}
-                  onChange={(e) =>
-                    setImageUploadData((prev) => ({ ...prev, alt: e.target.value }))
-                  }
+                  onChange={(e) => setImageUploadData((prev) => ({ ...prev, alt: e.target.value }))}
                   placeholder="Descriptive alt text for the cover image"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -1355,7 +1382,8 @@ export default function EditBlogPage({
                       onChange={(e) => handleTimeChange(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      You can set any date and time. Posts with a future publish date will appear to visitors once that time is reached.
+                      You can set any date and time. Posts with a future publish date will appear to
+                      visitors once that time is reached.
                     </p>
                   </div>
                 </div>
@@ -1478,7 +1506,11 @@ export default function EditBlogPage({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveDialogOpen(false)} disabled={approvalLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setApproveDialogOpen(false)}
+              disabled={approvalLoading}
+            >
               Cancel
             </Button>
             <Button onClick={handleApprove} disabled={approvalLoading}>
@@ -1508,10 +1540,18 @@ export default function EditBlogPage({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={approvalLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setRejectDialogOpen(false)}
+              disabled={approvalLoading}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={approvalLoading || !adminComment.trim()}>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={approvalLoading || !adminComment.trim()}
+            >
               {approvalLoading ? 'Rejecting...' : 'Reject'}
             </Button>
           </DialogFooter>

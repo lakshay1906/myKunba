@@ -376,7 +376,7 @@ export function UserRegistrationSheet({ open, onOpenChange, btnText }: UserRegis
                   </div>
                 )}
                 <Button
-                  className="w-full mt-36"
+                  className="w-full mt-8"
                   onClick={() => {
                     if (btnText === 'Login' || loginForm.password === loginForm.confirmPassword) {
                       handleAuthSuccess('emailPass')

@@ -4,11 +4,10 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShare2, FiMail, FiLink } from 'react-icons/fi'
 import { FaFacebook, FaWhatsapp, FaTelegram } from 'react-icons/fa'
-import { LuLinkedin } from "react-icons/lu";
+import { LuLinkedin } from 'react-icons/lu'
 import { FaXTwitter, FaThreads } from 'react-icons/fa6'
 import { toast } from 'sonner'
 
-const BUTTON_GAP = 56
 const STAGGER_DURATION = 0.05
 
 type ShareOptionBase = {
@@ -34,7 +33,8 @@ const shareOptions: ShareOptionBase[] = [
     id: 'facebook',
     label: 'Facebook',
     Icon: FaFacebook,
-    href: (url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    href: (url: string) =>
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
     hoverClass: 'hover:bg-[#1877F2] hover:text-white',
   },
   {
@@ -43,7 +43,8 @@ const shareOptions: ShareOptionBase[] = [
     Icon: FaThreads,
     href: (url: string, title: string) =>
       `https://www.threads.net/intent/post?text=${encodeURIComponent(`${title} ${url}`)}`,
-    hoverClass: 'hover:bg-[#000000] hover:text-white dark:hover:bg-[#e7e9ea] dark:hover:text-[#000000]',
+    hoverClass:
+      'hover:bg-[#000000] hover:text-white dark:hover:bg-[#e7e9ea] dark:hover:text-[#000000]',
   },
   {
     id: 'whatsapp',
@@ -124,7 +125,7 @@ export default function FloatingShare() {
   )
 
   const buttonBaseClass =
-    'cursor-pointer flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-lg transition-colors'
+    'cursor-pointer flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-lg transition-colors'
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center" aria-label="Share">
@@ -176,11 +177,13 @@ export default function FloatingShare() {
                     title={option.label}
                     aria-label={option.label}
                   >
-                    <option.Icon className="size-5" />
+                    <option.Icon className="size-6" />
                   </button>
                 ) : (
                   <a
-                    href={option.isMailto && option.href ? option.href(getShareUrl(), getTitle()) : '#'}
+                    href={
+                      option.isMailto && option.href ? option.href(getShareUrl(), getTitle()) : '#'
+                    }
                     target={option.isMailto ? '_self' : '_blank'}
                     rel={option.isMailto ? undefined : 'noopener noreferrer'}
                     onClick={(e) => {
@@ -193,7 +196,7 @@ export default function FloatingShare() {
                     title={option.label}
                     aria-label={option.label}
                   >
-                    <option.Icon className="size-5" />
+                    <option.Icon className="size-6" />
                   </a>
                 )}
               </motion.div>
