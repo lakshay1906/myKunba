@@ -7,7 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
 
@@ -20,15 +19,13 @@ export function NavDocuments({
     icon: LucideIcon
   }[]
 }) {
-  const { isMobile } = useSidebar()
-
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+    <SidebarGroup>
       <SidebarGroupLabel className="text-sm">Documents</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild tooltip={item.name}>
               <Link href={item.url}>
                 <item.icon />
                 <span>{item.name}</span>

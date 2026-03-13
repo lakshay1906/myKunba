@@ -18,6 +18,8 @@ export default function UnifiedImageUpload({
   onUploadComplete,
   fileInputId = 'file-input',
   lazyUpload = false,
+  hasExistingImage = false,
+  onCloseAfterSet,
 }: {
   imageUploadData: ImageUploadData
   setImageUploadData: React.Dispatch<React.SetStateAction<ImageUploadData>>
@@ -25,6 +27,10 @@ export default function UnifiedImageUpload({
   onUploadComplete?: (imageUrl: string, alt: string) => void | Promise<void>
   fileInputId?: string
   lazyUpload?: boolean // If true, don't upload immediately - just return data URL or URL
+  /** When true, primary button shows "Replace image" instead of "Done" so dialog has only one Done (in header). */
+  hasExistingImage?: boolean
+  /** When set (e.g. by ImageUploadDialog), called after cover image is set so the dialog can close with one click. */
+  onCloseAfterSet?: () => void
 }) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -278,7 +284,7 @@ export default function UnifiedImageUpload({
               }
             }
           } else {
-            // Original behavior: just set coverImage as data URL (for cover image upload)
+            // Cover image flow: set coverImage then close dialog so user only clicks Done once
             if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
               const reader = new FileReader()
               reader.onload = (e) => {
@@ -288,6 +294,7 @@ export default function UnifiedImageUpload({
                   isOpen: false,
                   coverImage: e.target?.result as string,
                 }))
+                onCloseAfterSet?.()
               }
               reader.readAsDataURL(imageUploadData.file)
             } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
@@ -297,6 +304,7 @@ export default function UnifiedImageUpload({
                 isOpen: false,
                 coverImage: imageUploadData.imageUrl,
               }))
+              onCloseAfterSet?.()
             }
           }
         }}
@@ -423,7 +431,13 @@ export default function UnifiedImageUpload({
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              {onUploadComplete ? (lazyUpload ? 'Add to Content' : 'Upload & Add') : 'Done'}
+              {onUploadComplete
+                ? lazyUpload
+                  ? 'Add to Content'
+                  : 'Upload & Add'
+                : hasExistingImage
+                  ? 'Replace image'
+                  : 'Done'}
             </>
           )}
         </Button>

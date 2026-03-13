@@ -936,12 +936,12 @@ export function CreatePostForm() {
         return
       }
 
-      // Blog created successfully - clear draft data BEFORE navigation
+      // Blog created successfully - clear draft data BEFORE navigation (draft and published)
       submittedSuccessfullyRef.current = true
       try {
         setIsDraftLoaded(false)
 
-        // Clear draft from storage
+        // Clear draft from storage (same for status draft or published)
         await clearDraftCookie()
         setHasDraftData(false)
 

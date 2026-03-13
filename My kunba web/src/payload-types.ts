@@ -166,7 +166,7 @@ export interface User {
   bio?: string | null;
   verified: boolean;
   /**
-   * Profile picture URL (uploaded to Cloudflare R2 as WebP, max 500KB). Set via profile page upload.
+   * Profile picture URL (uploaded to Cloudflare R2 as WebP, max 100KB). Set via profile page upload.
    */
   profileImage?: string | null;
   role: 'admin' | 'author' | 'user';

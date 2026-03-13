@@ -135,6 +135,8 @@ export default function ImageUploadDialog({
                 imageUploadData={imageUploadData}
                 setImageUploadData={setImageUploadData}
                 clearAll={clearAll}
+                hasExistingImage={Boolean(imageUploadData.coverImage)}
+                onCloseAfterSet={() => setIsOpen(false)}
               />
             </div>
           </div>

@@ -48,6 +48,7 @@ import { processContentImages } from '@/utils/process-content-images'
 import { extractImageUrlsFromHtml } from '@/utils/cleanup-orphaned-images'
 import { extractContentImages } from '@/utils/content-images'
 import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
+import { clearDraftCookie } from '@/lib/utils/cookies'
 import { useDashboardLayout } from '@/lib/context/dashboard-layout-context'
 import { cn } from '@/lib/utils'
 import {
@@ -724,6 +725,9 @@ export default function EditBlogPage({
       if (!response.ok) {
         throw new Error(result.message || 'Failed to save blog')
       }
+
+      // Clear create-form draft so "new post" doesn't restore old draft (same as on create submit)
+      await clearDraftCookie().catch(() => {})
 
       // Clean up removed images from Cloudflare R2 (non-blocking)
       if (removedImages.length > 0) {
