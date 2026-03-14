@@ -16,17 +16,17 @@ function getEnv(key: string, publicKey: string): string {
 }
 
 export async function sendEmail({ to, subject, html }: EmailOptions): Promise<void> {
-  const smtpHost = getEnv('SMTP_HOST', 'NEXT_PUBLIC_SMTP_HOST')
-  const smtpPort = getEnv('SMTP_PORT', 'NEXT_PUBLIC_SMTP_PORT')
-  const smtpEmail = getEnv('SMTP_EMAIL', 'NEXT_PUBLIC_SMTP_EMAIL')
-  const smtpPass = getEnv('SMTP_PASS', 'NEXT_PUBLIC_SMTP_PASS')
+  const smtpHost = getEnv('SMTP_HOST', 'SMTP_HOST')
+  const smtpPort = getEnv('SMTP_PORT', 'SMTP_PORT')
+  const smtpEmail = getEnv('SMTP_EMAIL', 'SMTP_EMAIL')
+  const smtpPass = getEnv('SMTP_PASS', 'SMTP_PASS')
 
   if (!smtpHost || !smtpPort || !smtpEmail || !smtpPass) {
     const missing = [
-      !smtpHost && 'SMTP_HOST or NEXT_PUBLIC_SMTP_HOST',
-      !smtpPort && 'SMTP_PORT or NEXT_PUBLIC_SMTP_PORT',
-      !smtpEmail && 'SMTP_EMAIL or NEXT_PUBLIC_SMTP_EMAIL',
-      !smtpPass && 'SMTP_PASS or NEXT_PUBLIC_SMTP_PASS',
+      !smtpHost && 'SMTP_HOST or SMTP_HOST',
+      !smtpPort && 'SMTP_PORT or SMTP_PORT',
+      !smtpEmail && 'SMTP_EMAIL or SMTP_EMAIL',
+      !smtpPass && 'SMTP_PASS or SMTP_PASS',
     ].filter(Boolean)
     throw new Error(
       `SMTP configuration is missing. Set in .env: ${missing.join(', ')}. ` +
@@ -39,7 +39,10 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
 
   // Determine if it's Gmail or Outlook
   const isGmail = smtpHost.includes('gmail.com')
-  const isOutlook = smtpHost.includes('outlook.com') || smtpHost.includes('live.com') || smtpHost.includes('hotmail.com')
+  const isOutlook =
+    smtpHost.includes('outlook.com') ||
+    smtpHost.includes('live.com') ||
+    smtpHost.includes('hotmail.com')
 
   // Configure transporter based on provider
   const transporterConfig: any = {
@@ -105,12 +108,12 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
       if (verifyError?.code === 'EAUTH') {
         throw new Error(
           `SMTP Authentication Failed (${verifyError?.responseCode || 'N/A'}): ${verifyError?.response || verifyError?.message}\n\n` +
-          `Common fixes:\n` +
-          `- Check your email and password in .env file\n` +
-          `- For Gmail: Use an App Password instead of your regular password (https://support.google.com/accounts/answer/185833)\n` +
-          `- For Outlook: Check if "Less secure app access" is enabled or use an App Password\n` +
-          `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
-          `- Current config: Host=${smtpHost}, Port=${portNumber}, Email=${smtpEmail}`
+            `Common fixes:\n` +
+            `- Check your email and password in .env file\n` +
+            `- For Gmail: Use an App Password instead of your regular password (https://support.google.com/accounts/answer/185833)\n` +
+            `- For Outlook: Check if "Less secure app access" is enabled or use an App Password\n` +
+            `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
+            `- Current config: Host=${smtpHost}, Port=${portNumber}, Email=${smtpEmail}`,
         )
       }
       throw verifyError
@@ -124,19 +127,18 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
       subject,
       html,
     })
-
   } catch (error: any) {
     // Provide helpful error messages
     if (error?.code === 'EAUTH') {
       const authError = new Error(
         `SMTP Authentication Failed (${error?.responseCode || 'N/A'}): ${error?.response || error?.message}\n\n` +
-        `Common fixes:\n` +
-        `- Check your email and password in .env file\n` +
-        `- For Gmail: Use an App Password instead of your regular password\n` +
-        `  (Enable 2FA, then generate App Password at: https://myaccount.google.com/apppasswords)\n` +
-        `- For Outlook: Use an App Password (https://account.microsoft.com/security/app-passwords)\n` +
-        `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
-        `- Make sure there are no extra spaces in your .env file values`
+          `Common fixes:\n` +
+          `- Check your email and password in .env file\n` +
+          `- For Gmail: Use an App Password instead of your regular password\n` +
+          `  (Enable 2FA, then generate App Password at: https://myaccount.google.com/apppasswords)\n` +
+          `- For Outlook: Use an App Password (https://account.microsoft.com/security/app-passwords)\n` +
+          `- Verify SMTP_HOST, SMTP_PORT, SMTP_EMAIL, and SMTP_PASS are correct\n` +
+          `- Make sure there are no extra spaces in your .env file values`,
       )
       ;(authError as any).code = 'EAUTH'
       throw authError

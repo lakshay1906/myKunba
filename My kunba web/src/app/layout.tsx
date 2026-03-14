@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { getPublicUrl } from '@/lib/env'
 import './globals.css'
-import { GoogleAnalytics } from "@next/third-parties/google"
+import { GoogleAnalytics } from '@next/third-parties/google'
+import Script from 'next/script'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -103,11 +104,12 @@ export default function RootLayout({
   return (
     <html lang="en-US" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <link
-          rel="alternate"
-          type="application/rss+xml"
-          title="My Kunba Blog"
-          href={feedUrl}
+        <link rel="alternate" type="application/rss+xml" title="My Kunba Blog" href={feedUrl} />
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
         />
       </head>
       <body
