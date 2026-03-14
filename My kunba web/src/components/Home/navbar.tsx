@@ -135,13 +135,13 @@ export default function Navbar({
           title: 'About Us',
           description: 'Get all the answers you need right here',
           icon: <ContactRound className="size-5 shrink-0" />,
-          url: '/about',
+          url: '/about-us',
         },
         {
           title: 'Contact Us',
           description: 'We are here to help you with any questions you have',
           icon: <Send className="size-5 shrink-0" />,
-          url: '/contact',
+          url: '/contact-us',
         },
         {
           title: 'Privacy Policy',

@@ -14,8 +14,8 @@ const sectionKeys = [
     titleKey: 'footer_links',
     links: [
       { nameKey: 'nav_home', href: '/' },
-      { nameKey: 'nav_about', href: '/about' },
-      { nameKey: 'nav_contact', href: '/contact' },
+      { nameKey: 'nav_about', href: '/about-us' },
+      { nameKey: 'nav_contact', href: '/contact-us' },
       { nameKey: 'footer_all_posts', href: '/' },
       { nameKey: 'nav_privacy_policy', href: '/privacy-policy' },
       { nameKey: 'nav_disclaimer', href: '/disclaimer' },
@@ -66,7 +66,9 @@ export default function Footer() {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success(data.message || 'Successfully subscribed! Please check your email for confirmation.')
+        toast.success(
+          data.message || 'Successfully subscribed! Please check your email for confirmation.',
+        )
         setEmail('') // Clear the input
       } else {
         toast.error(data.message || 'Something went wrong. Please try again later.')

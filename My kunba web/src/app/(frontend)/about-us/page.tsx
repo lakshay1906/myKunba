@@ -6,11 +6,13 @@ import { getPublicUrl } from '@/lib/env'
 // Static SSG; no frequent revalidation
 export const metadata: Metadata = {
   title: 'About Us',
-  description: 'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights on technology, design, and personal development.',
+  description:
+    'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights on technology, design, and personal development.',
   openGraph: {
     title: 'About Us - My Kunba',
-    description: 'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights.',
-    url: '/about',
+    description:
+      'Learn about My Kunba, our mission, values, and team. We are passionate about sharing knowledge and insights.',
+    url: '/about-us',
     type: 'website',
   },
   twitter: {
@@ -19,7 +21,7 @@ export const metadata: Metadata = {
     description: 'Learn about My Kunba, our mission, values, and team.',
   },
   alternates: {
-    canonical: '/about',
+    canonical: '/about-us',
   },
 }
 
@@ -33,16 +35,15 @@ export default function About() {
     name: 'My Kunba',
     url: siteUrl,
     logo: `${siteUrl}/full_logo.png`,
-    description: 'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
+    description:
+      'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
     foundingDate: '2023',
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Customer Service',
-      url: `${siteUrl}/contact`,
+      url: `${siteUrl}/contact-us`,
     },
-    sameAs: [
-      'https://x.com/mykunba',
-    ],
+    sameAs: ['https://x.com/mykunba'],
   }
 
   // AboutPage schema
@@ -51,7 +52,7 @@ export default function About() {
     '@type': 'AboutPage',
     name: 'About My Kunba',
     description: 'Learn about My Kunba, our mission, values, and team.',
-    url: `${siteUrl}/about`,
+    url: `${siteUrl}/about-us`,
     mainEntity: organizationSchema,
   }
 
@@ -74,7 +75,7 @@ export default function About() {
               topics related to technology, design, and personal development.
             </p>
 
-            <div className="my-8 relative h-64 rounded-xl overflow-hidden">
+            {/* <div className="my-8 relative h-64 rounded-xl overflow-hidden">
               <Image
                 src="https://picsum.photos/seed/about/1200/400"
                 alt="Our team working together"
@@ -83,7 +84,7 @@ export default function About() {
                 loading="lazy"
                 sizes="(max-width: 768px) 100vw, 1200px"
               />
-            </div>
+            </div> */}
 
             <p>
               Founded in 2023, our platform has grown from a small personal blog to a community of
@@ -97,8 +98,8 @@ export default function About() {
         <section className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold mb-6">Our Mission</h2>
           <p className="text-gray-700 dark:text-gray-300">
-            To empower individuals with knowledge and insights that inspire creativity, foster growth,
-            and drive innovation in the digital world.
+            To empower individuals with knowledge and insights that inspire creativity, foster
+            growth, and drive innovation in the digital world.
           </p>
         </section>
 
@@ -182,7 +183,7 @@ export default function About() {
             We're always looking for passionate writers and contributors to join our team.
           </p>
           <Link
-            href="/contact"
+            href="/contact-us"
             className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             Get in Touch
