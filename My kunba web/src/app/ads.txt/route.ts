@@ -22,8 +22,11 @@ export async function GET() {
     })
   }
 
+  // ads.txt requires "pub-xxxxxxxxxxxx" (no "ca-" prefix); env uses "ca-pub-..."
+  const adsTxtPublisherId = publisherId.replace(/^ca-pub-/, 'pub-')
+
   // Format: domain, publisher_id, relationship, certification_authority_id
-  const line = `google.com, ${publisherId}, DIRECT, ${GOOGLE_CERTIFICATION_AUTHORITY_ID}\n`
+  const line = `google.com, ${adsTxtPublisherId}, DIRECT, ${GOOGLE_CERTIFICATION_AUTHORITY_ID}\n`
   const body = new TextEncoder().encode(line)
 
   return new Response(body, {
