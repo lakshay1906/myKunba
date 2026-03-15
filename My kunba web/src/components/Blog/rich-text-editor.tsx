@@ -21,12 +21,7 @@ import FontFamily from '@tiptap/extension-font-family'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Bold,
   Italic,
@@ -65,7 +60,15 @@ import {
 export type ContentImageOption = { src: string; alt?: string }
 
 /** Get images currently in editor content (for translation mode). */
-function getImgsInDoc(editor: { state: { doc: { descendants: (f: (node: { type: { name: string }; attrs?: { src?: string; alt?: string } }) => void) => void } } }): ContentImageOption[] {
+function getImgsInDoc(editor: {
+  state: {
+    doc: {
+      descendants: (
+        f: (node: { type: { name: string }; attrs?: { src?: string; alt?: string } }) => void,
+      ) => void
+    }
+  }
+}): ContentImageOption[] {
   const out: ContentImageOption[] = []
   editor.state.doc.descendants((node) => {
     if (node.type.name === 'image' && node.attrs?.src) {
@@ -329,7 +332,11 @@ export default function RichTextEditor({
       // Insert image with alt text into editor at current cursor position
       // imageSrc is already a data URL (for file uploads) or external URL (for URL uploads)
       // Will be uploaded to Cloudflare R2 only on form submission
-      editor.chain().focus().setImage({ src: imageSrc, alt: alt || '' }).run()
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: imageSrc, alt: alt || '' })
+        .run()
 
       toast.success('Image added', {
         description: 'Image added to content. It will be uploaded when you submit the blog.',
@@ -365,7 +372,11 @@ export default function RichTextEditor({
       if (!editor) return
       const img = remainingContentImages[index]
       if (!img) return
-      editor.chain().focus().setImage({ src: img.src, alt: img.alt || '' }).run()
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: img.src, alt: img.alt || '' })
+        .run()
       toast.success('Image inserted')
     },
     [editor, remainingContentImages],
@@ -411,7 +422,7 @@ export default function RichTextEditor({
   return (
     <Card className="w-full">
       {/* Fixed Toolbar */}
-      <div className="sticky top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
+      <div className="sticky top-[7.4rem] sm:top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
         {/* Undo/Redo */}
         <Button
           type="button"
@@ -691,7 +702,10 @@ export default function RichTextEditor({
                 <ImageIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-[280px] overflow-y-auto min-w-[200px]">
+            <DropdownMenuContent
+              align="start"
+              className="max-h-[280px] overflow-y-auto min-w-[200px]"
+            >
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Insert image from post content
               </DropdownMenuLabel>
@@ -742,14 +756,14 @@ export default function RichTextEditor({
 
       {/* Image Upload Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent 
+        <DialogContent
           className="sm:max-w-[500px] max-h-[calc(100vh-20px)] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader>
             <DialogTitle>Upload Image</DialogTitle>
           </DialogHeader>
-          <div 
+          <div
             className="overflow-y-auto rich-text-image-dialog"
             onClick={(e) => e.stopPropagation()}
           >

@@ -895,11 +895,11 @@ export default function EditBlogPage({
           </Link>
           <h1 className="text-2xl font-bold">Edit Blog</h1>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex sm:flex-row flex-col sm:items-center gap-2">
           <button
             type="button"
             onClick={() => setRightSidebarOpen((o) => !o)}
-            className="cursor-pointer flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
+            className="w-fit cursor-pointer flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
             aria-label={rightSidebarOpen ? 'Close SEO Sidebar' : 'Open SEO Sidebar'}
           >
             <BarChart3 className="size-4" />
@@ -921,29 +921,37 @@ export default function EditBlogPage({
               </span>
             )}
           </button>
-          <Button variant="outline" onClick={() => router.push(`/${blog.slug}`)}>
-            Preview
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <>
-                <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-0 border-r-0 rounded-full border-white"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="size-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" onClick={() => router.push(`/${blog.slug}`)}>
+              Preview
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-0 border-r-0 rounded-full border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="size-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
       <Tabs defaultValue="content">
-        <TabsList className="mb-6">
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="mb-6 sm:w-fit w-full sticky top-18 sm:static z-10">
+          <TabsTrigger value="content" className="w-full sm:w-fit">
+            Content
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="w-full sm:w-fit">
+            SEO & Meta
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="w-full sm:w-fit">
+            Settings
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="content" className="space-y-6">
           <div>

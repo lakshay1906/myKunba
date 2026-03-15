@@ -142,8 +142,14 @@ export function CreatePostForm() {
   const slugManuallyEditedRef = useRef(false)
   const metaTitleManuallyEditedRef = useRef(false)
   const metaDescriptionManuallyEditedRef = useRef(false)
-  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<typeof getSEOScoreAndChecks> | null>(null)
-  const { rightSidebarOpen, setRightSidebarOpen, setSeoScoreResult: setContextSeoResult } = useDashboardLayout()
+  const [seoScoreResult, setSeoScoreResult] = useState<ReturnType<
+    typeof getSEOScoreAndChecks
+  > | null>(null)
+  const {
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    setSeoScoreResult: setContextSeoResult,
+  } = useDashboardLayout()
   const [titleExistsDialogOpen, setTitleExistsDialogOpen] = useState(false)
   const pendingDraftDataRef = useRef<FormValues | null>(null)
   const submittedSuccessfullyRef = useRef(false)
@@ -272,11 +278,17 @@ export function CreatePostForm() {
         // Normalize array fields so they have the expected shape (url/anchorText or question/answer)
         const normalizeLinks = (arr: BlogDraftData['externalLinks']) =>
           Array.isArray(arr) && arr.length > 0
-            ? arr.map((l) => ({ url: (l as any)?.url ?? '', anchorText: (l as any)?.anchorText ?? '' }))
+            ? arr.map((l) => ({
+                url: (l as any)?.url ?? '',
+                anchorText: (l as any)?.anchorText ?? '',
+              }))
             : []
         const normalizeFaq = (arr: BlogDraftData['faq']) =>
           Array.isArray(arr) && arr.length > 0
-            ? arr.map((f) => ({ question: (f as any)?.question ?? '', answer: (f as any)?.answer ?? '' }))
+            ? arr.map((f) => ({
+                question: (f as any)?.question ?? '',
+                answer: (f as any)?.answer ?? '',
+              }))
             : []
 
         // Reset form with draft data (this won't trigger watch during reset)
@@ -302,7 +314,9 @@ export function CreatePostForm() {
             focusKeyword: (draftData.focusKeyword ?? '').toString(),
             imageAltText: (draftData.imageAltText ?? '').toString(),
             externalLinks: normalizeLinks(draftData.externalLinks),
-            internalLinks: normalizeLinks(draftData.internalLinks as BlogDraftData['internalLinks']),
+            internalLinks: normalizeLinks(
+              draftData.internalLinks as BlogDraftData['internalLinks'],
+            ),
             faq: normalizeFaq(draftData.faq),
             status: draftData.status || 'draft',
             commentsEnabled: draftData.commentsEnabled !== false,
@@ -380,16 +394,28 @@ export function CreatePostForm() {
           commentsEnabled: formValues.commentsEnabled,
           isFeatured: formValues.isFeatured,
           externalLinks:
-            formValues.externalLinks?.length && formValues.externalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
-              ? formValues.externalLinks.map((l) => ({ url: l?.url?.trim() || '', anchorText: l?.anchorText?.trim() || '' }))
+            formValues.externalLinks?.length &&
+            formValues.externalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
+              ? formValues.externalLinks.map((l) => ({
+                  url: l?.url?.trim() || '',
+                  anchorText: l?.anchorText?.trim() || '',
+                }))
               : undefined,
           internalLinks:
-            formValues.internalLinks?.length && formValues.internalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
-              ? formValues.internalLinks.map((l) => ({ url: l?.url?.trim() || '', anchorText: l?.anchorText?.trim() || '' }))
+            formValues.internalLinks?.length &&
+            formValues.internalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
+              ? formValues.internalLinks.map((l) => ({
+                  url: l?.url?.trim() || '',
+                  anchorText: l?.anchorText?.trim() || '',
+                }))
               : undefined,
           faq:
-            formValues.faq?.length && formValues.faq.some((f) => f?.question?.trim() || f?.answer?.trim())
-              ? formValues.faq.map((f) => ({ question: f?.question?.trim() || '', answer: f?.answer?.trim() || '' }))
+            formValues.faq?.length &&
+            formValues.faq.some((f) => f?.question?.trim() || f?.answer?.trim())
+              ? formValues.faq.map((f) => ({
+                  question: f?.question?.trim() || '',
+                  answer: f?.answer?.trim() || '',
+                }))
               : undefined,
           status: formValues.status,
           publishImmediately: formValues.publishImmediately !== false,
@@ -443,7 +469,14 @@ export function CreatePostForm() {
         }, 1000) // Debounce for 1 second
       }
     },
-    [form, selectedCategories, selectedTags, imageUploadData.coverImage, imageUploadData.alt, isDraftLoaded],
+    [
+      form,
+      selectedCategories,
+      selectedTags,
+      imageUploadData.coverImage,
+      imageUploadData.alt,
+      isDraftLoaded,
+    ],
   )
 
   // Store saveDraft in ref for use in handleImageUploadDataChange
@@ -483,7 +516,14 @@ export function CreatePostForm() {
   useEffect(() => {
     if (!isDraftLoaded) return
     saveDraft(true)
-  }, [watchedFocusKeyword, watchedExternalLinks, watchedInternalLinks, watchedFaq, isDraftLoaded, saveDraft])
+  }, [
+    watchedFocusKeyword,
+    watchedExternalLinks,
+    watchedInternalLinks,
+    watchedFaq,
+    isDraftLoaded,
+    saveDraft,
+  ])
 
   // Watch content field specifically (RichTextEditor might not trigger form.watch properly)
   const contentValue = form.watch('content')
@@ -740,284 +780,281 @@ export function CreatePostForm() {
 
       try {
         // PHASE 2: Upload images
-      toast.info('Uploading images...', {
-        description: 'Uploading images to Cloudflare R2...',
-      })
-
-      // Upload cover image if one was selected
-      let coverImageUrl: string | null = null
-      if (imageUploadData.coverImage) {
-        // If it's a data URL, it means a file was selected and needs to be uploaded
-        if (
-          imageUploadData.coverImage.startsWith('data:') &&
-          imageUploadData.uploadMethod === 'file' &&
-          imageUploadData.file
-        ) {
-          try {
-            const imageData = await handleUpload()
-            if (imageData?.success && imageData.data?.url) {
-              coverImageUrl = imageData.data.url
-              if (coverImageUrl) {
-                uploadedImages.push(coverImageUrl) // Track for cleanup
-              }
-            } else {
-              throw new Error('Failed to upload image')
-            }
-          } catch (error: any) {
-            isSubmittingRef.current = false
-            setIsLoading(false)
-            toast.error('Error', {
-              description: 'Failed to upload image. Please try again.',
-            })
-            return
-          }
-        }
-        // Draft-restored cover image: data URL present but no file (e.g. after page reload)
-        else if (
-          imageUploadData.coverImage.startsWith('data:') &&
-          !imageUploadData.file
-        ) {
-          try {
-            const res = await fetch(imageUploadData.coverImage)
-            const blob = await res.blob()
-            const file = new File([blob], `cover-${Date.now()}.png`, { type: blob.type })
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('alt', imageUploadData.alt?.trim() || 'Cover image')
-            const uploadRes = await fetch('/api/image/upload', { method: 'POST', body: formData })
-            const uploadJson = await uploadRes.json()
-            if (uploadRes.ok && uploadJson?.success && uploadJson?.data?.url) {
-              coverImageUrl = uploadJson.data.url
-              if (coverImageUrl) uploadedImages.push(coverImageUrl)
-            } else {
-              throw new Error(uploadJson?.error || uploadJson?.message || 'Upload failed')
-            }
-          } catch (err: any) {
-            isSubmittingRef.current = false
-            setIsLoading(false)
-            toast.error('Error', {
-              description: 'Failed to upload cover image. Please try again.',
-            })
-            return
-          }
-        }
-        // If it's a URL (not data URL), validate it
-        else if (
-          !imageUploadData.coverImage.startsWith('data:') &&
-          imageUploadData.uploadMethod === 'url' &&
-          imageUploadData.imageUrl
-        ) {
-          try {
-            const imageData = await handleUpload()
-            if (imageData?.success && imageData.data?.url) {
-              coverImageUrl = imageData.data.url
-              if (coverImageUrl) {
-                uploadedImages.push(coverImageUrl) // Track for cleanup
-              }
-            } else {
-              throw new Error('Failed to validate image URL')
-            }
-          } catch (error: any) {
-            isSubmittingRef.current = false
-            setIsLoading(false)
-            toast.error('Error', {
-              description: 'Failed to validate image URL. Please try again.',
-            })
-            return
-          }
-        }
-        // If coverImage is already a URL (not data URL), use it directly
-        else if (!imageUploadData.coverImage.startsWith('data:')) {
-          coverImageUrl = imageUploadData.coverImage
-        }
-      }
-
-      // Cover image is required only for publishing, not for draft
-      if (!isDraft && !coverImageUrl) {
-        isSubmittingRef.current = false
-        setIsLoading(false)
-        toast.error('Error', {
-          description: 'Cover image is required. Please upload an image.',
+        toast.info('Uploading images...', {
+          description: 'Uploading images to Cloudflare R2...',
         })
-        return
-      }
 
-      // Process content HTML to upload any pending images (data URLs) to Cloudflare R2
-      // This ensures all images in content are uploaded with WebP conversion
-      // ONLY process on actual form submission, not during image uploads
-      let processedContent = data.content
-      try {
-        // Only process if there are data URLs in content (pending uploads)
-        if (data.content && data.content.includes('data:image')) {
-          toast.info('Processing images...', {
-            description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
+        // Upload cover image if one was selected
+        let coverImageUrl: string | null = null
+        if (imageUploadData.coverImage) {
+          // If it's a data URL, it means a file was selected and needs to be uploaded
+          if (
+            imageUploadData.coverImage.startsWith('data:') &&
+            imageUploadData.uploadMethod === 'file' &&
+            imageUploadData.file
+          ) {
+            try {
+              const imageData = await handleUpload()
+              if (imageData?.success && imageData.data?.url) {
+                coverImageUrl = imageData.data.url
+                if (coverImageUrl) {
+                  uploadedImages.push(coverImageUrl) // Track for cleanup
+                }
+              } else {
+                throw new Error('Failed to upload image')
+              }
+            } catch (error: any) {
+              isSubmittingRef.current = false
+              setIsLoading(false)
+              toast.error('Error', {
+                description: 'Failed to upload image. Please try again.',
+              })
+              return
+            }
+          }
+          // Draft-restored cover image: data URL present but no file (e.g. after page reload)
+          else if (imageUploadData.coverImage.startsWith('data:') && !imageUploadData.file) {
+            try {
+              const res = await fetch(imageUploadData.coverImage)
+              const blob = await res.blob()
+              const file = new File([blob], `cover-${Date.now()}.png`, { type: blob.type })
+              const formData = new FormData()
+              formData.append('file', file)
+              formData.append('alt', imageUploadData.alt?.trim() || 'Cover image')
+              const uploadRes = await fetch('/api/image/upload', { method: 'POST', body: formData })
+              const uploadJson = await uploadRes.json()
+              if (uploadRes.ok && uploadJson?.success && uploadJson?.data?.url) {
+                coverImageUrl = uploadJson.data.url
+                if (coverImageUrl) uploadedImages.push(coverImageUrl)
+              } else {
+                throw new Error(uploadJson?.error || uploadJson?.message || 'Upload failed')
+              }
+            } catch (err: any) {
+              isSubmittingRef.current = false
+              setIsLoading(false)
+              toast.error('Error', {
+                description: 'Failed to upload cover image. Please try again.',
+              })
+              return
+            }
+          }
+          // If it's a URL (not data URL), validate it
+          else if (
+            !imageUploadData.coverImage.startsWith('data:') &&
+            imageUploadData.uploadMethod === 'url' &&
+            imageUploadData.imageUrl
+          ) {
+            try {
+              const imageData = await handleUpload()
+              if (imageData?.success && imageData.data?.url) {
+                coverImageUrl = imageData.data.url
+                if (coverImageUrl) {
+                  uploadedImages.push(coverImageUrl) // Track for cleanup
+                }
+              } else {
+                throw new Error('Failed to validate image URL')
+              }
+            } catch (error: any) {
+              isSubmittingRef.current = false
+              setIsLoading(false)
+              toast.error('Error', {
+                description: 'Failed to validate image URL. Please try again.',
+              })
+              return
+            }
+          }
+          // If coverImage is already a URL (not data URL), use it directly
+          else if (!imageUploadData.coverImage.startsWith('data:')) {
+            coverImageUrl = imageUploadData.coverImage
+          }
+        }
+
+        // Cover image is required only for publishing, not for draft
+        if (!isDraft && !coverImageUrl) {
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          toast.error('Error', {
+            description: 'Cover image is required. Please upload an image.',
           })
-          const contentProcessingResult = await processContentImages(data.content)
-          processedContent = contentProcessingResult.processedContent
+          return
+        }
 
-          if (contentProcessingResult.uploadedImages.length > 0) {
-            // Track uploaded content images for cleanup (filter out null values)
-            const contentImageUrls = contentProcessingResult.uploadedImages
-              .map((img) => img.uploadedUrl)
-              .filter((url): url is string => url !== null && url !== undefined)
-            uploadedImages.push(...contentImageUrls)
+        // Process content HTML to upload any pending images (data URLs) to Cloudflare R2
+        // This ensures all images in content are uploaded with WebP conversion
+        // ONLY process on actual form submission, not during image uploads
+        let processedContent = data.content
+        try {
+          // Only process if there are data URLs in content (pending uploads)
+          if (data.content && data.content.includes('data:image')) {
+            toast.info('Processing images...', {
+              description: 'Uploading images in content to Cloudflare R2 with WebP conversion.',
+            })
+            const contentProcessingResult = await processContentImages(data.content)
+            processedContent = contentProcessingResult.processedContent
+
+            if (contentProcessingResult.uploadedImages.length > 0) {
+              // Track uploaded content images for cleanup (filter out null values)
+              const contentImageUrls = contentProcessingResult.uploadedImages
+                .map((img) => img.uploadedUrl)
+                .filter((url): url is string => url !== null && url !== undefined)
+              uploadedImages.push(...contentImageUrls)
+            }
           }
+        } catch (error: any) {
+          // Continue with submission even if some images fail to upload
+          toast.warning('Some images failed to upload', {
+            description: 'The blog will be saved, but some images may need to be re-uploaded.',
+          })
         }
-      } catch (error: any) {
-        // Continue with submission even if some images fail to upload
-        toast.warning('Some images failed to upload', {
-          description: 'The blog will be saved, but some images may need to be re-uploaded.',
+
+        // PHASE 3: Create blog post with uploaded images
+        toast.info('Creating blog post...', {
+          description: 'Saving your blog post...',
         })
-      }
 
-      // PHASE 3: Create blog post with uploaded images
-      toast.info('Creating blog post...', {
-        description: 'Saving your blog post...',
-      })
+        // When Publish Immediately: use current date/time; otherwise use selected date & time
+        const combinedPublishDate = (() => {
+          if (data.publishImmediately !== false) return new Date().toISOString()
+          const d = data.publishDate
+          const t = data.publishTime
+          if (!d) return undefined
+          if (t) {
+            const [h, m] = t.split(':').map(Number)
+            const combined = new Date(d)
+            combined.setHours(h ?? 0, m ?? 0, 0, 0)
+            return combined.toISOString()
+          }
+          return d.toISOString()
+        })()
 
-      // When Publish Immediately: use current date/time; otherwise use selected date & time
-      const combinedPublishDate = (() => {
-        if (data.publishImmediately !== false) return new Date().toISOString()
-        const d = data.publishDate
-        const t = data.publishTime
-        if (!d) return undefined
-        if (t) {
-          const [h, m] = t.split(':').map(Number)
-          const combined = new Date(d)
-          combined.setHours(h ?? 0, m ?? 0, 0, 0)
-          return combined.toISOString()
-        }
-        return d.toISOString()
-      })()
-
-      const response = await fetch(`/api/dashboard/blog`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `${loginDetail ? `bearer ${loginDetail.token}` : null}`,
-        },
-        body: JSON.stringify({
-          ...data,
-          publishDate: combinedPublishDate,
-          content: processedContent, // Use processed content with uploaded image URLs
-          coverImage: coverImageUrl,
-          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-          tags: selectedTags.length > 0 ? selectedTags : undefined,
-          focusKeyword: data.focusKeyword || undefined,
-          imageAltText: imageUploadData.alt?.trim() || undefined,
-          externalLinks:
-            data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
-          internalLinks:
-            data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
-          faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
-          commentsEnabled: data.commentsEnabled !== false,
-          isFeatured: data.isFeatured === true,
-          seoScore: seoScoreResult?.score,
-        }),
-      })
-
-      const res = await response.json()
-
-      if (!response.ok) {
-        // If blog creation failed but images were uploaded, cleanup orphaned images
-        if (uploadedImages.length > 0) {
-          // Attempt cleanup (non-blocking)
-          import('@/utils/cleanup-orphaned-images')
-            .then(({ cleanupOrphanedImages }) => cleanupOrphanedImages(uploadedImages))
-            .catch(() => {})
-        }
-
-        isSubmittingRef.current = false
-        setIsLoading(false)
-        toast.error('Error', {
-          description:
-            res.message ?? 'Failed to create blog post. Uploaded images have been cleaned up.',
-        })
-        return
-      }
-
-      // Blog created successfully - clear draft data BEFORE navigation (draft and published)
-      submittedSuccessfullyRef.current = true
-      try {
-        setIsDraftLoaded(false)
-
-        // Clear draft from storage (same for status draft or published)
-        await clearDraftCookie()
-        setHasDraftData(false)
-
-        // Reset form to default values after clearing draft
-        form.reset(
-          {
-            title: '',
-            slug: '',
-            excerpt: '',
-            content: '',
-            publishImmediately: true,
-            publishDate: new Date(),
-            publishTime: (() => {
-              const now = new Date()
-              return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-            })(),
-            metaTitle: '',
-            metaDescription: '',
-            focusKeyword: '',
-            imageAltText: '',
-            externalLinks: [],
-            internalLinks: [],
-            faq: [],
-            status: 'draft',
-            commentsEnabled: true,
-            isFeatured: false,
+        const response = await fetch(`/api/dashboard/blog`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `${loginDetail ? `bearer ${loginDetail.token}` : null}`,
           },
-          { keepDefaultValues: false },
-        )
+          body: JSON.stringify({
+            ...data,
+            publishDate: combinedPublishDate,
+            content: processedContent, // Use processed content with uploaded image URLs
+            coverImage: coverImageUrl,
+            categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+            focusKeyword: data.focusKeyword || undefined,
+            imageAltText: imageUploadData.alt?.trim() || undefined,
+            externalLinks:
+              data.externalLinks && data.externalLinks.length > 0 ? data.externalLinks : undefined,
+            internalLinks:
+              data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
+            faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
+            commentsEnabled: data.commentsEnabled !== false,
+            isFeatured: data.isFeatured === true,
+            seoScore: seoScoreResult?.score,
+          }),
+        })
 
-        // Clear categories, tags, and image data
-        setSelectedCategories([])
-        setSelectedTags([])
-        setDraftImageLoaded(false)
-        handleImageUploadDataChange((prev) => ({
-          ...prev,
-          coverImage: null,
-          file: null,
-          imageUrl: '',
-          alt: '',
-          preview: null,
-          dimensions: null,
-          result: null,
-          uploadMethod: null,
-        }))
+        const res = await response.json()
 
-        // Reset file input
-        const fileInput = document.getElementById('file-input') as HTMLInputElement
-        if (fileInput) fileInput.value = ''
-      } catch {
-        // Even if clearing fails, don't block the success flow
+        if (!response.ok) {
+          // If blog creation failed but images were uploaded, cleanup orphaned images
+          if (uploadedImages.length > 0) {
+            // Attempt cleanup (non-blocking)
+            import('@/utils/cleanup-orphaned-images')
+              .then(({ cleanupOrphanedImages }) => cleanupOrphanedImages(uploadedImages))
+              .catch(() => {})
+          }
+
+          isSubmittingRef.current = false
+          setIsLoading(false)
+          toast.error('Error', {
+            description:
+              res.message ?? 'Failed to create blog post. Uploaded images have been cleaned up.',
+          })
+          return
+        }
+
+        // Blog created successfully - clear draft data BEFORE navigation (draft and published)
+        submittedSuccessfullyRef.current = true
+        try {
+          setIsDraftLoaded(false)
+
+          // Clear draft from storage (same for status draft or published)
+          await clearDraftCookie()
+          setHasDraftData(false)
+
+          // Reset form to default values after clearing draft
+          form.reset(
+            {
+              title: '',
+              slug: '',
+              excerpt: '',
+              content: '',
+              publishImmediately: true,
+              publishDate: new Date(),
+              publishTime: (() => {
+                const now = new Date()
+                return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+              })(),
+              metaTitle: '',
+              metaDescription: '',
+              focusKeyword: '',
+              imageAltText: '',
+              externalLinks: [],
+              internalLinks: [],
+              faq: [],
+              status: 'draft',
+              commentsEnabled: true,
+              isFeatured: false,
+            },
+            { keepDefaultValues: false },
+          )
+
+          // Clear categories, tags, and image data
+          setSelectedCategories([])
+          setSelectedTags([])
+          setDraftImageLoaded(false)
+          handleImageUploadDataChange((prev) => ({
+            ...prev,
+            coverImage: null,
+            file: null,
+            imageUrl: '',
+            alt: '',
+            preview: null,
+            dimensions: null,
+            result: null,
+            uploadMethod: null,
+          }))
+
+          // Reset file input
+          const fileInput = document.getElementById('file-input') as HTMLInputElement
+          if (fileInput) fileInput.value = ''
+        } catch {
+          // Even if clearing fails, don't block the success flow
+        }
+
+        hasShownLeaveToastRef.current = false
+        isSubmittingRef.current = false
+
+        toast.success('Success', {
+          description:
+            data.status === 'published'
+              ? res.message || 'Blog published successfully.'
+              : res.message || 'Post created successfully. Draft has been cleared.',
+        })
+
+        // Small delay to ensure draft clearing is complete before navigation
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // Navigate after draft is cleared and form is reset
+        router.push('/dashboard/blog')
+      } catch (error: any) {
+        isSubmittingRef.current = false
+        toast.error('Error', {
+          description: error?.message || 'Error creating post',
+        })
+      } finally {
+        setIsLoading(false)
       }
-
-      hasShownLeaveToastRef.current = false
-      isSubmittingRef.current = false
-
-      toast.success('Success', {
-        description:
-          data.status === 'published'
-            ? res.message || 'Blog published successfully.'
-            : res.message || 'Post created successfully. Draft has been cleared.',
-      })
-
-      // Small delay to ensure draft clearing is complete before navigation
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Navigate after draft is cleared and form is reset
-      router.push('/dashboard/blog')
-    } catch (error: any) {
-      isSubmittingRef.current = false
-      toast.error('Error', {
-        description: error?.message || 'Error creating post',
-      })
-    } finally {
-      setIsLoading(false)
-    }
     },
     [
       handleUpload,
@@ -1056,7 +1093,10 @@ export function CreatePostForm() {
         if (!data.content?.trim()) required.push({ field: 'content', label: 'Content' })
         if (required.length > 0) {
           required.forEach(({ field, label }) =>
-            form.setError(field, { type: 'manual', message: `${label} is required for publishing` }),
+            form.setError(field, {
+              type: 'manual',
+              message: `${label} is required for publishing`,
+            }),
           )
           setCurrentTab('content')
           isSubmittingRef.current = false
@@ -1103,7 +1143,9 @@ export function CreatePostForm() {
         if (!validationResult.valid) {
           isSubmittingRef.current = false
           setIsLoading(false)
-          const msgs = [validationResult.errors?.title, validationResult.errors?.slug].filter(Boolean)
+          const msgs = [validationResult.errors?.title, validationResult.errors?.slug].filter(
+            Boolean,
+          )
           toast.error('Validation Failed', {
             description: msgs.join('. ') || 'Title or slug already exists.',
           })
@@ -1170,7 +1212,13 @@ export function CreatePostForm() {
     try {
       const categories = await fetchDashboardCategories()
       const list = categories.docs ?? []
-      setCategories(list.map((c: { id: number; name: string; slug?: string }) => ({ id: c.id, name: c.name, slug: c.slug })))
+      setCategories(
+        list.map((c: { id: number; name: string; slug?: string }) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+        })),
+      )
     } catch (error) {
       toast.error('Error', {
         description: 'Failed to refresh categories',
@@ -1230,9 +1278,9 @@ export function CreatePostForm() {
 
       {/* Clear Draft Button - Show when draft data exists */}
       {hasDraftData && (
-        <div className="mb-4 flex items-center justify-between p-4 border rounded-md bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+        <div className="mb-4 flex sm:flex-row flex-col sm:items-center justify-between gap-2 p-4 border rounded-md bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span className="text-sm text-amber-800 dark:text-amber-200">
               Draft data detected. You can continue editing or clear it to start fresh.
             </span>
@@ -1329,35 +1377,45 @@ export function CreatePostForm() {
           }}
           className="space-y-8"
         >
-          <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <div className="flex sm:flex-row flex-col sm:items-center justify-between">
-              <TabsList className="mb-4 flex">
-                <TabsTrigger value="content" className="flex-1">Content</TabsTrigger>
-                <TabsTrigger value="seo" className="flex-1">SEO & Meta</TabsTrigger>
-                <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
-              </TabsList>
-              <button
-                type="button"
-                onClick={() => setRightSidebarOpen((o) => !o)}
-                className="w-fit flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-                aria-label={rightSidebarOpen ? 'Close SEO Sidebar' : 'Open SEO Sidebar'}
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>SEO Score</span>
-                {seoScoreResult != null && (
-                  <span
-                    className={cn(
-                      'rounded px-1.5 py-0.5 text-xs font-medium',
-                      seoScoreResult.score >= 81 && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-                      seoScoreResult.score >= 51 && seoScoreResult.score < 81 && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-                      seoScoreResult.score < 51 && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-                    )}
-                  >
-                    {seoScoreResult.score} / 100
-                  </span>
-                )}
-              </button>
-            </div>
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="relative">
+            {/* <div className="flex sm:flex-row flex-col sm:items-center justify-between"> */}
+            <TabsList className="mb-4 flex sm:w-fit w-full sticky top-18 sm:static z-10">
+              <TabsTrigger value="content" className="flex-1">
+                Content
+              </TabsTrigger>
+              <TabsTrigger value="seo" className="flex-1">
+                SEO & Meta
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex-1">
+                Settings
+              </TabsTrigger>
+            </TabsList>
+            {/* </div> */}
+            <button
+              type="button"
+              onClick={() => setRightSidebarOpen((o) => !o)}
+              className="w-fit flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors relative sm:absolute sm:top-0 sm:right-0"
+              aria-label={rightSidebarOpen ? 'Close SEO Sidebar' : 'Open SEO Sidebar'}
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>SEO Score</span>
+              {seoScoreResult != null && (
+                <span
+                  className={cn(
+                    'rounded px-1.5 py-0.5 text-xs font-medium',
+                    seoScoreResult.score >= 81 &&
+                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                    seoScoreResult.score >= 51 &&
+                      seoScoreResult.score < 81 &&
+                      'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                    seoScoreResult.score < 51 &&
+                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                  )}
+                >
+                  {seoScoreResult.score} / 100
+                </span>
+              )}
+            </button>
 
             <TabsContent value="content" className="space-y-6">
               <div>
@@ -1428,9 +1486,7 @@ export function CreatePostForm() {
                         imageUploadData={imageUploadData}
                         setImageUploadData={handleImageUploadDataChange}
                         clearAll={clearAll}
-                        placeholder={
-                          imageUploadData.coverImage ? 'Change Image' : 'Upload Image'
-                        }
+                        placeholder={imageUploadData.coverImage ? 'Change Image' : 'Upload Image'}
                       />
                     </div>
                   </div>
@@ -1519,9 +1575,7 @@ export function CreatePostForm() {
                             maxLength={100}
                           />
                         </FormControl>
-                        <FormDescription>
-                          The URL-friendly version of the title.
-                        </FormDescription>
+                        <FormDescription>The URL-friendly version of the title.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1709,7 +1763,10 @@ export function CreatePostForm() {
                           Add FAQ items. They will be shown in an accordion beside the blog content.
                         </FormDescription>
                         {field.value?.map((item, index) => (
-                          <div key={index} className="flex flex-col gap-2 mb-2 p-3 border rounded-md">
+                          <div
+                            key={index}
+                            className="flex flex-col gap-2 mb-2 p-3 border rounded-md"
+                          >
                             <Input
                               placeholder="Question"
                               value={item?.question ?? ''}
@@ -1825,7 +1882,8 @@ export function CreatePostForm() {
                         <div className="space-y-0.5">
                           <FormLabel className="text-base">Publish Immediately</FormLabel>
                           <FormDescription>
-                            When on, the post will use the current date and time when published. Turn off to schedule a date and time.
+                            When on, the post will use the current date and time when published.
+                            Turn off to schedule a date and time.
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -1886,11 +1944,7 @@ export function CreatePostForm() {
                           <FormItem>
                             <FormLabel>Publish Time</FormLabel>
                             <FormControl>
-                              <Input
-                                type="time"
-                                {...field}
-                                disabled={isLoading}
-                              />
+                              <Input type="time" {...field} disabled={isLoading} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -2035,7 +2089,15 @@ export function CreatePostForm() {
                     },
                     (errors) => {
                       const contentFields = ['title', 'slug', 'excerpt', 'content']
-                      const seoFields = ['metaTitle', 'metaDescription', 'focusKeyword', 'imageAltText', 'externalLinks', 'internalLinks', 'faq']
+                      const seoFields = [
+                        'metaTitle',
+                        'metaDescription',
+                        'focusKeyword',
+                        'imageAltText',
+                        'externalLinks',
+                        'internalLinks',
+                        'faq',
+                      ]
                       const firstErrorKey = Object.keys(errors)[0] as string | undefined
                       if (firstErrorKey) {
                         const tab = contentFields.includes(firstErrorKey)
@@ -2045,8 +2107,10 @@ export function CreatePostForm() {
                             : 'settings'
                         setCurrentTab(tab)
                         try {
-                          form.setFocus(firstErrorKey as Parameters<typeof form.setFocus>[0], { shouldSelect: true })
-                        } catch (_) { }
+                          form.setFocus(firstErrorKey as Parameters<typeof form.setFocus>[0], {
+                            shouldSelect: true,
+                          })
+                        } catch (_) {}
                         // Get first error message (support nested e.g. externalLinks.0.url)
                         const getMessage = (obj: any): string | undefined => {
                           if (!obj || typeof obj !== 'object') return undefined
@@ -2054,7 +2118,9 @@ export function CreatePostForm() {
                           const sub = obj.root ?? obj[Object.keys(obj)[0]]
                           return sub ? getMessage(sub) : undefined
                         }
-                        const message = getMessage((errors as any)[firstErrorKey]) ?? 'Please fix the errors in the form and try again.'
+                        const message =
+                          getMessage((errors as any)[firstErrorKey]) ??
+                          'Please fix the errors in the form and try again.'
                         toast.error('Validation error', {
                           description: message,
                           duration: 6000,
