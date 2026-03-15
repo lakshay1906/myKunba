@@ -516,7 +516,14 @@ export default function EditBlogPage({
             : blog.media && typeof blog.media === 'string'
               ? blog.media
               : null
-        const currentPublishDate = date ? date.toISOString() : null
+        // Use combined date+time so time-only edits are detected (date.toISOString() ignores publishTime)
+        const currentPublishDate = (() => {
+          if (!date) return null
+          const [h, m] = publishTime.split(':').map(Number)
+          const combined = new Date(date)
+          combined.setHours(h ?? 0, m ?? 0, 0, 0)
+          return combined.toISOString()
+        })()
         const currentCategories = JSON.stringify([...selectedCategories].sort((a, b) => a - b))
         const currentTags = JSON.stringify([...selectedTags].sort((a, b) => a - b))
         const current: typeof initial = {
