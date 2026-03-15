@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation'
 
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_ID
 
+/** Path prefixes where ads must not be shown */
+const NO_ADS_PATHS = ['/dashboard', '/admin']
+
 export interface AdBannerProps {
   /** Ad unit slot ID from AdSense (e.g. "1234567890") */
   dataAdSlot: string
@@ -42,6 +45,9 @@ export function AdBanner({
       console.warn('AdSense push failed:', e)
     }
   }, [dataAdSlot, pathname])
+
+  const hideAds = NO_ADS_PATHS.some((prefix) => pathname?.startsWith(prefix))
+  if (hideAds) return null
 
   const defaultMinHeight = dataAdFormat === 'fluid' ? 90 : 250
   const reservedHeight = minHeight ?? defaultMinHeight
