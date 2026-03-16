@@ -47,18 +47,16 @@ const nextConfig = {
   serverExternalPackages: ['pg'],
   // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
   async redirects() {
-    return [
-      { source: '/rss', destination: '/feed.xml', permanent: true },
-    ]
+    return [{ source: '/rss', destination: '/feed.xml', permanent: true }]
   },
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
   // Standalone output for Docker; leave unset for local dev (e.g. Windows)
   ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
-  // compiler: {
-  //   removeConsole: true,
-  // },
+  compiler: {
+    removeConsole: true,
+  },
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
