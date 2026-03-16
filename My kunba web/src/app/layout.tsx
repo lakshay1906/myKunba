@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { getPublicUrl } from '@/lib/env'
 import './globals.css'
-import { GoogleAnalytics } from '@next/third-parties/google'
 import Script from 'next/script'
 
 const geistSans = Geist({
@@ -109,7 +108,7 @@ export default function RootLayout({
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body
@@ -117,7 +116,22 @@ export default function RootLayout({
         cz-shortcut-listen="false"
         suppressHydrationWarning={true}
       >
-        <GoogleAnalytics gaId="G-6END5TZJTY" />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_PROPERTY_ID}`}
+          strategy="lazyOnload"
+        />
+        <Script
+          id="google-analytics"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', ${process.env.NEXT_PUBLIC_GA_PROPERTY_ID});
+            `,
+          }}
+        />
         {children}
       </body>
     </html>
