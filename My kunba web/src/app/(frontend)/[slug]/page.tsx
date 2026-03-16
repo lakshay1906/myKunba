@@ -1,9 +1,7 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
-import FAQAccordion from '@/components/Blog/FAQAccordion'
-import FloatingShare from '@/components/FloatingShare'
+import { FloatingShareClient, FAQAccordionClient } from '@/components/Blog/BlogPostDeferred'
 import type { Metadata } from 'next'
-import type { ComponentProps } from 'react'
 import { getPublicUrl } from '@/lib/env'
 import { buildAlternateLanguages } from '@/lib/i18n/seo'
 import { fetchComments, getCurrentUserId } from '@/app/actions/comment-actions'
@@ -64,10 +62,10 @@ export async function generateMetadata({
       robots: { index: false, follow: false },
     }
   }
-  const title = (post.metaTitle ?? post.title ?? undefined) ?? undefined
-  const description = (post.metaDescription ?? post.excerpt ?? undefined) ?? undefined
+  const title = post.metaTitle ?? post.title ?? undefined
+  const description = post.metaDescription ?? post.excerpt ?? undefined
   const imageUrl = post.media || ''
-  const imageAlt = (post.imageAltText ?? post.title) ?? undefined
+  const imageAlt = post.imageAltText ?? post.title ?? undefined
   const focusKeywordRaw = post.focusKeyword || ''
   const focusKeywords = focusKeywordRaw
     .split(',')
@@ -80,13 +78,15 @@ export async function generateMetadata({
   const keywords: string[] = [...focusKeywords]
   if (post.categories && Array.isArray(post.categories)) {
     post.categories.forEach((cat) => {
-      const c = typeof cat === 'object' && cat !== null && 'name' in cat ? (cat as { name: string }) : null
+      const c =
+        typeof cat === 'object' && cat !== null && 'name' in cat ? (cat as { name: string }) : null
       if (c?.name && !keywords.includes(c.name)) keywords.push(c.name)
     })
   }
   if (post.tags && Array.isArray(post.tags)) {
     post.tags.forEach((tag) => {
-      const t = typeof tag === 'object' && tag !== null && 'name' in tag ? (tag as { name: string }) : null
+      const t =
+        typeof tag === 'object' && tag !== null && 'name' in tag ? (tag as { name: string }) : null
       if (t?.name && !keywords.includes(t.name)) keywords.push(t.name)
     })
   }
@@ -109,7 +109,7 @@ export async function generateMetadata({
       locale: 'en_US',
       type: 'article',
       publishedTime: post.publishDate ?? undefined,
-      modifiedTime: (post.updatedAt ?? post.publishDate) ?? undefined,
+      modifiedTime: post.updatedAt ?? post.publishDate ?? undefined,
       authors: metaAuthor ? [metaAuthor] : undefined,
       ...(focusKeywords.length > 0 && { tags: focusKeywords }),
     },
@@ -165,19 +165,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       Promise.all(tagIds.map((id) => getTagTranslation(id, locale))),
     ])
     if (localizedCats.some(Boolean)) {
-      const mappedCats = blog.categories?.map((c, i) => {
-        const cat = c as { id: number; name: string; slug: string }
-        const tr = localizedCats[i]
-        return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
-      }) ?? []
+      const mappedCats =
+        blog.categories?.map((c, i) => {
+          const cat = c as { id: number; name: string; slug: string }
+          const tr = localizedCats[i]
+          return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
+        }) ?? []
       blog = { ...blog, categories: mappedCats as typeof blog.categories }
     }
     if (localizedTags.some(Boolean) && blog) {
-      const mappedTags = blog.tags?.map((t, i) => {
-        const tag = t as { id: number; name: string; slug: string }
-        const tr = localizedTags[i]
-        return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
-      }) ?? []
+      const mappedTags =
+        blog.tags?.map((t, i) => {
+          const tag = t as { id: number; name: string; slug: string }
+          const tr = localizedTags[i]
+          return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
+        }) ?? []
       blog = { ...blog, tags: mappedTags as typeof blog.tags }
     }
   }
@@ -186,11 +188,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const categoryIds =
     blog.categories?.map((cat) =>
-      typeof cat === 'object' && cat !== null && 'id' in cat ? (cat as { id: number }).id : (cat as number),
+      typeof cat === 'object' && cat !== null && 'id' in cat
+        ? (cat as { id: number }).id
+        : (cat as number),
     ) ?? []
   const tagIds =
     blog.tags?.map((tag) =>
-      typeof tag === 'object' && tag !== null && 'id' in tag ? (tag as { id: number }).id : (tag as number),
+      typeof tag === 'object' && tag !== null && 'id' in tag
+        ? (tag as { id: number }).id
+        : (tag as number),
     ) ?? []
   const [commentsData, currentUserId, relatedArticles] = await Promise.all([
     fetchComments(blog.id, 10),
@@ -204,7 +210,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <>
-      <FloatingShare />
+      <FloatingShareClient />
       <BlogSchema
         post={{
           title: blog.title ?? '',
@@ -219,22 +225,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           author:
             typeof blog.author === 'object' && blog.author !== null && 'displayName' in blog.author
               ? {
-                id: blog.author.id,
-                username: (blog.author as any).username,
-                displayName: blog.author.displayName ?? undefined,
-                profileImage: undefined,
-                bio: blog.author.bio ?? undefined,
-                role: blog.author.role ?? undefined,
-              }
+                  id: blog.author.id,
+                  username: (blog.author as any).username,
+                  displayName: blog.author.displayName ?? undefined,
+                  profileImage: undefined,
+                  bio: blog.author.bio ?? undefined,
+                  role: blog.author.role ?? undefined,
+                }
               : undefined,
           categories: Array.isArray(blog.categories)
             ? blog.categories
-              .filter((c) => typeof c === 'object' && c !== null)
-              .map((c) => {
-                const o = c as unknown as { id?: number; name?: string; slug?: string }
-                return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
-              })
-              .filter((cat) => cat.id && cat.name)
+                .filter((c) => typeof c === 'object' && c !== null)
+                .map((c) => {
+                  const o = c as unknown as { id?: number; name?: string; slug?: string }
+                  return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
+                })
+                .filter((cat) => cat.id && cat.name)
             : undefined,
         }}
         siteUrl={siteUrl}
@@ -260,7 +266,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               relatedArticles={relatedArticles}
             />
           </div>
-          {faqItems.length > 0 && <FAQAccordion items={faqItems} />}
+          {faqItems.length > 0 && <FAQAccordionClient items={faqItems} />}
         </div>
       </main>
     </>

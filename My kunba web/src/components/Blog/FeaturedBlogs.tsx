@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import {
   Carousel,
   CarouselContent,
@@ -120,7 +121,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
 
   return (
     <div className="container mx-auto px-4 relative bg-background">
-      <Carousel className="w-full" setApi={setApi}>
+      <Carousel className="w-full" setApi={setApi} opts={{ loop: true }}>
         <CarouselContent className="ml-0">
           {blogs.map((blog, index) => (
             <CarouselItem key={blog.id} className="pl-0">
@@ -145,14 +146,18 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                 }}
               >
                 <div
-                  className="relative h-96 md:h-[500px] w-full overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
-                  style={{
-                    backgroundImage: blog.media ? `url("${blog.media}")` : undefined,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: blog.media ? undefined : '#1a1a1a',
-                  }}
+                  className="relative h-96 md:h-[500px] w-full overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.02] cursor-pointer bg-[#1a1a1a]"
                 >
+                  {blog.media && (
+                    <Image
+                      src={blog.media}
+                      alt={blog.title}
+                      fill
+                      className="object-cover"
+                      priority={index < 3}
+                      sizes="100vw"
+                    />
+                  )}
                   <div
                     className="absolute inset-0 rounded-2xl"
                     style={{

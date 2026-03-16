@@ -2,16 +2,25 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
 import EmptyBlogState from './EmptyBlogState'
-import Spinner from '../Loading'
 import { useAppStoreOptional } from '@/lib/context/store'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Search } from 'lucide-react'
-import { MultiSelect } from './multi-select'
+
+const MultiSelect = dynamic(
+  () => import('./multi-select').then((m) => ({ default: m.MultiSelect })),
+  { ssr: false },
+)
+
+const Spinner = dynamic(() => import('../Loading'), {
+  ssr: false,
+  loading: () => <div className="size-11 animate-pulse rounded-full bg-muted" />,
+})
 import { Button } from '../ui/button'
 import {
   Tooltip,
