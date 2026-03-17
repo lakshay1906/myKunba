@@ -245,34 +245,7 @@ export default function Blog({
     setOffset(initialLimit)
   }, [posts?.docs, posts?.totalDocs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length, initialTotal, initialCurrentPage, initialTotalPages, initialLimit])
 
-  // When returning to home with category/author filters, fetch filtered blogs (run once on mount)
-  const filtersAppliedOnMount = useRef(false)
-  useEffect(() => {
-    if (blogCategorySlugs.length === 0 && blogAuthorEmails.length === 0) return
-    if (filtersAppliedOnMount.current) return
-    filtersAppliedOnMount.current = true
-    fetchBlogs({ resetOffset: true })
-  }, [blogCategorySlugs.length, blogAuthorEmails.length, fetchBlogs])
-
-  // Sync from server when URL/page changes (no filters)
-  useEffect(() => {
-    if (searchResults !== null || blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
-    if (!posts?.docs) return
-    setData(Array.isArray(posts.docs) ? posts.docs : [])
-    setTotal(initialTotal ?? 0)
-    setCurrentPage(initialCurrentPage)
-    setTotalPages(initialTotalPages || 1)
-  }, [initialCurrentPage, initialTotal, initialTotalPages, posts?.docs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length])
-
-  // When in search mode, show search results
-  useEffect(() => {
-    if (searchResults !== null) {
-      setData(searchResults)
-      setTotalPages(1)
-    }
-  }, [searchResults])
-
-  // Fetch with current filters + optional search (single API)
+  // Fetch with current filters + optional search (single API) - must be defined before useEffects that use it
   const fetchBlogs = useCallback(
     async (opts: { search?: string; resetOffset?: boolean }) => {
       setLoading(true)
@@ -318,6 +291,33 @@ export default function Blog({
       setSearchQuery,
     ],
   )
+
+  // When returning to home with category/author filters, fetch filtered blogs (run once on mount)
+  const filtersAppliedOnMount = useRef(false)
+  useEffect(() => {
+    if (blogCategorySlugs.length === 0 && blogAuthorEmails.length === 0) return
+    if (filtersAppliedOnMount.current) return
+    filtersAppliedOnMount.current = true
+    fetchBlogs({ resetOffset: true })
+  }, [blogCategorySlugs.length, blogAuthorEmails.length, fetchBlogs])
+
+  // Sync from server when URL/page changes (no filters)
+  useEffect(() => {
+    if (searchResults !== null || blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
+    if (!posts?.docs) return
+    setData(Array.isArray(posts.docs) ? posts.docs : [])
+    setTotal(initialTotal ?? 0)
+    setCurrentPage(initialCurrentPage)
+    setTotalPages(initialTotalPages || 1)
+  }, [initialCurrentPage, initialTotal, initialTotalPages, posts?.docs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length])
+
+  // When in search mode, show search results
+  useEffect(() => {
+    if (searchResults !== null) {
+      setData(searchResults)
+      setTotalPages(1)
+    }
+  }, [searchResults])
 
   // Search: debounce 800ms when has value; when empty, reset and show previously visible (filtered) list
   const hadSearchValueRef = useRef(false)
