@@ -7,7 +7,7 @@ export type Locale = (typeof locales)[number]
 
 type Strings = Record<string, string>
 
-const en: Strings = {
+const enStrings: Strings = {
   nav_home: 'Home',
   nav_blog: 'Blog',
   nav_about: 'About',
@@ -43,9 +43,9 @@ const en: Strings = {
 }
 
 export const translations: Record<Locale, Strings> = {
-  en,
+  en: enStrings,
   zh: {
-    ...en,
+    ...enStrings,
     nav_home: '首页',
     nav_blog: '博客',
     nav_about: '关于',
@@ -75,7 +75,7 @@ export const translations: Record<Locale, Strings> = {
     back_to_blog: '返回博客',
   },
   hi: {
-    ...en,
+    ...enStrings,
     nav_home: '\u0939\u094B\u092E',
     nav_blog: '\u092C\u094D\u0932\u0949\u0917',
     nav_about: '\u0939\u092E\u093E\u0930\u0947 \u092C\u093E\u0930\u0947 \u092E\u0947\u0902',
@@ -105,7 +105,7 @@ export const translations: Record<Locale, Strings> = {
     back_to_blog: '\u092C\u094D\u0932\u0949\u0917 \u092A\u0930 \u0935\u093E\u092A\u0938',
   },
   es: {
-    ...en,
+    ...enStrings,
     nav_home: 'Inicio',
     nav_blog: 'Blog',
     nav_about: 'Nosotros',
@@ -135,7 +135,7 @@ export const translations: Record<Locale, Strings> = {
     back_to_blog: 'Volver al blog',
   },
   fr: {
-    ...en,
+    ...enStrings,
     nav_home: 'Accueil',
     nav_blog: 'Blog',
     nav_about: 'À propos',
@@ -165,7 +165,7 @@ export const translations: Record<Locale, Strings> = {
     back_to_blog: 'Retour au blog',
   },
   ar: {
-    ...en,
+    ...enStrings,
     nav_home: '\u0627\u0644\u0631\u0626\u064A\u0633\u064A\u0629',
     nav_blog: '\u0627\u0644\u0645\u062F\u0648\u0646\u0629',
     nav_about: '\u0639\u0646\u0627',
