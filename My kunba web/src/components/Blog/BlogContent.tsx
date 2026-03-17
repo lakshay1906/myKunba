@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,6 +11,116 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import PayloadRichTextRenderer, { PayloadRichTextContent } from './payload-richtext-renderer'
 import { DeferredSection } from '@/components/DeferredSection'
+import BlogCard from './BlogCard'
+import RelatedArticlesCarousel from './RelatedArticlesCarousel'
+
+function InternalLinksCards({
+  internalLinks,
+}: {
+  internalLinks: Array<{ url: string; anchorText: string }>
+}) {
+  const [posts, setPosts] = useState<Array<{
+    id: number
+    title: string
+    slug: string
+    excerpt: string
+    media: string | null
+    author: Record<string, any>
+    categories: Record<string, any>[]
+    tags?: Record<string, any>[]
+    content: string
+    createdAt: string
+    updatedAt: string
+  }> | null>(null)
+
+  const slugs = internalLinks
+    .map((l) => l.url.replace(/^\//, '').trim())
+    .filter(Boolean)
+
+  useEffect(() => {
+    if (slugs.length === 0) {
+      setPosts([])
+      return
+    }
+    fetch(`/api/user/blog?slugs=${encodeURIComponent(slugs.join(','))}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const docs = data?.docs ?? []
+        setPosts(docs)
+      })
+      .catch(() => setPosts([]))
+  }, [slugs.join(',')])
+
+  if (posts === null) {
+    return (
+      <DeferredSection
+        skeleton={
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Skeleton className="h-64 rounded-lg" />
+            <Skeleton className="h-64 rounded-lg" />
+            <Skeleton className="h-64 rounded-lg" />
+          </div>
+        }
+      >
+        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
+          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {internalLinks.map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </DeferredSection>
+    )
+  }
+
+  if (posts.length === 0) {
+    return (
+      <DeferredSection
+        skeleton={
+          <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        }
+      >
+        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
+          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
+          <ul className="space-y-2">
+            {internalLinks.map((link, index) => (
+              <li key={index}>
+                <Link href={link.url} className="text-primary hover:underline font-medium" rel="internal">
+                  {link.anchorText}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </DeferredSection>
+    )
+  }
+
+  return (
+    <DeferredSection
+      skeleton={
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 rounded-lg" />
+        </div>
+      }
+    >
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Related Content</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <BlogCard key={post.id} post={post} />
+          ))}
+        </div>
+      </div>
+    </DeferredSection>
+  )
+}
 
 const Comments = dynamic(() => import('./Comments'), {
   ssr: false,
@@ -213,34 +324,9 @@ export default function BlogContent({
         ) : null}
       </DeferredSection>
 
-      {/* Deferred: Internal Links */}
+      {/* Deferred: Internal Links (as cards) */}
       {blog.internalLinks && blog.internalLinks.length > 0 && (
-        <DeferredSection
-          skeleton={
-            <div className="mb-8 p-6 bg-muted/50 rounded-lg border space-y-2">
-              <Skeleton className="h-6 w-32 mb-4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          }
-        >
-          <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-4">Related Content</h2>
-            <ul className="space-y-2">
-              {blog.internalLinks.map((link, index) => (
-                <li key={index}>
-                  <Link
-                    href={link.url}
-                    className="text-primary hover:underline font-medium"
-                    rel="internal"
-                  >
-                    {link.anchorText}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </DeferredSection>
+        <InternalLinksCards internalLinks={blog.internalLinks} />
       )}
 
       {/* Deferred: External Links */}
@@ -318,7 +404,7 @@ export default function BlogContent({
         initialCurrentUserId={currentUserId}
       />
 
-      {/* Deferred: Related Articles */}
+      {/* Deferred: Related Articles - Swiper with infinite loop */}
       {relatedArticles && relatedArticles.length > 0 && (
         <DeferredSection
           skeleton={
@@ -341,53 +427,7 @@ export default function BlogContent({
             </div>
           }
         >
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {relatedArticles.map((article) => (
-                <Link
-                  key={article.id}
-                  href={`/${article.slug}`}
-                  className="group block"
-                  rel="related"
-                >
-                  <Card className="h-full transition-all duration-300 hover:shadow-lg">
-                    <CardContent className="p-0">
-                      {article.media && (
-                        <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
-                          <Image
-                            src={article.media}
-                            alt={article.title}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            loading="lazy"
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                          />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                          {article.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {article.excerpt}
-                        </p>
-                        {article.categories && article.categories.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {article.categories.slice(0, 2).map((cat) => (
-                              <Badge key={cat.id} variant="secondary" className="text-xs">
-                                {cat.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <RelatedArticlesCarousel articles={relatedArticles} />
         </DeferredSection>
       )}
     </div>

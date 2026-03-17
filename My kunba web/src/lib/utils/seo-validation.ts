@@ -138,14 +138,43 @@ function extractHeadingTexts(content: string | unknown): string[] {
   return headings
 }
 
-/** Detect if content has a table of contents (TOC) pattern */
+/** Detect if content has a table of contents (TOC) pattern or a table element */
 function hasTableOfContents(content: string | unknown): boolean {
-  if (content == null || typeof content !== 'string') return false
-  const lower = content.toLowerCase()
-  return (
-    /table of content|table-of-content|toc\b|class="[^"]*toc[^"]*"|id="toc"/i.test(lower) ||
-    /<nav[^>]*>[\s\S]*?<a[^>]*href="#[^"]*"/i.test(content)
-  )
+  if (content == null) return false
+  // Check for HTML table
+  if (typeof content === 'string' && /<table[\s>]/i.test(content)) return true
+  // Check for Lexical table node
+  if (typeof content === 'object' && content !== null && 'root' in content) {
+    const root = (content as { root?: { children?: unknown[] } }).root
+    if (root?.children && Array.isArray(root.children)) {
+      if (hasLexicalTable(root.children)) return true
+    }
+  }
+  if (typeof content === 'string') {
+    try {
+      const parsed = JSON.parse(content)
+      if (parsed?.root?.children && Array.isArray(parsed.root.children)) {
+        if (hasLexicalTable(parsed.root.children)) return true
+      }
+    } catch {
+      // Not JSON
+    }
+    const lower = content.toLowerCase()
+    return (
+      /table of content|table-of-content|toc\b|class="[^"]*toc[^"]*"|id="toc"/i.test(lower) ||
+      /<nav[^>]*>[\s\S]*?<a[^>]*href="#[^"]*"/i.test(content)
+    )
+  }
+  return false
+}
+
+function hasLexicalTable(children: unknown[]): boolean {
+  for (const child of children) {
+    const node = child as { type?: string; children?: unknown[] }
+    if (node.type === 'table') return true
+    if (node.children && Array.isArray(node.children) && hasLexicalTable(node.children)) return true
+  }
+  return false
 }
 
 /** Count images and videos in content (HTML or Lexical). */

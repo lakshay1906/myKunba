@@ -9,11 +9,58 @@ import { getTagByLocalizedSlug } from '@/lib/tag-translations'
 export async function GET(req: NextRequest) {
   try {
     const slug = req.nextUrl.searchParams.get('slug')
+    const slugsParam = req.nextUrl.searchParams.get('slugs') // comma-separated slugs for internal links
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
     const search = req.nextUrl.searchParams.get('search')
     let data: any
-    if (slug) {
+    if (slugsParam) {
+      const slugs = slugsParam.split(',').map((s) => s.trim()).filter(Boolean)
+      if (slugs.length > 0) {
+        const blogResult = await payload.find({
+          collection: 'posts',
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            media: true,
+            imageAltText: true,
+            author: true,
+            excerpt: true,
+            categories: true,
+            tags: true,
+            publishDate: true,
+            updatedAt: true,
+            content: true,
+            commentsEnabled: true,
+            metaTitle: true,
+            metaDescription: true,
+            focusKeyword: true,
+            externalLinks: true,
+            internalLinks: true,
+            faq: true,
+          },
+          where: {
+            slug: { in: slugs },
+            deleted_at: { equals: null },
+            status: { equals: 'published' },
+          },
+          depth: 2,
+        })
+        const rawDocs = blogResult.docs || []
+        const withJson = rawDocs.map((raw) => {
+          const withJsonDoc = raw as unknown as Record<string, unknown> & {
+            externalLinks?: string | null
+            internalLinks?: string | null
+            faq?: string | null
+          }
+          return normalizePostJsonFields(withJsonDoc)
+        })
+        data = { docs: withJson }
+      } else {
+        data = { docs: [] }
+      }
+    } else if (slug) {
       const blogResult = await payload.find({
         collection: 'posts',
         select: {

@@ -35,6 +35,7 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import CategorySelector from '@/components/Blog/category-selector'
 import TagSelector from '@/components/Blog/tag-selector'
+import { InternalLinkBlogSelector } from '@/components/Blog/internal-link-blog-selector'
 import { fetchAllCategories } from '@/app/actions/category-actions'
 import { fetchAllTags } from '@/app/actions/tag-actions'
 import Loading from '../Loading'
@@ -1187,54 +1188,15 @@ export default function EditBlogPage({
               <div className="space-y-2">
                 <Label>Internal Links</Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Add internal links to other blog posts or pages for SEO.
+                  Add internal links to other blog posts. Select from existing blogs below.
                 </p>
-                {(blog.internalLinks || []).map((link: any, index: number) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="/post-slug or /page"
-                      value={link?.url ?? ''}
-                      onChange={(e) => {
-                        const newLinks = [...(blog.internalLinks || [])]
-                        newLinks[index] = { ...newLinks[index], url: e.target.value }
-                        setBlog({ ...blog, internalLinks: newLinks })
-                      }}
-                    />
-                    <Input
-                      placeholder="Anchor Text"
-                      value={link?.anchorText ?? ''}
-                      onChange={(e) => {
-                        const newLinks = [...(blog.internalLinks || [])]
-                        newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
-                        setBlog({ ...blog, internalLinks: newLinks })
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const newLinks = (blog.internalLinks || []).filter(
-                          (_: any, i: number) => i !== index,
-                        )
-                        setBlog({ ...blog, internalLinks: newLinks })
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setBlog({
-                      ...blog,
-                      internalLinks: [...(blog.internalLinks || []), { url: '', anchorText: '' }],
-                    })
-                  }}
-                >
-                  Add Internal Link
-                </Button>
+                <InternalLinkBlogSelector
+                  value={blog.internalLinks || []}
+                  onChange={(links) => setBlog({ ...blog, internalLinks: links })}
+                  excludeSlug={blog.slug}
+                  authToken={loginDetail?.token}
+                  disabled={saving}
+                />
               </div>
               <div className="space-y-2">
                 <Label>FAQ</Label>

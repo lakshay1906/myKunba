@@ -119,12 +119,20 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({ message: 'Invalid authorId' }, { status: 400 })
         }
 
-        const where: Where = {
-          deleted_at: { equals: null },
-        }
+        const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+        const baseConditions: any[] = [{ deleted_at: { equals: null } }]
         if (filterByAuthor) {
-          where.author = { equals: filterAuthorId }
+          baseConditions.push({ author: { equals: filterAuthorId } })
         }
+        if (searchTrim) {
+          baseConditions.push({
+            or: [
+              { title: { contains: searchTrim } },
+              { slug: { contains: searchTrim } },
+            ],
+          })
+        }
+        const where: Where = baseConditions.length === 1 ? baseConditions[0] : { and: baseConditions }
 
         const blog = await payload.find({
           collection: 'posts',

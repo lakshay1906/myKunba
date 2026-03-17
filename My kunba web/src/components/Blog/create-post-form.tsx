@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import CategorySelector from './category-selector'
 import TagSelector from './tag-selector'
+import { InternalLinkBlogSelector } from './internal-link-blog-selector'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -1699,54 +1700,14 @@ export function CreatePostForm() {
                       <FormItem>
                         <FormLabel>Internal Links</FormLabel>
                         <FormDescription className="mb-2">
-                          Add internal links to other blog posts or pages. These help with SEO and
-                          user engagement.
+                          Add internal links to other blog posts. Select from existing blogs below.
                         </FormDescription>
-                        {field.value?.map((link, index) => (
-                          <div key={index} className="flex gap-2 mb-2">
-                            <Input
-                              placeholder="/post-slug or /page"
-                              value={link?.url ?? ''}
-                              onChange={(e) => {
-                                const newLinks = [...(field.value || [])]
-                                newLinks[index] = { ...newLinks[index], url: e.target.value }
-                                field.onChange(newLinks)
-                              }}
-                              disabled={isLoading}
-                            />
-                            <Input
-                              placeholder="Anchor Text"
-                              value={link?.anchorText ?? ''}
-                              onChange={(e) => {
-                                const newLinks = [...(field.value || [])]
-                                newLinks[index] = { ...newLinks[index], anchorText: e.target.value }
-                                field.onChange(newLinks)
-                              }}
-                              disabled={isLoading}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                const newLinks = field.value?.filter((_, i) => i !== index) || []
-                                field.onChange(newLinks)
-                              }}
-                              disabled={isLoading}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            field.onChange([...(field.value || []), { url: '', anchorText: '' }])
-                          }}
+                        <InternalLinkBlogSelector
+                          value={field.value ?? []}
+                          onChange={field.onChange}
+                          authToken={loginDetail?.token}
                           disabled={isLoading}
-                        >
-                          Add Internal Link
-                        </Button>
+                        />
                         <FormMessage />
                       </FormItem>
                     )}

@@ -157,15 +157,17 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       const firstRowHasHeader = firstRow?.children?.some((c) => (c as PayloadElementNode).type === 'tableHeader')
       return (
         <div className="my-6 w-full overflow-x-auto rounded-lg border">
-          <Table>
+          <Table className="min-w-[400px]">
             {firstRowHasHeader && firstRow && (
               <TableHeader>
                 <TableRow>
                   {firstRow.children?.map((cell, i) => (
-                    <TableHead key={i} className="px-4 py-2 font-medium">
-                      {(cell as PayloadElementNode).children?.map((child, j) => (
-                        <RenderNode key={j} node={child} />
-                      ))}
+                    <TableHead key={i} className="px-4 py-2 font-medium max-w-[200px]">
+                      <div className="line-clamp-2 break-words">
+                        {(cell as PayloadElementNode).children?.map((child, j) => (
+                          <RenderNode key={j} node={child} />
+                        ))}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -178,10 +180,12 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
                 return (
                   <TableRow key={rowIdx}>
                     {cells.map((cell, cellIdx) => (
-                      <TableCell key={cellIdx} className="px-4 py-2">
-                        {(cell as PayloadElementNode).children?.map((child, j) => (
-                          <RenderNode key={j} node={child} />
-                        ))}
+                      <TableCell key={cellIdx} className="px-4 py-2 max-w-[200px]">
+                        <div className="line-clamp-2 break-words">
+                          {(cell as PayloadElementNode).children?.map((child, j) => (
+                            <RenderNode key={j} node={child} />
+                          ))}
+                        </div>
                       </TableCell>
                     ))}
                   </TableRow>

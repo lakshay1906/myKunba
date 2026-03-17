@@ -231,9 +231,10 @@ export default function Blog({
     setOriginalBlogData(docs)
   }, [searchResults, posts?.docs, setOriginalBlogData])
 
-  // Apply initial server posts when not in search mode (run once)
+  // Apply initial server posts when not in search mode and no category/author filters (run once)
   useEffect(() => {
     if (searchResults !== null || !posts?.docs) return
+    if (blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
     if (initialPostsApplied.current) return
     const docs = Array.isArray(posts.docs) ? posts.docs : []
     initialPostsApplied.current = true
@@ -242,7 +243,16 @@ export default function Blog({
     setCurrentPage(initialCurrentPage)
     setTotalPages(initialTotalPages || Math.ceil((initialTotal ?? posts.totalDocs ?? 0) / initialLimit) || 1)
     setOffset(initialLimit)
-  }, [posts?.docs, posts?.totalDocs, searchResults, initialTotal, initialCurrentPage, initialTotalPages, initialLimit])
+  }, [posts?.docs, posts?.totalDocs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length, initialTotal, initialCurrentPage, initialTotalPages, initialLimit])
+
+  // When returning to home with category/author filters, fetch filtered blogs (run once on mount)
+  const filtersAppliedOnMount = useRef(false)
+  useEffect(() => {
+    if (blogCategorySlugs.length === 0 && blogAuthorEmails.length === 0) return
+    if (filtersAppliedOnMount.current) return
+    filtersAppliedOnMount.current = true
+    fetchBlogs({ resetOffset: true })
+  }, [blogCategorySlugs.length, blogAuthorEmails.length, fetchBlogs])
 
   // Sync from server when URL/page changes (no filters)
   useEffect(() => {

@@ -79,6 +79,7 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
         publishDate: true,
         createdAt: true,
         updatedAt: true,
+        seoScore: true,
       },
       limit,
       page,
