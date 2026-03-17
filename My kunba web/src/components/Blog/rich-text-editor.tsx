@@ -21,7 +21,9 @@ import FontFamily from '@tiptap/extension-font-family'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Bold,
   Italic,
@@ -134,6 +136,9 @@ export default function RichTextEditor({
   const [currentHeading, setCurrentHeading] = useState('0')
   const [currentFontFamily, setCurrentFontFamily] = useState('unset')
   const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showTableDialog, setShowTableDialog] = useState(false)
+  const [tableRows, setTableRows] = useState(3)
+  const [tableCols, setTableCols] = useState(3)
   const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
     file: null,
     imageUrl: '',
@@ -382,11 +387,20 @@ export default function RichTextEditor({
     [editor, remainingContentImages],
   )
 
+  const openTableDialog = useCallback(() => {
+    setTableRows(3)
+    setTableCols(3)
+    setShowTableDialog(true)
+  }, [])
+
   const insertTable = useCallback(() => {
-    if (editor) {
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    if (editor && tableRows >= 1 && tableCols >= 1) {
+      const rows = Math.min(Math.max(1, tableRows), 20)
+      const cols = Math.min(Math.max(1, tableCols), 10)
+      editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+      setShowTableDialog(false)
     }
-  }, [editor])
+  }, [editor, tableRows, tableCols])
 
   const handleHeadingChange = (value: string) => {
     if (!editor) return
@@ -736,7 +750,7 @@ export default function RichTextEditor({
             <ImageIcon className="h-4 w-4" />
           </Button>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
+        <Button type="button" variant="ghost" size="sm" onClick={openTableDialog}>
           <TableIcon className="h-4 w-4" />
         </Button>
       </div>
@@ -753,6 +767,47 @@ export default function RichTextEditor({
           </div>
         )}
       </div>
+
+      {/* Table Dimensions Dialog */}
+      <Dialog open={showTableDialog} onOpenChange={setShowTableDialog}>
+        <DialogContent className="sm:max-w-[340px]" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertTable(); } }}>
+          <DialogHeader>
+            <DialogTitle>Insert Table</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="table-rows">Rows</Label>
+              <Input
+                id="table-rows"
+                type="number"
+                min={1}
+                max={20}
+                value={tableRows}
+                onChange={(e) => setTableRows(Math.min(20, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="table-cols">Columns</Label>
+              <Input
+                id="table-cols"
+                type="number"
+                min={1}
+                max={10}
+                value={tableCols}
+                onChange={(e) => setTableCols(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowTableDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={insertTable}>
+              Insert Table
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Image Upload Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>

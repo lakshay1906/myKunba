@@ -1,5 +1,13 @@
 import type { JSX } from 'react'
 import Image from 'next/image'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface PayloadTextNode {
   type: 'text'
@@ -140,6 +148,48 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
             <RenderNode key={index} node={child} />
           ))}
         </blockquote>
+      )
+
+    case 'table':
+      const tableNode = node as PayloadElementNode
+      const tableRows = tableNode.children?.filter((c) => (c as PayloadElementNode).type === 'tableRow') ?? []
+      const firstRow = tableRows[0] as PayloadElementNode | undefined
+      const firstRowHasHeader = firstRow?.children?.some((c) => (c as PayloadElementNode).type === 'tableHeader')
+      return (
+        <div className="my-6 w-full overflow-x-auto rounded-lg border">
+          <Table>
+            {firstRowHasHeader && firstRow && (
+              <TableHeader>
+                <TableRow>
+                  {firstRow.children?.map((cell, i) => (
+                    <TableHead key={i} className="px-4 py-2 font-medium">
+                      {(cell as PayloadElementNode).children?.map((child, j) => (
+                        <RenderNode key={j} node={child} />
+                      ))}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+            )}
+            <TableBody>
+              {tableRows.map((row, rowIdx) => {
+                if (firstRowHasHeader && rowIdx === 0) return null
+                const cells = (row as PayloadElementNode).children ?? []
+                return (
+                  <TableRow key={rowIdx}>
+                    {cells.map((cell, cellIdx) => (
+                      <TableCell key={cellIdx} className="px-4 py-2">
+                        {(cell as PayloadElementNode).children?.map((child, j) => (
+                          <RenderNode key={j} node={child} />
+                        ))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )
 
     case 'link':

@@ -163,6 +163,68 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
           })
           break
 
+        case 'table':
+          const tableRows: LexicalElementNode[] = []
+          const processTr = (trEl: HTMLElement) => {
+            const cells: LexicalElementNode[] = []
+            for (const cell of trEl.childNodes) {
+              if (cell.nodeType === 1) {
+                const cellEl = cell as HTMLElement
+                const cellTag = cellEl.tagName?.toLowerCase()
+                if (cellTag === 'th' || cellTag === 'td') {
+                  const cellChildren: (LexicalTextNode | LexicalElementNode)[] = []
+                  for (const c of cellEl.childNodes) {
+                    cellChildren.push(...processNode(c))
+                  }
+                  cells.push({
+                    type: cellTag === 'th' ? 'tableHeader' : 'tableCell',
+                    version: 1,
+                    children: cellChildren.length > 0 ? cellChildren : [createTextNode('')],
+                    direction: 'ltr',
+                    format: '',
+                    indent: 0,
+                  })
+                }
+              }
+            }
+            if (cells.length > 0) {
+              tableRows.push({
+                type: 'tableRow',
+                version: 1,
+                children: cells,
+                direction: 'ltr',
+                format: '',
+                indent: 0,
+              })
+            }
+          }
+          for (const tableChild of element.childNodes) {
+            if (tableChild.nodeType === 1) {
+              const tableChildEl = tableChild as HTMLElement
+              const childTag = tableChildEl.tagName?.toLowerCase()
+              if (childTag === 'thead' || childTag === 'tbody') {
+                for (const tr of tableChildEl.childNodes) {
+                  if (tr.nodeType === 1 && (tr as HTMLElement).tagName?.toLowerCase() === 'tr') {
+                    processTr(tr as HTMLElement)
+                  }
+                }
+              } else if (childTag === 'tr') {
+                processTr(tableChildEl)
+              }
+            }
+          }
+          if (tableRows.length > 0) {
+            result.push({
+              type: 'table',
+              version: 1,
+              children: tableRows,
+              direction: 'ltr',
+              format: '',
+              indent: 0,
+            })
+          }
+          break
+
         case 'strong':
         case 'b':
           // Handle bold text - do not trim so space between "Work Culture" (bold) and "plays" (normal) is preserved
@@ -213,6 +275,11 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
             } as LexicalElementNode & { url: string; alt?: string; width?: number; height?: number })
           }
           break
+
+        case 'div':
+        case 'figure':
+        case 'body':
+          return elementChildren
 
         default:
           // For unknown elements (including img tags that might be nested), check if it's an image first
