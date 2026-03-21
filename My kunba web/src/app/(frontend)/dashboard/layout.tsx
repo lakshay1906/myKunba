@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import { DashboardLayoutProvider } from '@/lib/context/dashboard-layout-context'
+import { DashboardListPageProvider } from '@/lib/context/dashboard-list-page-context'
 import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client'
 import { redirect } from 'next/navigation'
 import jwt from 'jsonwebtoken'
@@ -50,9 +51,6 @@ export default async function RootLayout({
 
     const accessSecret = process.env.ACCESS_SECRET
     if (!accessSecret) {
-      console.error('❌ [DASHBOARD LAYOUT] ACCESS_SECRET not configured', {
-        timestamp: new Date().toISOString(),
-      })
       redirect(await getRedirectUrl())
     }
 
@@ -96,7 +94,9 @@ export default async function RootLayout({
 
   return (
     <DashboardLayoutProvider>
-      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      <DashboardListPageProvider>
+        <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      </DashboardListPageProvider>
     </DashboardLayoutProvider>
   )
 }

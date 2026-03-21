@@ -86,7 +86,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error fetching notifications:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -200,7 +199,6 @@ export async function PUT(req: NextRequest) {
       )
     }
   } catch (error: any) {
-    console.error('Error updating notification:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }

@@ -54,6 +54,9 @@ export async function fetchBlogPostBySlugInternal(
     })
     const doc = result.docs[0] ?? null
     if (!doc) return null
+    // Don't show published post until publishDate has passed
+    const pubDate = doc.publishDate ? new Date(doc.publishDate as string) : null
+    if (pubDate && pubDate.getTime() > Date.now()) return null
     const withJson = doc as unknown as Record<string, unknown> & {
       externalLinks?: string | null
       internalLinks?: string | null
@@ -65,7 +68,6 @@ export async function fetchBlogPostBySlugInternal(
       faq: FAQItem[]
     })
   } catch (error) {
-    console.error('Error fetching blog post by slug:', error)
     return null
   }
 }
@@ -125,8 +127,13 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
       limit: 10, // Limit to 10 featured blogs
     })
 
+    const now = Date.now()
+    const visibleDocs = result.docs.filter(
+      (doc) => !doc.publishDate || new Date(doc.publishDate as string).getTime() <= now,
+    )
+
     // Transform the data to match the FeaturedBlog interface
-    const featuredBlogs: FeaturedBlog[] = result.docs.map((doc) => {
+    const featuredBlogs: FeaturedBlog[] = visibleDocs.map((doc) => {
       const author = typeof doc.author === 'object' && doc.author !== null ? doc.author : null
 
       return {
@@ -145,7 +152,6 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
 
     return featuredBlogs
   } catch (error) {
-    console.error('Error fetching featured blogs:', error)
     return []
   }
 }
@@ -259,7 +265,7 @@ export async function fetchRelatedArticles(
           : baseWhere
       const categoryOnlyResult = await payload.find({
         collection: 'posts',
-        where: categoryOnlyWhere,
+        where: categoryOnlyWhere as import('payload').Where,
         select: {
           id: true,
           title: true,
@@ -276,9 +282,12 @@ export async function fetchRelatedArticles(
       docs = [...docs, ...categoryOnlyResult.docs]
     }
 
-    return docs.slice(0, limit).map(mapDocToRelated)
+    const now = Date.now()
+    const visibleDocs = docs.filter(
+      (d) => !d.publishDate || new Date(d.publishDate as string).getTime() <= now,
+    )
+    return visibleDocs.slice(0, limit).map(mapDocToRelated)
   } catch (error) {
-    console.error('Error fetching related articles:', error)
     return []
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import DataTable from '@/components/DataTable'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,6 +17,7 @@ import {
 import { EllipsisVertical, Trash2, RotateCcw } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useAppStore } from '@/lib/context/store'
+import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
 import { toast } from 'sonner'
 import CurrentPageComponent from '@/components/CurrentPageComponent'
 
@@ -26,6 +27,7 @@ const LIMIT = 10
 
 export default function RecycleBinPage() {
   const { loginDetail } = useAppStore()
+  const { listPages, setListPage } = useDashboardListPage()
   const [activeTab, setActiveTab] = useState<TabType>('blogs')
   const [blogs, setBlogs] = useState<Record<string, any>[]>([])
   const [categories, setCategories] = useState<Record<string, any>[]>([])
@@ -51,26 +53,29 @@ export default function RecycleBinPage() {
         )
         const json = await res.json()
         if (!res.ok) throw new Error(json.message || 'Failed to fetch')
+        const pageNum = json.currentPage ?? page
+        const key = `recycle-bin-${type}` as const
+        setListPage(key, pageNum)
         if (type === 'blogs') {
           setBlogs(json.data || [])
           setTotal((t) => ({ ...t, blogs: json.total ?? 0 }))
           setTotalPages((t) => ({ ...t, blogs: json.totalPages ?? 1 }))
-          setCurrentPage((t) => ({ ...t, blogs: json.currentPage ?? page }))
+          setCurrentPage((t) => ({ ...t, blogs: pageNum }))
         } else if (type === 'categories') {
           setCategories(json.data || [])
           setTotal((t) => ({ ...t, categories: json.total ?? 0 }))
           setTotalPages((t) => ({ ...t, categories: json.totalPages ?? 1 }))
-          setCurrentPage((t) => ({ ...t, categories: json.currentPage ?? page }))
+          setCurrentPage((t) => ({ ...t, categories: pageNum }))
         } else if (type === 'tags') {
           setTags(json.data || [])
           setTotal((t) => ({ ...t, tags: json.total ?? 0 }))
           setTotalPages((t) => ({ ...t, tags: json.totalPages ?? 1 }))
-          setCurrentPage((t) => ({ ...t, tags: json.currentPage ?? page }))
+          setCurrentPage((t) => ({ ...t, tags: pageNum }))
         } else {
           setUsers(json.data || [])
           setTotal((t) => ({ ...t, users: json.total ?? 0 }))
           setTotalPages((t) => ({ ...t, users: json.totalPages ?? 1 }))
-          setCurrentPage((t) => ({ ...t, users: json.currentPage ?? page }))
+          setCurrentPage((t) => ({ ...t, users: pageNum }))
         }
       } catch (e: any) {
         toast.error('Error', { description: e.message })
@@ -87,6 +92,16 @@ export default function RecycleBinPage() {
     },
     [activeTab, fetchRecycle],
   )
+
+  // Restore saved list page when returning from detail or switching tabs
+  useEffect(() => {
+    const key = `recycle-bin-${activeTab}` as const
+    const saved = listPages[key]
+    if (saved != null && saved >= 1 && currentPage[activeTab] === 1) {
+      setCurrentPage((prev) => ({ ...prev, [activeTab]: saved }))
+      fetchRecycle(activeTab, saved)
+    }
+  }, [activeTab])
 
   const handleEmptyRecycleBin = async () => {
     if (!loginDetail?.token) {

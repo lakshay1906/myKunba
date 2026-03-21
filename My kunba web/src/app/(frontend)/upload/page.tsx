@@ -10,7 +10,6 @@ import Image from 'next/image'
 //         endpoint="imageUploader"
 //         onClientUploadComplete={(res: any) => {
 //           // Do something with the response
-//           console.log('Files: ', res)
 //           alert('Upload Completed')
 //         }}
 //         onUploadError={(error: Error) => {
@@ -129,7 +128,7 @@ export default function App() {
           </div>
         </div>
         {uploadState === 'uploaded' && image && (
-          <div onClick={handleResetClick}>
+          <div className="cursor-pointer" onClick={handleResetClick}>
             <Image
               // className={classes.logo}
               src={image}

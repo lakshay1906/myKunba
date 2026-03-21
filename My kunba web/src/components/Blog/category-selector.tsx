@@ -117,7 +117,6 @@ export default function CategorySelector({
         description: `Category "${newCategory.name}" created successfully`,
       })
     } catch (error: any) {
-      console.error('Error creating category:', error)
       toast.error('Error', {
         description: error?.message || 'Failed to create category. Please try again.',
       })

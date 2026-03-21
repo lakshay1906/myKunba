@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ suggestions }, { status: 200 })
   } catch (error: any) {
-    console.error('Username suggestions error:', error)
     return NextResponse.json(
       { suggestions: [], message: error.message || 'Failed to generate username suggestions' },
       { status: 500 },

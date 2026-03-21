@@ -76,7 +76,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: unknown) {
-    console.error('Error fetching all posts for tag:', error)
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },

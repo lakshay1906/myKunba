@@ -90,7 +90,6 @@ export default function TagSelector({
       setOpen(false)
       toast.success('Success', { description: `Tag "${newTag.name}" created` })
     } catch (error: any) {
-      console.error('Error creating tag:', error)
       toast.error('Error', { description: error?.message || 'Failed to create tag.' })
     } finally {
       setIsCreating(false)

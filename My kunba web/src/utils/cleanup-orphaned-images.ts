@@ -19,7 +19,6 @@ export function extractFileNameFromR2Url(url: string): string | null {
     // Usually the filename is the last part after bucket name
     return pathParts[pathParts.length - 1] || null
   } catch (error) {
-    console.error('Error extracting filename from URL:', error)
     return null
   }
 }
@@ -40,7 +39,6 @@ export async function deleteImageFromR2(imageUrl: string): Promise<boolean> {
 
     return response.ok
   } catch (error) {
-    console.error('Error deleting image from R2:', error)
     return false
   }
 }

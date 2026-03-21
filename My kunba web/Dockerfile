@@ -47,9 +47,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
-# Build Next.js (standalone output)
+# Build Next.js with standalone output (required for this Dockerfile)
+ENV DOCKER_BUILD=1
 # Use --webpack so standalone file tracing generates middleware.js.nft.json (Turbopack can omit it)
-# npx uses node_modules from deps (no pnpm/yarn needed in builder)
 RUN npx next build --webpack
 
 # =========================
@@ -76,12 +76,20 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Ensure permissions
-RUN mkdir -p .next && chown -R nextjs:nodejs .next
+# Copy migration scripts (for docker-entrypoint: wait-for-db + migrate)
+COPY --from=builder /app/scripts ./scripts
+
+# Install pg for migration runner in a vendor dir (standalone node_modules layout is not reliable for cp)
+RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8 && \
+    mkdir -p /app/vendor && cp -r /tmp/pg-install/node_modules/* /app/vendor/ && rm -rf /tmp/pg-install
+ENV NODE_PATH=/app/vendor
+
+# Ensure permissions (nextjs user runs entrypoint and needs scripts + vendor)
+RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor package.json package-lock.json 2>/dev/null || true
 
 USER nextjs
 
 EXPOSE 3000
 
-# Run standalone Next.js server
-CMD ["node", "server.js"]
+# Wait for DB, run idempotent migrations, then start the app
+CMD ["node", "scripts/docker-entrypoint.js"]

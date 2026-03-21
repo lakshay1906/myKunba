@@ -121,6 +121,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  a,
+  button {
+    @apply cursor-pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 html {
   scroll-behavior: smooth !important;
@@ -128,6 +135,57 @@ html {
 body {
   font-family: Arial, Helvetica, sans-serif;
   scroll-behavior: smooth !important;
+}
+
+@layer utilities {
+  @keyframes pulse-spinner {
+    0%,
+    100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .spinner-dot {
+    @apply absolute inset-0 flex items-start justify-start;
+  }
+
+  .spinner-dot::before {
+    content: '';
+    @apply h-[20%] w-[20%] rounded-full bg-primary;
+    box-shadow: 0 0 20px rgba(18, 31, 53, 0.3);
+    animation: pulse-spinner 1s ease-in-out infinite;
+  }
+
+  /* Animation delays */
+  .delay-0::before {
+    animation-delay: 0s;
+  }
+  .delay-1::before {
+    animation-delay: -0.875s;
+  }
+  .delay-2::before {
+    animation-delay: -0.75s;
+  }
+  .delay-3::before {
+    animation-delay: -0.625s;
+  }
+  .delay-4::before {
+    animation-delay: -0.5s;
+  }
+  .delay-5::before {
+    animation-delay: -0.375s;
+  }
+  .delay-6::before {
+    animation-delay: -0.25s;
+  }
+  .delay-7::before {
+    animation-delay: -0.125s;
+  }
 }
 
 .spinner-rotate {
@@ -138,7 +196,9 @@ body {
   stroke-dasharray: 187;
   stroke-dashoffset: 0;
   transform-origin: center;
-  animation: dash 1.4s ease-in-out infinite, colors 5.6s ease-in-out infinite;
+  animation:
+    dash 1.4s ease-in-out infinite,
+    colors 5.6s ease-in-out infinite;
 }
 
 @keyframes rotator {

@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { buildAlternateLanguages } from '@/lib/i18n/seo'
+import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -83,6 +86,7 @@ export async function generateMetadata({
       description: bio
         ? `${bio} Read articles by ${displayName} on My Kunba.`
         : `Read articles and blog posts by ${displayName} on My Kunba.`,
+      robots: { index: true, follow: true },
       keywords: [displayName, 'author', 'blogger', 'writer', 'articles'],
       authors: [{ name: displayName }],
       openGraph: {
@@ -111,6 +115,7 @@ export async function generateMetadata({
       },
       alternates: {
         canonical: authorUrl,
+        languages: buildAlternateLanguages(`/author/${authorSlug}`),
       },
     }
   } catch (error) {
@@ -174,14 +179,15 @@ export default async function AuthorPage({
     const limit = 12
     const offset = (page - 1) * limit
     const authorEmail = (profile as { email?: string }).email ?? ''
+    const headersList = await headers()
+    const locale = parseLocaleFromHeader(headersList.get('x-locale'))
 
-    // SSG: cached until revalidateTag('posts')
     const [postsRes, categoriesRes] = await Promise.all([
       fetch(
         `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&author=${encodeURIComponent(authorEmail)}`,
         { next: { tags: ['posts'] } },
       ),
-      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
+      fetch(`${getServerApiUrl()}/api/user/category?locale=${locale}`, { next: { tags: ['posts'] } }),
     ])
 
     const authorPosts = await postsRes.json()
@@ -202,7 +208,7 @@ export default async function AuthorPage({
         description: profile.bio,
       }),
       ...(profile.profileImage && {
-        image: profile.profileImage,
+        image: typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url,
       }),
       jobTitle: profile.role === 'admin' ? 'Administrator' : profile.role === 'author' ? 'Content Author' : 'User',
       worksFor: {
@@ -263,7 +269,7 @@ export default async function AuthorPage({
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="size-24 border-4 border-background shadow-lg">
                 <AvatarImage
-                  src={typeof profile.profileImage === 'string' ? profile.profileImage : ''}
+                  src={typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url ?? ''}
                   alt={profile.displayName ?? undefined}
                 />
                 <AvatarFallback className="text-2xl">

@@ -54,7 +54,7 @@ export function MultiSelect({
             aria-expanded={open}
             className={cn(
               'flex min-h-10 w-full flex-wrap items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background',
-              disabled && 'cursor-not-allowed opacity-50',
+              disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
               'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
             )}
             onClick={() => !disabled && setOpen(true)}
@@ -67,7 +67,7 @@ export function MultiSelect({
                     {option?.label || item}
                     {!disabled && (
                       <button
-                        className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="cursor-pointer ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         onMouseDown={(e) => {
                           e.preventDefault()
                           e.stopPropagation()

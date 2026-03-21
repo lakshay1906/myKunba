@@ -5,7 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore } from '@/lib/context/store'
+import { useLocale } from '@/lib/i18n/locale-context'
 import Toast from '@/components/Toast'
+import { Spinner } from '@/components/ui/spinner'
 import { MoreVertical, Trash2, Edit2, ThumbsUp, ThumbsDown } from 'lucide-react'
 import {
   DropdownMenu,
@@ -112,9 +114,11 @@ function CommentItem({
         <Avatar className={`${depth === 0 ? 'h-10 w-10' : 'h-8 w-8'} shrink-0`}>
           <AvatarImage
             src={
-              typeof comment.user.profileImage === 'object' && comment.user.profileImage?.url
-                ? comment.user.profileImage.url
-                : ''
+              typeof comment.user.profileImage === 'string'
+                ? comment.user.profileImage
+                : typeof comment.user.profileImage === 'object' && comment.user.profileImage?.url
+                  ? comment.user.profileImage.url
+                  : ''
             }
             alt={comment.user.displayName}
           />
@@ -269,6 +273,7 @@ export default function Comments({
   initialCurrentUserId = null,
 }: CommentsProps) {
   const { loginDetail } = useAppStore()
+  const { locale } = useLocale()
   const [comments, setComments] = useState<Comment[]>(initialComments)
   const [loading, setLoading] = useState(false) // Start with false since we have initial data
   const [submitting, setSubmitting] = useState(false)
@@ -385,7 +390,6 @@ export default function Comments({
         setTotalComments(data.total || 0)
       }
     } catch (error) {
-      console.error('Error fetching comments:', error)
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -409,7 +413,6 @@ export default function Comments({
           setUserReaction(data.userReaction || null)
         }
       } catch (error) {
-        console.error('Error fetching post reactions:', error)
       }
     }
     fetchPostReactions()
@@ -451,7 +454,6 @@ export default function Comments({
             }
           }
         } catch (error) {
-          console.error('Error fetching current user:', error)
         }
       }
 
@@ -622,6 +624,7 @@ export default function Comments({
         body: JSON.stringify({
           postId,
           content: commentContent,
+          language: locale,
         }),
       })
 
@@ -701,6 +704,7 @@ export default function Comments({
           postId,
           content: replyText.trim(),
           parentId,
+          language: locale,
         }),
       })
 
@@ -898,7 +902,7 @@ export default function Comments({
                 <button
                   onClick={() => handlePostLikeDislike('like')}
                   disabled={updatingReaction}
-                  className={`flex items-center gap-1 text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`cursor-pointer flex items-center gap-1 text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     userReaction === 'like' ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
@@ -908,7 +912,7 @@ export default function Comments({
                 <button
                   onClick={() => handlePostLikeDislike('dislike')}
                   disabled={updatingReaction}
-                  className={`flex items-center gap-1 text-sm hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`cursor-pointer flex items-center gap-1 text-sm hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     userReaction === 'dislike' ? 'text-destructive' : 'text-muted-foreground'
                   }`}
                 >
@@ -1023,7 +1027,14 @@ export default function Comments({
             disabled={loadingMore}
             className="min-w-[120px]"
           >
-            {loadingMore ? 'Loading...' : 'Load More Comments'}
+            {loadingMore ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Loading...
+              </>
+            ) : (
+              'Load More Comments'
+            )}
           </Button>
         </div>
       )}

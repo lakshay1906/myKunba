@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
     const list = await getMediaList()
     return NextResponse.json(list)
   } catch (e) {
-    console.error('[media list]', e)
     return NextResponse.json(
       { message: e instanceof Error ? e.message : 'Failed to list media' },
       { status: 500 },
@@ -49,7 +48,6 @@ export async function DELETE(req: NextRequest) {
     await deleteFromCloudflareR2(url)
     return NextResponse.json({ success: true })
   } catch (e) {
-    console.error('[media delete]', e)
     return NextResponse.json(
       { message: e instanceof Error ? e.message : 'Failed to delete' },
       { status: 500 },

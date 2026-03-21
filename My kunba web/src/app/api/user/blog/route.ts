@@ -3,15 +3,64 @@ export const dynamic = 'force-dynamic'
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizePostJsonFields } from '@/lib/utils/posts-json-fields'
+import { getCategoryByLocalizedSlug } from '@/lib/category-translations'
+import { getTagByLocalizedSlug } from '@/lib/tag-translations'
 
 export async function GET(req: NextRequest) {
   try {
     const slug = req.nextUrl.searchParams.get('slug')
+    const slugsParam = req.nextUrl.searchParams.get('slugs') // comma-separated slugs for internal links
     const limit = req.nextUrl.searchParams.get('limit')
     const offset = req.nextUrl.searchParams.get('offset')
     const search = req.nextUrl.searchParams.get('search')
     let data: any
-    if (slug) {
+    if (slugsParam) {
+      const slugs = slugsParam.split(',').map((s) => s.trim()).filter(Boolean)
+      if (slugs.length > 0) {
+        const blogResult = await payload.find({
+          collection: 'posts',
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            media: true,
+            imageAltText: true,
+            author: true,
+            excerpt: true,
+            categories: true,
+            tags: true,
+            publishDate: true,
+            updatedAt: true,
+            content: true,
+            commentsEnabled: true,
+            metaTitle: true,
+            metaDescription: true,
+            focusKeyword: true,
+            externalLinks: true,
+            internalLinks: true,
+            faq: true,
+          },
+          where: {
+            slug: { in: slugs },
+            deleted_at: { equals: null },
+            status: { equals: 'published' },
+          },
+          depth: 2,
+        })
+        const rawDocs = blogResult.docs || []
+        const withJson = rawDocs.map((raw) => {
+          const withJsonDoc = raw as unknown as Record<string, unknown> & {
+            externalLinks?: string | null
+            internalLinks?: string | null
+            faq?: string | null
+          }
+          return normalizePostJsonFields(withJsonDoc)
+        })
+        data = { docs: withJson }
+      } else {
+        data = { docs: [] }
+      }
+    } else if (slug) {
       const blogResult = await payload.find({
         collection: 'posts',
         select: {
@@ -77,7 +126,6 @@ export async function GET(req: NextRequest) {
               } as any,
             })
           } catch (error) {
-            console.error('Error incrementing impressions:', error)
             // Silently fail
           }
         })().catch(() => {
@@ -109,23 +157,28 @@ export async function GET(req: NextRequest) {
 
       const searchTrim = search && search.trim() ? search.trim() : ''
 
-      // Resolve category slugs to IDs
+      // Resolve category slugs to IDs (localized slug from category_translations, fallback to categories.slug)
       let categoryIds: number[] = []
       if (categorySlugs.length > 0) {
-        const categoryResult = await payload.find({
-          collection: 'categories',
-          where: {
-            and: [
-              {
-                or: categorySlugs.map((slug) => ({ slug: { equals: slug } })),
+        const ids = new Set<number>()
+        for (const slug of categorySlugs) {
+          const byTranslation = await getCategoryByLocalizedSlug(slug)
+          if (byTranslation) {
+            ids.add(byTranslation.categoryId)
+          } else {
+            const categoryResult = await payload.find({
+              collection: 'categories',
+              where: {
+                slug: { equals: slug },
+                deleted_at: { equals: null },
+                isVisible: { equals: true },
               },
-              { deleted_at: { equals: null } },
-              { isVisible: { equals: true } },
-            ],
-          },
-          limit: 100,
-        })
-        categoryIds = categoryResult.docs.map((c: { id: number }) => c.id)
+              limit: 1,
+            })
+            if (categoryResult.docs[0]) ids.add((categoryResult.docs[0] as { id: number }).id)
+          }
+        }
+        categoryIds = Array.from(ids)
       }
 
       // Resolve author emails to user IDs
@@ -147,21 +200,27 @@ export async function GET(req: NextRequest) {
         authorIds = authorResult.docs.map((u: { id: number }) => u.id)
       }
 
-      // Resolve tag slugs to IDs
+      // Resolve tag slugs to IDs (localized slug from tag_translations, fallback to tags.slug)
       let tagIds: number[] = []
       if (tagSlugs.length > 0) {
-        const tagResult = await payload.find({
-          collection: 'tags',
-          where: {
-            and: [
-              { or: tagSlugs.map((s) => ({ slug: { equals: s } })) },
-              { deleted_at: { equals: null } },
-              { or: [{ isVisible: { equals: true } }, { isVisible: { exists: false } }] },
-            ],
-          },
-          limit: 100,
-        })
-        tagIds = tagResult.docs.map((t: { id: number }) => t.id)
+        const ids = new Set<number>()
+        for (const slug of tagSlugs) {
+          const byTranslation = await getTagByLocalizedSlug(slug)
+          if (byTranslation) {
+            ids.add(byTranslation.tagId)
+          } else {
+            const tagResult = await payload.find({
+              collection: 'tags',
+              where: {
+                slug: { equals: slug },
+                deleted_at: { equals: null },
+              },
+              limit: 1,
+            })
+            if (tagResult.docs[0]) ids.add((tagResult.docs[0] as { id: number }).id)
+          }
+        }
+        tagIds = Array.from(ids)
       }
 
       // Build where as AND of: base, categories, tags, authors, search (all combined)
@@ -212,6 +271,13 @@ export async function GET(req: NextRequest) {
         page: page,
         sort: '-publishDate',
       })
+      // Only show posts whose publishDate has passed (or no publishDate)
+      const now = Date.now()
+      const visibleDocs = (data.docs || []).filter(
+        (doc: { publishDate?: string | null }) =>
+          !doc.publishDate || new Date(doc.publishDate).getTime() <= now,
+      )
+      data = { ...data, docs: visibleDocs }
     }
     return NextResponse.json(data, { status: 200 })
   } catch (error) {

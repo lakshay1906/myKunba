@@ -39,6 +39,8 @@ export const Notifications: CollectionConfig = {
         { label: 'Comment', value: 'comment' },
         { label: 'Reply', value: 'reply' },
         { label: 'System', value: 'system' },
+        { label: 'Post Submission', value: 'post_submission' },
+        { label: 'Post Rejected', value: 'post_rejected' },
       ],
       defaultValue: 'comment',
       required: true,

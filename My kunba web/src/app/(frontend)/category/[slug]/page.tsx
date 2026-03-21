@@ -2,9 +2,13 @@ import type { Metadata } from 'next'
 import { payload } from '@/payload-client'
 import Blog from '@/components/Blog/Blog'
 import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { getCategoryByLocalizedSlug, getCategoryTranslation } from '@/lib/category-translations'
+import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
+import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 
-// Generate metadata for category pages (Programmatic SEO)
+// Generate metadata for category pages (Programmatic SEO); slug is localized (e.g. health, swasthya)
 export async function generateMetadata({
   params,
 }: {
@@ -13,60 +17,53 @@ export async function generateMetadata({
   const { slug } = await params
 
   try {
-    const category = await payload.find({
-      collection: 'categories',
-      where: {
-        slug: {
-          equals: slug,
-        },
-        deleted_at: {
-          equals: null,
-        },
-      },
-      limit: 1,
-    })
-
-    if (!category.docs.length) {
-      return {
-        title: 'Category Not Found',
-        robots: {
-          index: false,
-          follow: false,
-        },
-      }
-    }
-
-    const cat = category.docs[0]
+    const resolved = await getCategoryByLocalizedSlug(slug)
     const siteUrl = getPublicUrl()
-    const categoryUrl = `${siteUrl}/category/${slug}`
+    let categoryId: number
+    let categoryName: string
+    let canonicalSlug: string
+
+    if (!resolved) {
+      const category = await payload.find({
+        collection: 'categories',
+        where: { slug: { equals: slug }, deleted_at: { equals: null } },
+        limit: 1,
+      })
+      if (!category.docs.length) {
+        return { title: 'Category Not Found', robots: { index: false, follow: false } }
+      }
+      const cat = category.docs[0] as { id: number; name: string; slug: string }
+      categoryId = cat.id
+      categoryName = cat.name
+      canonicalSlug = slug
+    } else {
+      categoryId = resolved.categoryId
+      categoryName = resolved.name
+      canonicalSlug = slug
+    }
+
+    const categoryUrl = `${siteUrl}/category/${canonicalSlug}`
+    const languages: Record<string, string> = {}
+    for (const loc of SEO_LOCALES) {
+      const tr = await getCategoryTranslation(categoryId, loc)
+      const slugForLoc = tr?.slug ?? canonicalSlug
+      const path = `/category/${slugForLoc}`
+      const url = loc === 'en' ? `${siteUrl}${path}` : `${siteUrl}${path}?locale=${loc}`
+      languages[HREFLANG_CODES[loc]] = url
+    }
+    languages['x-default'] = categoryUrl
 
     return {
-      title: `${cat.name} - Blog Posts | My Kunba`,
-      description: `Explore all blog posts in the ${cat.name} category. Discover articles, insights, and stories about ${cat.name}.`,
-      keywords: [cat.name, 'blog', 'articles', 'category'],
-      openGraph: {
-        title: `${cat.name} - Blog Posts | My Kunba`,
-        description: `Explore all blog posts in the ${cat.name} category.`,
-        url: categoryUrl,
-        type: 'website',
-      },
-      twitter: {
-        card: 'summary',
-        title: `${cat.name} - Blog Posts | My Kunba`,
-        description: `Explore all blog posts in the ${cat.name} category.`,
-      },
-      alternates: {
-        canonical: categoryUrl,
-      },
+      title: `${categoryName} - Blog Posts | My Kunba`,
+      description: `Explore all blog posts in the ${categoryName} category.`,
+      robots: { index: true, follow: true },
+      keywords: [categoryName, 'blog', 'articles', 'category'],
+      openGraph: { title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.`, url: categoryUrl, type: 'website' },
+      twitter: { card: 'summary', title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.` },
+      alternates: { canonical: categoryUrl, languages },
     }
-  } catch (error) {
-    return {
-      title: 'Category',
-      robots: {
-        index: false,
-        follow: false,
-      },
-    }
+  } catch {
+    return { title: 'Category', robots: { index: false, follow: false } }
   }
 }
 
@@ -80,52 +77,53 @@ export default async function CategoryPage({
   const { slug } = await params
   const params2 = await searchParams
   const page = params2.page ? Number(params2.page) : 1
+  const headersList = await headers()
+  const locale = parseLocaleFromHeader(headersList.get('x-locale'))
 
   try {
-    // Fetch category
-    const category = await payload.find({
-      collection: 'categories',
-      where: {
-        slug: {
-          equals: slug,
-        },
-        deleted_at: {
-          equals: null,
-        },
-      },
-      limit: 1,
-    })
+    const resolved = await getCategoryByLocalizedSlug(slug)
+    let categoryId: number
+    let categoryName: string
 
-    if (!category.docs.length) {
-      notFound()
+    if (resolved) {
+      categoryId = resolved.categoryId
+      categoryName = resolved.name
+    } else {
+      const category = await payload.find({
+        collection: 'categories',
+        where: { slug: { equals: slug }, deleted_at: { equals: null } },
+        limit: 1,
+      })
+      if (!category.docs.length) notFound()
+      const cat = category.docs[0]
+      categoryId = cat.id
+      categoryName = cat.name
     }
 
-    const cat = category.docs[0]
     const limit = 12
     const offset = (page - 1) * limit
+    const categoryUrl = `${getServerApiUrl()}/api/user/category?locale=${locale}`
 
-    // SSG: cached until revalidateTag('posts')
     const [postsRes, categoriesRes] = await Promise.all([
       fetch(`${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&category=${slug}`, {
         next: { tags: ['posts'] },
       }),
-      fetch(`${getServerApiUrl()}/api/user/category`, { next: { tags: ['posts'] } }),
+      fetch(categoryUrl, { next: { tags: ['posts'] } }),
     ])
 
     const posts = await postsRes.json()
     const categoriesData = await categoriesRes.json().catch(() => ({ docs: [] }))
     const categories = categoriesData?.docs || []
 
-    // Generate structured data for category page (public URL for canonical/schema)
     const siteUrl = getPublicUrl()
-    const categoryUrl = `${siteUrl}/category/${slug}`
+    const categoryPageUrl = `${siteUrl}/category/${slug}`
 
     const collectionPageSchema = {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
-      name: `${cat.name} - Blog Posts`,
-      description: `Collection of blog posts in the ${cat.name} category`,
-      url: categoryUrl,
+      name: `${categoryName} - Blog Posts`,
+      description: `Collection of blog posts in the ${categoryName} category`,
+      url: categoryPageUrl,
       mainEntity: {
         '@type': 'ItemList',
         numberOfItems: posts.totalDocs || 0,
@@ -160,8 +158,8 @@ export default async function CategoryPage({
         {
           '@type': 'ListItem',
           position: 3,
-          name: cat.name,
-          item: categoryUrl,
+          name: categoryName,
+          item: categoryPageUrl,
         },
       ],
     }
@@ -177,14 +175,14 @@ export default async function CategoryPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold mb-2">{cat.name}</h1>
+          <h1 className="text-4xl font-bold mb-2">{categoryName}</h1>
           <p className="text-muted-foreground mb-8">
             {posts.totalDocs || 0} {posts.totalDocs === 1 ? 'article' : 'articles'} in this category
           </p>
           <Blog
             posts={posts}
             initialCategories={categories}
-            initialSelectedCategory={cat.id}
+            initialSelectedCategory={categoryId}
             total={posts.totalDocs || 0}
             limit={limit}
           />

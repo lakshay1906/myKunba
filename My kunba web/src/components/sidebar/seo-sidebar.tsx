@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { X, ChevronUp, Check, HelpCircle } from 'lucide-react'
+import { X, ChevronUp, Check, BadgeAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { SEOScoreResult, SEOCheckItem } from '@/lib/utils/seo-validation'
 
-// Keep docked sidebar behavior, but don't crush content on smaller screens
-const SIDEBAR_WIDTH = 'clamp(260px, 28vw, 320px)'
+// Responsive width via CSS (SSR-safe); lg = 1024px
+const SIDEBAR_WIDTH_STYLE = { minWidth: '260px' }
 
 interface SEOSidebarProps {
   result: SEOScoreResult | null
@@ -35,15 +35,20 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 function CheckRow({ item }: { item: SEOCheckItem }) {
+  const status = item.status ?? (item.passed ? 'pass' : 'fail')
+  const icon =
+    status === 'pass' ? (
+      <Check className="size-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
+    ) : status === 'warn' ? (
+      <BadgeAlert className="size-4 shrink-0 text-amber-500 dark:text-amber-400 mt-0.5" />
+    ) : (
+      <span className="flex size-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
+        ✕
+      </span>
+    )
   return (
     <div className="flex items-start gap-2 py-1.5 text-sm">
-      {item.passed ? (
-        <Check className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
-      ) : (
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-red-500 text-red-500 mt-0.5 text-[10px] font-bold">
-          ✕
-        </span>
-      )}
+      {icon}
       <span
         className={cn(
           'flex-1',
@@ -52,7 +57,6 @@ function CheckRow({ item }: { item: SEOCheckItem }) {
       >
         {item.message}
       </span>
-      <HelpCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70 mt-0.5" />
     </div>
   )
 }
@@ -74,7 +78,7 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between py-3 px-2 text-left text-sm font-medium hover:bg-muted/50 rounded-md transition-colors"
+        className="cursor-pointer flex w-full items-center justify-between py-3 px-2 text-left text-sm font-medium hover:bg-muted/50 rounded-md transition-colors"
       >
         <span>{title}</span>
         <span className="flex items-center gap-1.5">
@@ -84,7 +88,7 @@ function Section({
             </span>
           )}
           <ChevronUp
-            className={cn('h-4 w-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
+            className={cn('size-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
           />
         </span>
       </button>
@@ -103,28 +107,22 @@ export function SEOSidebar({ result, onClose, className }: SEOSidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-l bg-background text-foreground shadow-lg',
+        'flex h-full w-full flex-col border-l bg-background text-foreground shadow-lg lg:w-[clamp(260px,28vw,320px)]',
         className,
       )}
-      style={{ width: SIDEBAR_WIDTH, minWidth: '260px' }}
+      style={SIDEBAR_WIDTH_STYLE}
     >
       <div className="flex shrink-0 items-center justify-between border-b px-3 py-3">
-        <h2 className="text-sm font-semibold">Rank Math</h2>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Pin">
-            <span className="text-muted-foreground">☆</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={onClose}
-            aria-label="Close SEO sidebar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        </div>
+        <h2 className="text-sm font-semibold">SEO Score</h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onClose}
+          aria-label="Close SEO sidebar"
+        >
+          <X className="size-4" />
+        </Button>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">

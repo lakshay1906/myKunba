@@ -1,7 +1,7 @@
 /**
  * URL helpers so we use the right env in each context.
  *
- * - NEXT_PUBLIC_PUBLIC_URL (https://new.mykunba.org): public domain.
+ * - NEXT_PUBLIC_PUBLIC_URL (https://mykunba.org): public domain.
  *   Use for canonical URLs, sitemap, robots, Open Graph, meta tags, JSON-LD, any URL shown to users or crawlers.
  *   Use for client-side fetches (browser).
  *
@@ -10,7 +10,7 @@
  *   production so traffic stays inside the network and DB is not exposed to the public.
  */
 
-const PUBLIC_DEFAULT = 'https://new.mykunba.org'
+const PUBLIC_DEFAULT = 'https://mykunba.org'
 const SERVER_DEFAULT = 'http://localhost:3000'
 
 /** Public domain URL. Use for canonical, sitemap, OG, schema, links shown to users. */

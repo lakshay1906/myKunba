@@ -73,7 +73,6 @@ function AddPosts({ id }: { id: string }) {
             })
           }
         } catch (error: any) {
-          console.error('Error fetching posts:', error)
           toast.error('Error', {
             description: 'Failed to fetch posts. Please try again.',
           })
@@ -125,7 +124,6 @@ function AddPosts({ id }: { id: string }) {
       // Navigate back to category detail page
       router.push(`/dashboard/category/${id}`)
     } catch (error: any) {
-      console.error('Error saving category posts:', error)
       toast.error('Error', {
         description: error.message || 'Failed to save changes. Please try again.',
       })

@@ -67,10 +67,7 @@ export async function POST(req: NextRequest) {
     if (isOldUser?.totalDocs > 0)
       return NextResponse.json({ message: 'User already exists' }, { status: 400 })
 
-    // Profile image is a relationship to 'media' collection, not a URL
-    // For now, we'll set it to null. Users can update their profile picture later
-    // TODO: In the future, we could create a media entry from the URL if needed
-    const profile_pic = null
+    // Profile image is stored as a URL string (Cloudflare R2). New users set it via profile page upload.
 
     // Derive a base username from display name or email, then ensure it is unique
     const baseUsername =
@@ -84,9 +81,12 @@ export async function POST(req: NextRequest) {
       collection: 'users',
       data: {
         email: userData?.email,
-        profileImage: profile_pic,
+        profileImage: data.profile_pic,
         uid: userData.uid,
-        socialLinks: typeof data.socialLinks === 'string' ? data.socialLinks : JSON.stringify(data.socialLinks || []),
+        socialLinks:
+          typeof data.socialLinks === 'string'
+            ? data.socialLinks
+            : JSON.stringify(data.socialLinks || []),
         displayName: data.name,
         username,
         bio: data.bio || null,

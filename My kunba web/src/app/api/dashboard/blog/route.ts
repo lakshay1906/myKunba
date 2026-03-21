@@ -1,6 +1,21 @@
 export const dynamic = 'force-dynamic'
 
 import type { Where } from 'payload'
+
+/** Compute SEO score 0–100 from meta title, description, focus keyword, image alt (25 each). */
+function computeSeoScore(meta: {
+  metaTitle?: string | null
+  metaDescription?: string | null
+  focusKeyword?: string | null
+  imageAltText?: string | null
+}): number {
+  let score = 0
+  if (meta.metaTitle && String(meta.metaTitle).trim().length > 0) score += 25
+  if (meta.metaDescription && String(meta.metaDescription).trim().length > 0) score += 25
+  if (meta.focusKeyword && String(meta.focusKeyword).trim().length > 0) score += 25
+  if (meta.imageAltText && String(meta.imageAltText).trim().length > 0) score += 25
+  return score
+}
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 import { convertHtmlToLexicalWithParser } from '@/utils/html-parser-to-lexical'
@@ -12,6 +27,8 @@ import {
   stringifyInternalLinks,
   stringifyFaq,
 } from '@/lib/utils/posts-json-fields'
+import { notifyGoogle } from '@/lib/indexing'
+import { getPublicUrl } from '@/lib/env'
 
 export async function GET(req: NextRequest) {
   try {
@@ -60,6 +77,7 @@ export async function GET(req: NextRequest) {
             media: true,
             status: true,
             publishDate: true,
+            adminComment: true,
             metaTitle: true,
             metaDescription: true,
             commentsEnabled: true,
@@ -81,27 +99,44 @@ export async function GET(req: NextRequest) {
         const pageNum = page ? Number(page) : 1
         const limitNum = limit ? Number(limit) : 10
 
-        // Admin can filter by authorId; author always sees only their own
+        // Admin can filter by authorId or see all (no authorId); author always sees only their own
         const isAdmin = userData.role === 'admin'
         const authorIdParam = req.nextUrl.searchParams.get('authorId')
+        const adminWantsAll =
+          isAdmin && (authorIdParam == null || authorIdParam === '')
+        const filterByAuthor =
+          !isAdmin || (!adminWantsAll && authorIdParam != null && authorIdParam !== '')
         const filterAuthorId =
           isAdmin && authorIdParam != null && authorIdParam !== ''
             ? Number(authorIdParam)
             : (userData.id as number)
-        if (isAdmin && authorIdParam != null && authorIdParam !== '' && isNaN(Number(authorIdParam))) {
+        if (
+          isAdmin &&
+          authorIdParam != null &&
+          authorIdParam !== '' &&
+          isNaN(Number(authorIdParam))
+        ) {
           return NextResponse.json({ message: 'Invalid authorId' }, { status: 400 })
         }
 
+        const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+        const baseConditions: any[] = [{ deleted_at: { equals: null } }]
+        if (filterByAuthor) {
+          baseConditions.push({ author: { equals: filterAuthorId } })
+        }
+        if (searchTrim) {
+          baseConditions.push({
+            or: [
+              { title: { contains: searchTrim } },
+              { slug: { contains: searchTrim } },
+            ],
+          })
+        }
+        const where: Where = baseConditions.length === 1 ? baseConditions[0] : { and: baseConditions }
+
         const blog = await payload.find({
           collection: 'posts',
-          where: {
-            author: {
-              equals: filterAuthorId,
-            },
-            deleted_at: {
-              equals: null,
-            },
-          },
+          where,
           select: {
             id: true,
             title: true,
@@ -110,11 +145,17 @@ export async function GET(req: NextRequest) {
             publishDate: true,
             createdAt: true,
             updatedAt: true,
+            metaTitle: true,
+            metaDescription: true,
+            focusKeyword: true,
+            imageAltText: true,
+            seoScore: true,
           },
           limit: limitNum,
           page: pageNum,
           pagination: true,
           sort: '-createdAt',
+          depth: 0,
         })
         return NextResponse.json(
           {
@@ -154,6 +195,7 @@ export async function POST(req: NextRequest) {
       externalLinks,
       internalLinks,
       faq,
+      seoScore: clientSeoScore,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -187,10 +229,16 @@ export async function POST(req: NextRequest) {
     }
 
     const author = { docs: [authorData] }
-    if (!coverImage)
-      return NextResponse.json({ message: 'Image uploading failed' }, { status: 400 })
+    const isDraft = status === 'draft'
+    const isAuthor = authorData.role !== 'admin'
+    // Authors submitting for publish go to pending_approval; admins go directly to published
+    const effectiveStatus = isDraft ? 'draft' : isAuthor ? 'pending_approval' : status
+    if (!isDraft && !coverImage) {
+      return NextResponse.json({ message: 'Cover image is required for publishing' }, { status: 400 })
+    }
 
-    const lexicalContent = convertHtmlToLexicalWithParser(content)
+    const contentStr = content != null && typeof content === 'string' ? content : ''
+    const lexicalContent = convertHtmlToLexicalWithParser(contentStr)
 
     // OLD: Database storage - COMMENTED OUT
     // await payload.create({
@@ -226,19 +274,26 @@ export async function POST(req: NextRequest) {
         .filter((cat): cat is number => cat !== null)
     }
 
+    // For draft: allow empty title/slug and no cover; use unique placeholders so DB unique constraints hold
+    const uniqueSuffix = Date.now()
+    const finalTitle =
+      title != null && String(title).trim() !== '' ? String(title).trim() : `Draft ${uniqueSuffix}`
+    const finalSlug =
+      slug != null && String(slug).trim() !== '' ? String(slug).trim() : `draft-${uniqueSuffix}`
+
     // Auto-fill metaTitle and metaDescription if not provided
-    const finalMetaTitle = metaTitle || title
-    const finalMetaDescription = metaDescription || excerpt
+    const finalMetaTitle = metaTitle || finalTitle
+    const finalMetaDescription = metaDescription || excerpt || ''
 
     // Build the data object
     const postData: any = {
-      title,
+      title: finalTitle,
       author: author.docs[0].id,
-      slug,
-      status,
+      slug: finalSlug,
+      status: effectiveStatus,
       content: lexicalContent,
-      media: coverImage, // NEW: URL string from Cloudflare R2
-      excerpt,
+      media: coverImage || null, // Draft may have no cover image
+      excerpt: excerpt || '',
       metaDescription: finalMetaDescription,
       metaTitle: finalMetaTitle,
       publishDate: publishDate ? publishDate : Date.now(),
@@ -259,6 +314,17 @@ export async function POST(req: NextRequest) {
     const faqStr = stringifyFaq(faq)
     if (faqStr != null) postData.faq = faqStr
 
+    const savedSeoScore =
+      typeof clientSeoScore === 'number' && clientSeoScore >= 0 && clientSeoScore <= 100
+        ? Math.round(clientSeoScore)
+        : null
+    postData.seoScore = savedSeoScore ?? computeSeoScore({
+      metaTitle: finalMetaTitle,
+      metaDescription: finalMetaDescription,
+      focusKeyword: focusKeyword ?? null,
+      imageAltText: imageAltText ?? null,
+    })
+
     // Add categories and tags - Payload accepts array of numbers for hasMany relationships
     postData.categories = categoriesData
     let tagsData: number[] = []
@@ -275,6 +341,41 @@ export async function POST(req: NextRequest) {
     })
     revalidateBlogPost(createdPost.slug ?? '')
     revalidatePostsTag()
+
+    // Notify Google Indexing API when a post is published (so it can be indexed promptly)
+    if (effectiveStatus === 'published' && createdPost.slug) {
+      notifyGoogle(`${getPublicUrl()}/${createdPost.slug}`).catch(() => {})
+    }
+
+    // When author submits for publish, notify all admins
+    if (effectiveStatus === 'pending_approval') {
+      try {
+        const adminUsers = await payload.find({
+          collection: 'users',
+          where: { role: { equals: 'admin' }, deleted_at: { equals: null } },
+          limit: 100,
+        })
+        const authorName =
+          (authorData.displayName as string) || (authorData.email as string) || 'An author'
+        for (const admin of adminUsers.docs) {
+          await payload.create({
+            collection: 'notifications',
+            data: {
+              user: admin.id,
+              title: 'Blog post submitted for approval',
+              message: `"${finalTitle}" by ${authorName} is awaiting your approval.`,
+              type: 'post_submission',
+              read: false,
+              relatedPost: createdPost.id,
+              fromUser: Number(authorData.id),
+            },
+          })
+        }
+      } catch (notifyErr) {
+        // Don't fail the request if notification fails
+      }
+    }
+
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -282,13 +383,13 @@ export async function POST(req: NextRequest) {
         title: createdPost.title,
         slug: createdPost.slug,
         status: createdPost.status,
+        ...(effectiveStatus === 'pending_approval' && {
+          message: 'Your blog has been submitted for admin approval.',
+        }),
       },
       { status: 201 },
     )
   } catch (error: any) {
-    console.error('Error creating blog post:', error)
-    console.error('Error stack:', error?.stack)
-    console.error('Error details:', JSON.stringify(error, null, 2))
 
     // Return more detailed error message
     let errorMessage = 'Internal server error'
@@ -341,6 +442,7 @@ export async function PUT(req: NextRequest) {
       externalLinks,
       internalLinks,
       faq,
+      seoScore: clientSeoScore,
     } = await req.json()
 
     // Authenticate user (supports both web cookies and mobile Authorization header)
@@ -396,13 +498,17 @@ export async function PUT(req: NextRequest) {
     const finalMetaTitle = metaTitle || title
     const finalMetaDescription = metaDescription || excerpt
 
+    // Authors submitting for publish go to pending_approval; admins go directly to published
+    const effectiveStatus =
+      status === 'published' && !isAdmin ? 'pending_approval' : status ?? blogPost.status
+
     // Prepare update data
     const updateData: any = {
       title,
       slug,
       excerpt,
       content: lexicalContent,
-      status,
+      status: effectiveStatus,
       metaDescription: finalMetaDescription,
       metaTitle: finalMetaTitle,
       commentsEnabled: commentsEnabled !== undefined ? commentsEnabled : blogPost.commentsEnabled,
@@ -420,41 +526,42 @@ export async function PUT(req: NextRequest) {
         blogPost.media && typeof blogPost.media === 'string' ? blogPost.media : null
       const cloudflarePublicUrl = process.env.CLOUDFLARE_PUBLIC_URL
 
-      // Check if current image is stored in Cloudflare
-      const currentImageIsInCloudflare =
-        currentMediaUrl && cloudflarePublicUrl && currentMediaUrl.startsWith(cloudflarePublicUrl)
-
-      // Check if new image is a Cloudflare URL (file upload) or external URL
-      const newImageIsInCloudflare =
-        cloudflarePublicUrl && coverImage.startsWith(cloudflarePublicUrl)
-
-      try {
-        // Case 1: Current image is in Cloudflare
-        if (currentImageIsInCloudflare) {
-          if (newImageIsInCloudflare) {
-            // User uploaded a new file → delete old image, update with new Cloudflare URL
-            await deleteFromCloudflareR2(currentMediaUrl!)
-            updateData.media = coverImage
-          } else {
-            // User provided a new URL → delete old image from Cloudflare, update with new URL
-            await deleteFromCloudflareR2(currentMediaUrl!)
-            updateData.media = coverImage
-          }
-        } else {
-          // Case 2: Current image is NOT in Cloudflare (external URL)
-          if (newImageIsInCloudflare) {
-            // User uploaded a file → update with Cloudflare URL (no deletion needed)
-            updateData.media = coverImage
-          } else {
-            // User provided a new URL → simply update the URL
-            updateData.media = coverImage
-          }
-        }
-      } catch (error) {
-        // Log error but don't fail the update if deletion fails
-        console.error('Error handling image update:', error)
-        // Still update with new image URL
+      // Same URL = no change (e.g. content-only save). Never delete from R2 in that case.
+      const isSameImage = currentMediaUrl && coverImage === currentMediaUrl
+      if (isSameImage) {
         updateData.media = coverImage
+      } else {
+        // Check if current image is stored in Cloudflare
+        const currentImageIsInCloudflare =
+          currentMediaUrl && cloudflarePublicUrl && currentMediaUrl.startsWith(cloudflarePublicUrl)
+
+        // Check if new image is a Cloudflare URL (file upload) or external URL
+        const newImageIsInCloudflare =
+          cloudflarePublicUrl && coverImage.startsWith(cloudflarePublicUrl)
+
+        try {
+          // Case 1: Current image is in Cloudflare — only delete if we're actually replacing it
+          if (currentImageIsInCloudflare) {
+            if (newImageIsInCloudflare) {
+              // User uploaded a new file → delete old image, update with new Cloudflare URL
+              await deleteFromCloudflareR2(currentMediaUrl!)
+              updateData.media = coverImage
+            } else {
+              // User provided a new external URL → delete old image from Cloudflare, update with new URL
+              await deleteFromCloudflareR2(currentMediaUrl!)
+              updateData.media = coverImage
+            }
+          } else {
+            // Case 2: Current image is NOT in Cloudflare (external URL)
+            if (newImageIsInCloudflare) {
+              updateData.media = coverImage
+            } else {
+              updateData.media = coverImage
+            }
+          }
+        } catch (error) {
+          updateData.media = coverImage
+        }
       }
     }
 
@@ -496,6 +603,19 @@ export async function PUT(req: NextRequest) {
       updateData.faq = stringifyFaq(faq) ?? null
     }
 
+    const patchSeoScore =
+      typeof clientSeoScore === 'number' && clientSeoScore >= 0 && clientSeoScore <= 100
+        ? Math.round(clientSeoScore)
+        : null
+    updateData.seoScore =
+      patchSeoScore ??
+      computeSeoScore({
+        metaTitle: updateData.metaTitle ?? blogPost.metaTitle,
+        metaDescription: updateData.metaDescription ?? blogPost.metaDescription,
+        focusKeyword: updateData.focusKeyword ?? blogPost.focusKeyword,
+        imageAltText: updateData.imageAltText ?? blogPost.imageAltText,
+      })
+
     // Update the blog post
     const updatedPost = await payload.update({
       collection: 'posts',
@@ -505,6 +625,41 @@ export async function PUT(req: NextRequest) {
     revalidateBlogPost(updatedPost.slug ?? '')
     revalidatePostsTag()
 
+    // Notify Google Indexing API when a post is published/updated (so it can be re-indexed)
+    if (effectiveStatus === 'published' && updatedPost.slug) {
+      notifyGoogle(`${getPublicUrl()}/${updatedPost.slug}`).catch(() => {})
+    }
+
+    // When author submits for publish (status changed to pending_approval), notify admins
+    const wasPending = blogPost.status === 'pending_approval'
+    if (effectiveStatus === 'pending_approval' && !wasPending) {
+      try {
+        const adminUsers = await payload.find({
+          collection: 'users',
+          where: { role: { equals: 'admin' }, deleted_at: { equals: null } },
+          limit: 100,
+        })
+        const authorName =
+          (currentUser.displayName as string) || (currentUser.email as string) || 'An author'
+        for (const admin of adminUsers.docs) {
+          await payload.create({
+            collection: 'notifications',
+            data: {
+              user: admin.id,
+              title: 'Blog post submitted for approval',
+              message: `"${title}" by ${authorName} is awaiting your approval.`,
+              type: 'post_submission',
+              read: false,
+              relatedPost: updatedPost.id,
+              fromUser: Number(currentUser.id),
+            },
+          })
+        }
+      } catch (notifyErr) {
+        // Don't fail the request if notification fails
+      }
+    }
+
     // Return only necessary fields to reduce bandwidth
     return NextResponse.json(
       {
@@ -512,11 +667,13 @@ export async function PUT(req: NextRequest) {
         title: updatedPost.title,
         slug: updatedPost.slug,
         status: updatedPost.status,
+        ...(effectiveStatus === 'pending_approval' && !wasPending && {
+          message: 'Your blog has been submitted for admin approval.',
+        }),
       },
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error updating blog:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
   }
 }
@@ -555,7 +712,6 @@ export async function DELETE(req: NextRequest) {
         id: Number(id),
       })
     } catch (findError) {
-      console.error('Error finding blog post:', findError)
       return NextResponse.json({ message: 'Blog post not found' }, { status: 404 })
     }
 
@@ -588,7 +744,6 @@ export async function DELETE(req: NextRequest) {
     revalidatePostsTag()
     return NextResponse.json({ message: 'Blog post deleted successfully' }, { status: 200 })
   } catch (error: any) {
-    console.error('Error in DELETE /api/dashboard/blog:', error)
     return NextResponse.json(
       { message: error.message || 'Internal server error' },
       { status: 500 },

@@ -49,7 +49,6 @@ export async function createPost(data: PostData, token: string) {
 
     return await response.json()
   } catch (error) {
-    console.error('Error in createPost:', error)
     throw error
   }
 }

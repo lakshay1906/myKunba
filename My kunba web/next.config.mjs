@@ -1,4 +1,5 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import createNextIntlPlugin from 'next-intl/plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { readdirSync, existsSync } from 'fs'
@@ -42,15 +43,20 @@ const payloadUIScssPaths = findPayloadUIScssPaths()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Exclude pg from Turbopack bundling (resolve at runtime on server)
+  serverExternalPackages: ['pg'],
   // /blog -> / and /blog/:slug -> /:slug are handled in middleware.ts to avoid redirect loops
-  // async redirects() { ... } removed
+  async redirects() {
+    return [{ source: '/rss', destination: '/feed.xml', permanent: true }]
+  },
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },
-  output: 'standalone', // Disabled for Windows compatibility
-  compiler: {
-    removeConsole: true,
-  },
+  // Standalone output for Docker; leave unset for local dev (e.g. Windows)
+  ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
+  // compiler: {
+  //   removeConsole: true,
+  // },
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
@@ -136,10 +142,20 @@ const nextConfig = {
   // If SCSS issues persist, use: pnpm run dev:webpack (runs without Turbopack)
   // Turbopack resolveAlias doesn't work well with Windows paths for SCSS
   turbopack: {},
+  // Allow image uploads up to 15 MB (avoids HTML error page when large files are rejected)
+  experimental: {
+    proxyClientMaxBodySize: '15mb',
+    serverActions: {
+      bodySizeLimit: '15mb',
+    },
+  },
 }
 
+// next-intl requires a request config file; must wrap the config object first so its webpack alias is merged (withPayload can return a function)
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
+const nextConfigWithIntl = withNextIntl(nextConfig)
 // Wrap the config to ensure experimental.turbo is removed if it exists
-const payloadConfig = withPayload(nextConfig, { devBundleServerPackages: false })
+const payloadConfig = withPayload(nextConfigWithIntl, { devBundleServerPackages: false })
 
 // Function to remove experimental.turbo from config
 function removeExperimentalTurbo(config) {

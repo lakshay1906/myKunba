@@ -32,7 +32,6 @@ export async function createCategory(
 
     return await response.json()
   } catch (error) {
-    console.error('Error in createCategory:', error)
     throw error
   }
 }
@@ -52,11 +51,38 @@ export async function fetchAllCategories() {
       error instanceof TypeError ||
       (error && typeof (error as NodeJS.ErrnoException).code === 'string' && ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED' || (error as NodeJS.ErrnoException).code === 'ENOTFOUND'))
     if (isNetworkOrUrlError) {
-      console.warn('fetchAllCategories: API unavailable (e.g. during build), returning empty list')
       return { docs: [] }
     }
-    console.error('Error in fetchAllCategories:', error)
     throw error
+  }
+}
+
+/**
+ * Fetch all categories from dashboard API (auth required).
+ * Use this in the blog create/edit form so newly created categories appear in the list
+ * (user/category may only return translated categories and miss new ones).
+ */
+export async function fetchDashboardCategories() {
+  try {
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) return { docs: [] }
+    const rawRes = await fetch(`${getServerApiUrl()}/api/dashboard/category?all=true`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!rawRes.ok) return { docs: [] }
+    const data = await rawRes.json()
+    return { docs: data.docs ?? [], totalDocs: data.totalDocs ?? 0 }
+  } catch (error: unknown) {
+    const isNetworkOrUrlError =
+      error instanceof TypeError ||
+      (error && typeof (error as NodeJS.ErrnoException).code === 'string' &&
+        ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
+          (error as NodeJS.ErrnoException).code === 'ENOTFOUND'))
+    if (isNetworkOrUrlError) {
+      return { docs: [] }
+    }
+    return { docs: [] }
   }
 }
 
@@ -88,7 +114,6 @@ export async function fetchCategoryData(id: number) {
 
     return data
   } catch (error: unknown) {
-    console.error('Error fetching category data:', getErrorMessage(error))
     throw error
   }
 }

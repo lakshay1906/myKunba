@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, CheckCircle, AlertCircle, Loader2, FileImage, Link } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle, FileImage, Link } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { getImageDimensions, getImageDimensionsFromUrl } from '@/utils/image-utils'
 import AspectRatioWarning from './aspect-ratio-warning'
 import ImagePreview from './image-preview'
@@ -17,6 +18,8 @@ export default function UnifiedImageUpload({
   onUploadComplete,
   fileInputId = 'file-input',
   lazyUpload = false,
+  hasExistingImage = false,
+  onCloseAfterSet,
 }: {
   imageUploadData: ImageUploadData
   setImageUploadData: React.Dispatch<React.SetStateAction<ImageUploadData>>
@@ -24,6 +27,10 @@ export default function UnifiedImageUpload({
   onUploadComplete?: (imageUrl: string, alt: string) => void | Promise<void>
   fileInputId?: string
   lazyUpload?: boolean // If true, don't upload immediately - just return data URL or URL
+  /** When true, primary button shows "Replace image" instead of "Done" so dialog has only one Done (in header). */
+  hasExistingImage?: boolean
+  /** When set (e.g. by ImageUploadDialog), called after cover image is set so the dialog can close with one click. */
+  onCloseAfterSet?: () => void
 }) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -57,7 +64,6 @@ export default function UnifiedImageUpload({
           dimensions: imageDimensions,
         }))
       } catch (error) {
-        console.error('Failed to get image dimensions:', error)
       } finally {
         setImageUploadData((prev) => ({
           ...prev,
@@ -138,7 +144,6 @@ export default function UnifiedImageUpload({
         }))
       }
     } catch (error) {
-      console.error('Failed to get image dimensions from URL:', error)
       setImageUploadData((prev) => ({
         ...prev,
         dimensions: null,
@@ -265,7 +270,6 @@ export default function UnifiedImageUpload({
                   clearAll()
                 }
               } catch (error: any) {
-                console.error('Error uploading image:', error)
                 setImageUploadData((prev) => ({
                   ...prev,
                   uploading: false,
@@ -280,7 +284,7 @@ export default function UnifiedImageUpload({
               }
             }
           } else {
-            // Original behavior: just set coverImage as data URL (for cover image upload)
+            // Cover image flow: set coverImage then close dialog so user only clicks Done once
             if (imageUploadData.uploadMethod === 'file' && imageUploadData.file) {
               const reader = new FileReader()
               reader.onload = (e) => {
@@ -290,6 +294,7 @@ export default function UnifiedImageUpload({
                   isOpen: false,
                   coverImage: e.target?.result as string,
                 }))
+                onCloseAfterSet?.()
               }
               reader.readAsDataURL(imageUploadData.file)
             } else if (imageUploadData.uploadMethod === 'url' && imageUploadData.imageUrl) {
@@ -299,6 +304,7 @@ export default function UnifiedImageUpload({
                 isOpen: false,
                 coverImage: imageUploadData.imageUrl,
               }))
+              onCloseAfterSet?.()
             }
           }
         }}
@@ -375,7 +381,7 @@ export default function UnifiedImageUpload({
         {/* Loading Dimensions */}
         {imageUploadData.loadingDimensions && (
           <Alert className="border-blue-200 bg-blue-50">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <Spinner className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
               Analyzing image dimensions...
             </AlertDescription>
@@ -419,13 +425,19 @@ export default function UnifiedImageUpload({
         >
           {imageUploadData.uploading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Spinner className="w-4 h-4 mr-2" />
               Uploading...
             </>
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              {onUploadComplete ? (lazyUpload ? 'Add to Content' : 'Upload & Add') : 'Done'}
+              {onUploadComplete
+                ? lazyUpload
+                  ? 'Add to Content'
+                  : 'Upload & Add'
+                : hasExistingImage
+                  ? 'Replace image'
+                  : 'Done'}
             </>
           )}
         </Button>

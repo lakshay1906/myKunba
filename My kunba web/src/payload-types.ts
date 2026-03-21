@@ -75,6 +75,7 @@ export interface Config {
     likes: Like;
     'post-logs': PostLog;
     posts: Post;
+    'post-translation-entries': PostTranslationEntry;
     tags: Tag;
     notifications: Notification;
     subscriptions: Subscription;
@@ -92,6 +93,7 @@ export interface Config {
     likes: LikesSelect<false> | LikesSelect<true>;
     'post-logs': PostLogsSelect<false> | PostLogsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    'post-translation-entries': PostTranslationEntriesSelect<false> | PostTranslationEntriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
@@ -163,7 +165,10 @@ export interface User {
   username: string;
   bio?: string | null;
   verified: boolean;
-  profileImage?: (number | null) | Media;
+  /**
+   * Profile picture URL (uploaded to Cloudflare R2 as WebP, max 100KB). Set via profile page upload.
+   */
+  profileImage?: string | null;
   role: 'admin' | 'author' | 'user';
   /**
    * JSON string of array of { platform, url }. e.g. [{"platform":"Twitter","url":"https://..."}]
@@ -233,6 +238,10 @@ export interface Comment {
   content: string;
   status?: ('pending' | 'approved' | 'rejected') | null;
   parent?: (number | null) | Comment;
+  /**
+   * Language of the comment (e.g. en, hi). Stored for display/filtering; content stays in original.
+   */
+  language?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -267,7 +276,14 @@ export interface Post {
    */
   media?: string | null;
   status?: ('draft' | 'published' | 'pending_approval') | null;
+  /**
+   * Date and time when the post should be published. Only current or future dates are allowed.
+   */
   publishDate?: string | null;
+  /**
+   * Admin feedback for improvement or rejection reason. Visible to author when status is pending_approval or after rejection.
+   */
+  adminComment?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   /**
@@ -298,6 +314,10 @@ export interface Post {
    * Number of times this blog has been viewed
    */
   impressions?: number | null;
+  /**
+   * SEO score 0–100 (meta title, description, focus keyword, image alt). Updated on create/update.
+   */
+  seoScore?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -348,6 +368,71 @@ export interface PostLog {
   createdAt: string;
 }
 /**
+ * Translated content and SEO fields per post and locale. Use Dashboard → Translations to add or edit; only the post author or an admin can create or edit translations for a post.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "post-translation-entries".
+ */
+export interface PostTranslationEntry {
+  id: number;
+  /**
+   * The blog post this translation belongs to.
+   */
+  post: number | Post;
+  /**
+   * Language of this translation. Use "English" only if you need to override the main post; usually add zh, hi, es, fr, ar.
+   */
+  locale: 'en' | 'zh' | 'hi' | 'es' | 'fr' | 'ar';
+  /**
+   * Translated post title.
+   */
+  title?: string | null;
+  /**
+   * Optional translated URL slug. If empty, the main post slug is used.
+   */
+  slug?: string | null;
+  /**
+   * Short summary for cards and meta.
+   */
+  excerpt?: string | null;
+  /**
+   * Full translated body (same editor as the main post).
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * SEO: title for search results and social (e.g. <title>). Important for SEO.
+   */
+  metaTitle?: string | null;
+  /**
+   * SEO: meta description for search results. Keep under ~160 characters.
+   */
+  metaDescription?: string | null;
+  /**
+   * SEO: primary keyword for this translation.
+   */
+  focusKeyword?: string | null;
+  /**
+   * Alt text for the cover image in this language (accessibility and SEO).
+   */
+  imageAltText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "notifications".
  */
@@ -368,7 +453,7 @@ export interface Notification {
   /**
    * Type of notification
    */
-  type: 'comment' | 'reply' | 'system';
+  type: 'comment' | 'reply' | 'system' | 'post_submission' | 'post_rejected';
   /**
    * Whether the notification has been read
    */
@@ -447,6 +532,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'post-translation-entries';
+        value: number | PostTranslationEntry;
       } | null)
     | ({
         relationTo: 'tags';
@@ -583,6 +672,7 @@ export interface CommentsSelect<T extends boolean = true> {
   content?: T;
   status?: T;
   parent?: T;
+  language?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -623,6 +713,7 @@ export interface PostsSelect<T extends boolean = true> {
   media?: T;
   status?: T;
   publishDate?: T;
+  adminComment?: T;
   metaTitle?: T;
   metaDescription?: T;
   focusKeyword?: T;
@@ -635,6 +726,25 @@ export interface PostsSelect<T extends boolean = true> {
   tags?: T;
   deleted_at?: T;
   impressions?: T;
+  seoScore?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "post-translation-entries_select".
+ */
+export interface PostTranslationEntriesSelect<T extends boolean = true> {
+  post?: T;
+  locale?: T;
+  title?: T;
+  slug?: T;
+  excerpt?: T;
+  content?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  focusKeyword?: T;
+  imageAltText?: T;
   updatedAt?: T;
   createdAt?: T;
 }

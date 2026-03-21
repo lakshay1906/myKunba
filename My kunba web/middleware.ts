@@ -33,6 +33,9 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/dashboard')) {
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-dashboard-path', pathname)
+    const locale = request.cookies.get('locale')?.value ?? 'en'
+    const allowed = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+    requestHeaders.set('x-locale', allowed.includes(locale) ? locale : 'en')
     return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
@@ -52,9 +55,21 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin')
   const method = request.method
 
-  // Only apply security to API routes
+  // Non-API: set locale header from cookie (and optional ?lang= to set cookie and redirect)
   if (!pathname.startsWith('/api')) {
-    return NextResponse.next()
+    const lang = request.nextUrl.searchParams.get('lang')
+    const allowedLocales = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+    if (lang && allowedLocales.includes(lang)) {
+      const url = request.nextUrl.clone()
+      url.searchParams.delete('lang')
+      const res = NextResponse.redirect(url, 302)
+      res.cookies.set('locale', lang, { path: '/', maxAge: 365 * 24 * 60 * 60, sameSite: 'lax' })
+      return res
+    }
+    const locale = request.cookies.get('locale')?.value ?? 'en'
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-locale', allowedLocales.includes(locale) ? locale : 'en')
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // Handle CORS preflight requests (OPTIONS)
@@ -143,6 +158,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on /dashboard, /blog, /blog/*, and all API routes
-  matcher: ['/dashboard', '/dashboard/:path*', '/blog', '/blog/:path*', '/api/:path*'],
+  // Run on frontend pages (locale, blog redirect, dashboard) and API
+  matcher: ['/', '/:path*', '/dashboard', '/dashboard/:path*', '/blog', '/blog/:path*', '/api/:path*'],
 }

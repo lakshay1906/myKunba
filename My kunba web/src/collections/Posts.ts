@@ -58,6 +58,16 @@ export const Posts: CollectionConfig = {
     {
       name: 'publishDate',
       type: 'date',
+      admin: {
+        description: 'Date and time when the post should be published. Only current or future dates are allowed.',
+      },
+    },
+    {
+      name: 'adminComment',
+      type: 'textarea',
+      admin: {
+        description: 'Admin feedback for improvement or rejection reason. Visible to author when status is pending_approval or after rejection.',
+      },
     },
     {
       name: 'metaTitle',
@@ -140,6 +150,13 @@ export const Posts: CollectionConfig = {
         description: 'Number of times this blog has been viewed',
       },
     },
+    {
+      name: 'seoScore',
+      type: 'number',
+      admin: {
+        description: 'SEO score 0–100 (meta title, description, focus keyword, image alt). Updated on create/update.',
+      },
+    },
   ],
   hooks: {
     afterChange: [
@@ -148,7 +165,6 @@ export const Posts: CollectionConfig = {
         if (!doc) return
         const userId = doc.author?.id
         if (!userId) {
-          console.warn('No user associated with post, skipping post-log creation')
           return
         }
         // ⏳ Defer log creation to next event loop
@@ -163,7 +179,6 @@ export const Posts: CollectionConfig = {
               },
             })
           } catch (error) {
-            console.error('Failed to create post log:', error)
           }
         }, 0)
       },

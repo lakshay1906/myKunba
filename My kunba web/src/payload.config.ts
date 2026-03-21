@@ -14,6 +14,7 @@ import { Comments } from './collections/Comments'
 import { Likes } from './collections/Likes'
 import { PostLogs } from './collections/PostLogs'
 import { Posts } from './collections/Posts'
+import { PostTranslations } from './collections/PostTranslations'
 import { Tags } from './collections/Tag'
 import { Admin } from './collections/Admin'
 import { Notifications } from './collections/Notifications'
@@ -40,6 +41,7 @@ export default buildConfig({
     Likes,
     PostLogs,
     Posts,
+    PostTranslations,
     Tags,
     Notifications,
     Subscriptions,

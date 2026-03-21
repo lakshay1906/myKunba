@@ -1,16 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode, SetStateAction, useEffect } from 'react'
-import {
-  signInWithPopup,
-  signOut,
-  GoogleAuthProvider,
-  User,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  getAuth,
-} from 'firebase/auth'
-import { auth } from '../firebase'
+import type { User } from 'firebase/auth'
 
 type AppContextType = {
   loginDetail: null | {
@@ -68,34 +59,47 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   const [blogAuthorEmails, setBlogAuthorEmails] = useState<string[]>([])
 
   async function googleSignIn() {
+    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth')
+    const { getFirebaseAuth } = await import('@/lib/firebase')
+    const auth = getFirebaseAuth()
+    if (!auth) throw new Error('Auth not available')
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
-    // signinWithEmailLink
     return result.user
   }
 
   async function emailSignUp({ email, password }: { email: string; password: string }) {
+    const { createUserWithEmailAndPassword } = await import('firebase/auth')
+    const { getFirebaseAuth } = await import('@/lib/firebase')
+    const auth = getFirebaseAuth()
+    if (!auth) throw new Error('Auth not available')
     const result = await createUserWithEmailAndPassword(auth, email, password)
     return result.user
   }
 
   async function emailSignIn({ email, password }: { email: string; password: string }) {
+    const { signInWithEmailAndPassword } = await import('firebase/auth')
+    const { getFirebaseAuth } = await import('@/lib/firebase')
+    const auth = getFirebaseAuth()
+    if (!auth) throw new Error('Auth not available')
     const result = await signInWithEmailAndPassword(auth, email, password)
     return result.user
   }
 
   async function logout() {
-    getAuth().signOut()
-    await signOut(auth)
-      .then(async () => {
-        const rawRes = await fetch('/api/user/auth/jwt/delete', {
-          method: 'DELETE',
+    const { signOut } = await import('firebase/auth')
+    const { getFirebaseAuth } = await import('@/lib/firebase')
+    const auth = getFirebaseAuth()
+    if (auth) {
+      await signOut(auth)
+        .then(async () => {
+          const rawRes = await fetch('/api/user/auth/jwt/delete', {
+            method: 'DELETE',
+          })
+          if (rawRes.ok) setLoginDetail(null)
         })
-        if (rawRes.ok) setLoginDetail(null)
-      })
-      .catch((error) => {
-        console.error('Error signing out:', error)
-      })
+        .catch(() => {})
+    }
   }
 
   useEffect(() => {
@@ -118,12 +122,11 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
               email: data.email,
               name: data.displayName,
               role: data.role,
-              profile_pic: data.profileImage ? data.profileImage.url : null,
+              profile_pic: typeof data.profileImage === 'string' ? data.profileImage : (data.profileImage?.url ?? null),
               id: data.id,
             })
         }
-      } catch (error) {
-        console.error('Error verifying token:', error)
+      } catch {
       } finally {
         setLoading(false)
       }
@@ -166,3 +169,6 @@ export const useAppStore = () => {
   }
   return context
 }
+
+/** Use store when inside AppProvider; returns null when outside (e.g. some SSR/streaming cases). */
+export const useAppStoreOptional = () => useContext(AppContext) ?? null

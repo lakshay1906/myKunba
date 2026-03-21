@@ -1,16 +1,26 @@
 'use client'
 
-import React, { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
 import EmptyBlogState from './EmptyBlogState'
-import Spinner from '../Loading'
-import { motion } from 'framer-motion'
-import { useAppStore } from '@/lib/context/store'
+import { useAppStoreOptional } from '@/lib/context/store'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Search } from 'lucide-react'
-import { MultiSelect } from './multi-select'
+
+const MultiSelect = dynamic(
+  () => import('./multi-select').then((m) => ({ default: m.MultiSelect })),
+  { ssr: false },
+)
+
+const Spinner = dynamic(() => import('../Loading'), {
+  ssr: false,
+  loading: () => <div className="size-11 animate-pulse rounded-full bg-muted" />,
+})
 import { Button } from '../ui/button'
 import {
   Tooltip,
@@ -29,7 +39,8 @@ type BlogProps = {
   initialAuthors?: Record<string, unknown>[]
   total?: number
   limit?: number
-  hasMore?: boolean
+  currentPage?: number
+  totalPages?: number
   initialSelectedCategory?: number
 }
 
@@ -51,30 +62,149 @@ function buildBlogQueryParams(opts: {
   return params.toString()
 }
 
+function PaginationLinks({
+  currentPage,
+  totalPages,
+  searchParams,
+  onPageChange,
+  hasFilters,
+}: {
+  currentPage: number
+  totalPages: number
+  searchParams: URLSearchParams
+  onPageChange: (page: number) => void
+  hasFilters: boolean
+}) {
+  const getPageUrl = (page: number) => {
+    const p = new URLSearchParams(searchParams?.toString() ?? '')
+    p.set('page', String(page))
+    return `/?${p.toString()}`
+  }
+  const maxVisible = 5
+  const pages: (number | 'ellipsis')[] = []
+  if (totalPages <= maxVisible + 2) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    let start = Math.max(2, currentPage - 1)
+    let end = Math.min(totalPages - 1, currentPage + 1)
+    if (currentPage <= 2) end = 3
+    if (currentPage >= totalPages - 1) start = totalPages - 2
+    if (start > 2) pages.push('ellipsis')
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < totalPages) pages.push(i)
+    }
+    if (end < totalPages - 1) pages.push('ellipsis')
+    if (totalPages > 1) pages.push(totalPages)
+  }
+
+  return (
+    <>
+      {currentPage > 1 ? (
+        hasFilters ? (
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage - 1)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            &lt; Previous
+          </button>
+        ) : (
+          <Link
+            href={getPageUrl(currentPage - 1)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            &lt; Previous
+          </Link>
+        )
+      ) : (
+        <span className="text-sm text-muted-foreground/60 flex items-center gap-1">&lt; Previous</span>
+      )}
+      <div className="flex items-center gap-1">
+        {pages.map((p, i) =>
+          p === 'ellipsis' ? (
+            <span key={`e-${i}`} className="px-2 text-muted-foreground">
+              ...
+            </span>
+          ) : p === currentPage ? (
+            <span
+              key={p}
+              className="min-w-8 h-8 flex items-center justify-center rounded-md bg-muted px-2 text-sm font-medium text-foreground"
+            >
+              {p}
+            </span>
+          ) : hasFilters ? (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onPageChange(p)}
+              className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            >
+              {p}
+            </button>
+          ) : (
+            <Link
+              key={p}
+              href={getPageUrl(p)}
+              className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            >
+              {p}
+            </Link>
+          ),
+        )}
+      </div>
+      {currentPage < totalPages ? (
+        hasFilters ? (
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage + 1)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            Next &gt;
+          </button>
+        ) : (
+          <Link
+            href={getPageUrl(currentPage + 1)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            Next &gt;
+          </Link>
+        )
+      ) : (
+        <span className="text-sm text-muted-foreground/60 flex items-center gap-1">Next &gt;</span>
+      )}
+    </>
+  )
+}
+
 export default function Blog({
   posts,
   initialCategories = [],
   initialAuthors = [],
   total: initialTotal = 0,
   limit: initialLimit = LIMIT,
-  hasMore: initialHasMore = false,
+  currentPage: initialCurrentPage = 1,
+  totalPages: initialTotalPages = 1,
 }: BlogProps) {
-  const {
-    searchResults,
-    setSearchResults,
-    setSearchQuery,
-    blogCategorySlugs,
-    setBlogCategorySlugs,
-    blogAuthorEmails,
-    setBlogAuthorEmails,
-    originalBlogData,
-    setOriginalBlogData,
-  } = useAppStore()
+  const searchParams = useSearchParams()
+  const store = useAppStoreOptional()
 
-  const observerRef = useRef<HTMLDivElement>(null)
+  const [localSearchResults, setLocalSearchResults] = useState<unknown[] | null>(null)
+  const [localSearchQuery, setLocalSearchQuery] = useState('')
+  const [localCategorySlugs, setLocalCategorySlugs] = useState<string[]>([])
+  const [localAuthorEmails, setLocalAuthorEmails] = useState<string[]>([])
+
+  const searchResults = store?.searchResults ?? localSearchResults
+  const setSearchResults = store?.setSearchResults ?? setLocalSearchResults
+  const setSearchQuery = store?.setSearchQuery ?? setLocalSearchQuery
+  const blogCategorySlugs = store?.blogCategorySlugs ?? localCategorySlugs
+  const setBlogCategorySlugs = store?.setBlogCategorySlugs ?? setLocalCategorySlugs
+  const blogAuthorEmails = store?.blogAuthorEmails ?? localAuthorEmails
+  const setBlogAuthorEmails = store?.setBlogAuthorEmails ?? setLocalAuthorEmails
+  const setOriginalBlogData = store?.setOriginalBlogData ?? (() => {})
+
   const [data, setData] = useState<any[]>(Array.isArray(posts?.docs) ? posts.docs : [])
   const [loading, setLoading] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [categories] = useState<Record<string, unknown>[]>([
     ...(Array.isArray(initialCategories) ? initialCategories : []),
@@ -83,7 +213,8 @@ export default function Blog({
     Array.isArray(initialAuthors) && initialAuthors.length > 0 ? initialAuthors : [],
   )
   const [total, setTotal] = useState(initialTotal)
-  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [currentPage, setCurrentPage] = useState(initialCurrentPage)
+  const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [offset, setOffset] = useState(initialLimit)
 
   const limit = initialLimit
@@ -100,27 +231,21 @@ export default function Blog({
     setOriginalBlogData(docs)
   }, [searchResults, posts?.docs, setOriginalBlogData])
 
-  // Apply initial server posts when not in search mode (run once)
+  // Apply initial server posts when not in search mode and no category/author filters (run once)
   useEffect(() => {
     if (searchResults !== null || !posts?.docs) return
+    if (blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
     if (initialPostsApplied.current) return
     const docs = Array.isArray(posts.docs) ? posts.docs : []
     initialPostsApplied.current = true
     setData(docs)
     setTotal(initialTotal ?? (typeof posts.totalDocs === 'number' ? posts.totalDocs : 0))
-    setHasMore(initialHasMore ?? (Boolean(posts.hasNextPage) ?? false))
+    setCurrentPage(initialCurrentPage)
+    setTotalPages(initialTotalPages || Math.ceil((initialTotal ?? posts.totalDocs ?? 0) / initialLimit) || 1)
     setOffset(initialLimit)
-  }, [posts?.docs, posts?.totalDocs, posts?.hasNextPage, searchResults, initialTotal, initialHasMore, initialLimit])
+  }, [posts?.docs, posts?.totalDocs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length, initialTotal, initialCurrentPage, initialTotalPages, initialLimit])
 
-  // When in search mode, show search results
-  useEffect(() => {
-    if (searchResults !== null) {
-      setData(searchResults)
-      setHasMore(false)
-    }
-  }, [searchResults])
-
-  // Fetch with current filters + optional search (single API)
+  // Fetch with current filters + optional search (single API) - must be defined before useEffects that use it
   const fetchBlogs = useCallback(
     async (opts: { search?: string; resetOffset?: boolean }) => {
       setLoading(true)
@@ -147,11 +272,11 @@ export default function Blog({
           setSearchQuery('')
           setData(docs)
           setTotal(totalDocs)
-          setHasMore(nextPage)
+          setTotalPages(Math.ceil(totalDocs / limit) || 1)
+          setCurrentPage(opts.resetOffset !== false ? 1 : Math.floor(offsetVal / limit) + 1)
           setOffset(opts.resetOffset !== false ? limit : offsetVal + docs.length)
         }
       } catch (e) {
-        console.error('Error fetching blogs:', e)
         if (!opts.search?.trim()) setSearchResults(null)
       } finally {
         setLoading(false)
@@ -166,6 +291,33 @@ export default function Blog({
       setSearchQuery,
     ],
   )
+
+  // When returning to home with category/author filters, fetch filtered blogs (run once on mount)
+  const filtersAppliedOnMount = useRef(false)
+  useEffect(() => {
+    if (blogCategorySlugs.length === 0 && blogAuthorEmails.length === 0) return
+    if (filtersAppliedOnMount.current) return
+    filtersAppliedOnMount.current = true
+    fetchBlogs({ resetOffset: true })
+  }, [blogCategorySlugs.length, blogAuthorEmails.length, fetchBlogs])
+
+  // Sync from server when URL/page changes (no filters)
+  useEffect(() => {
+    if (searchResults !== null || blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
+    if (!posts?.docs) return
+    setData(Array.isArray(posts.docs) ? posts.docs : [])
+    setTotal(initialTotal ?? 0)
+    setCurrentPage(initialCurrentPage)
+    setTotalPages(initialTotalPages || 1)
+  }, [initialCurrentPage, initialTotal, initialTotalPages, posts?.docs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length])
+
+  // When in search mode, show search results
+  useEffect(() => {
+    if (searchResults !== null) {
+      setData(searchResults)
+      setTotalPages(1)
+    }
+  }, [searchResults])
 
   // Search: debounce 800ms when has value; when empty, reset and show previously visible (filtered) list
   const hadSearchValueRef = useRef(false)
@@ -218,46 +370,8 @@ export default function Blog({
         setAuthors(sorted)
         if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(sorted))
       })
-      .catch((e) => console.error('Error fetching authors:', e))
+      .catch(() => { })
   }, [initialAuthors])
-
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || searchResults !== null) return
-    setLoadingMore(true)
-    try {
-      const qs = buildBlogQueryParams({
-        categorySlugs: blogCategorySlugs,
-        authorEmails: blogAuthorEmails,
-        limit,
-        offset,
-      })
-      const res = await fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
-      const result = await res.json()
-      if (res.ok && result?.docs) {
-        setData((prev) => [...prev, ...result.docs])
-        setHasMore(result.hasNextPage ?? false)
-        setOffset((o) => o + limit)
-        setTotal(result.totalDocs ?? 0)
-      }
-    } catch (e) {
-      console.error('Error loading more:', e)
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [loadingMore, hasMore, limit, offset, blogCategorySlugs, blogAuthorEmails, searchResults])
-
-  useEffect(() => {
-    const el = observerRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !loadingMore) loadMore()
-      },
-      { threshold: 0.1, rootMargin: '100px' },
-    )
-    observer.observe(el)
-    return () => observer.unobserve(el)
-  }, [hasMore, loadingMore, loadMore])
 
   const handleCategoryChange = (selected: string[]) => {
     setBlogCategorySlugs(selected)
@@ -276,7 +390,6 @@ export default function Blog({
         if (result == null) return
         const docs = result.docs || []
         const totalDocs = result.totalDocs ?? 0
-        const hasNextPage = result.hasNextPage ?? false
         if (searchTerm) {
           setSearchResults(docs)
           setSearchQuery(searchTerm)
@@ -286,10 +399,11 @@ export default function Blog({
           setData(docs)
         }
         setTotal(totalDocs)
-        setHasMore(hasNextPage)
+        setTotalPages(Math.ceil(totalDocs / limit) || 1)
+        setCurrentPage(1)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => { })
       .finally(() => setLoading(false))
   }
 
@@ -312,10 +426,11 @@ export default function Blog({
         if (result == null) return
         setData(result.docs || [])
         setTotal(result.totalDocs ?? 0)
-        setHasMore(result.hasNextPage ?? false)
+        setTotalPages(Math.ceil((result.totalDocs ?? 0) / limit) || 1)
+        setCurrentPage(1)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => { })
       .finally(() => setLoading(false))
   }
 
@@ -336,7 +451,6 @@ export default function Blog({
         if (result == null) return
         const docs = result.docs || []
         const totalDocs = result.totalDocs ?? 0
-        const hasNextPage = result.hasNextPage ?? false
         if (searchTerm) {
           setSearchResults(docs)
           setSearchQuery(searchTerm)
@@ -346,10 +460,11 @@ export default function Blog({
           setData(docs)
         }
         setTotal(totalDocs)
-        setHasMore(hasNextPage)
+        setTotalPages(Math.ceil(totalDocs / limit) || 1)
+        setCurrentPage(1)
         setOffset(limit)
       })
-      .catch((e) => console.error('Error fetching blogs:', e))
+      .catch(() => { })
       .finally(() => setLoading(false))
   }
 
@@ -442,27 +557,51 @@ export default function Blog({
       ) : (
         <>
           {data.length > 0 ? (
-            <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
-              {data.map((ele, idx) => (
-                <motion.div
-                  key={ele.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.1 * idx }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  className="size-full"
+            <>
+              <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
+                {data.map((ele) => (
+                  <div key={ele.id} className="size-full">
+                    <BlogCard key={ele.id} post={ele} />
+                  </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <nav
+                  className="flex items-center justify-center gap-1 sm:gap-2 mt-8 mb-4"
+                  aria-label="Blog pagination"
                 >
-                  <BlogCard key={ele.id} post={ele} />
-                </motion.div>
-              ))}
-            </div>
+                  <PaginationLinks
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    searchParams={searchParams}
+                    onPageChange={(page) => {
+                      setCurrentPage(page)
+                      setLoading(true)
+                      const offsetVal = (page - 1) * limit
+                      const qs = buildBlogQueryParams({
+                        categorySlugs: blogCategorySlugs,
+                        authorEmails: blogAuthorEmails,
+                        limit,
+                        offset: offsetVal,
+                      })
+                      fetch(`/api/user/blog?${qs}`, { cache: 'no-store' })
+                        .then((res) => (res.ok ? res.json() : null))
+                        .then((result) => {
+                          if (result?.docs) {
+                            setData(result.docs)
+                            setTotal(result.totalDocs ?? 0)
+                            setCurrentPage(page)
+                          }
+                        })
+                        .finally(() => setLoading(false))
+                    }}
+                    hasFilters={blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0 || (searchResults !== null)}
+                  />
+                </nav>
+              )}
+            </>
           ) : (
             <EmptyBlogState />
-          )}
-          {hasMore && (
-            <div ref={observerRef} className="flex justify-center items-center py-8">
-              {loadingMore ? <Spinner /> : <div className="h-4" />}
-            </div>
           )}
         </>
       )}

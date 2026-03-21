@@ -1,10 +1,3 @@
-## Blog
+Scheduled / translated blogs (implemented)
 
-### 1. All Blogs => 1\*1-Img, Name, description, Likes, CreatedAt
-
-### 2. Trash Blogs => 1\*1-Img, Name, Scheduled Time, CreatedAt
-
-add loading in login process
-
-Meta title and description
-Scheduled blogs
+RSS feed: Provide an RSS feed for blog posts for syndication and discovery.

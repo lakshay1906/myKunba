@@ -9,8 +9,9 @@ import {
   FileImage,
   Trash2,
   Download,
-  Loader2,
 } from 'lucide-react'
+import Loading from '@/components/Loading'
+import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -169,7 +170,7 @@ export function MediaPageClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loading />
       </div>
     )
   }
@@ -249,7 +250,7 @@ export function MediaPageClient() {
           <div className="flex-1 overflow-y-auto py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {detailsLoading ? (
               <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loading />
               </div>
             ) : details ? (
               <div className="space-y-4">
@@ -300,7 +301,7 @@ export function MediaPageClient() {
                 disabled={!!deletingKey}
               >
                 {deletingKey === details.key ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2 h-4 w-4" />
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
@@ -335,7 +336,7 @@ function MediaCard({
       <button
         type="button"
         onClick={onDetail}
-        className="aspect-video w-full bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="cursor-pointer aspect-video w-full bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={item.url}
@@ -393,7 +394,7 @@ function MediaRow({
       <button
         type="button"
         onClick={onDetail}
-        className="h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="cursor-pointer h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={item.url}
@@ -473,7 +474,7 @@ function MediaActions({
         disabled={isDeleting}
       >
         {isDeleting ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Spinner className="mr-2 h-4 w-4" />
         ) : (
           <Trash2 className="mr-2 h-4 w-4" />
         )}

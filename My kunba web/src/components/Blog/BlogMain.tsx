@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import DataTable from '../DataTable'
 import Link from 'next/link'
 import { Button } from '../ui/button'
@@ -26,6 +26,16 @@ import { EllipsisVertical, Trash2 } from 'lucide-react'
 import Toast from '../Toast'
 import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
+import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
+
+function computeSeoScore(blog: Record<string, any>): number {
+  let score = 0
+  if (blog.metaTitle && String(blog.metaTitle).trim().length > 0) score += 25
+  if (blog.metaDescription && String(blog.metaDescription).trim().length > 0) score += 25
+  if (blog.focusKeyword && String(blog.focusKeyword).trim().length > 0) score += 25
+  if (blog.imageAltText && String(blog.imageAltText).trim().length > 0) score += 25
+  return score
+}
 
 interface BlogMainProps {
   initialBlogs?: Record<string, any>[]
@@ -50,8 +60,10 @@ export default function BlogMain({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [authors, setAuthors] = useState<{ id: number; displayName: string; email?: string }[]>([])
-  const [selectedAuthorId, setSelectedAuthorId] = useState<number | null>(null)
+  const [selectedAuthorId, setSelectedAuthorId] = useState<number | 'all' | null>(null)
   const { loginDetail } = useAppStore()
+  const { listPages, setListPage } = useDashboardListPage()
+  const restoreAttempted = useRef(false)
 
   const isAdmin = (loginDetail as { role?: string } | null)?.role === 'admin'
   const currentUserId = (loginDetail as { id?: number } | null)?.id
@@ -122,7 +134,6 @@ export default function BlogMain({
 
       return { success: true }
     } catch (error: any) {
-      console.error('Error deleting blog:', error)
       const message = error.message || 'Failed to delete blog'
       if (!silent) toast.error('Error', { description: message })
       return { success: false, message }
@@ -146,7 +157,7 @@ export default function BlogMain({
       const url = new URL('/api/dashboard/blog', window.location.origin)
       url.searchParams.set('page', String(page))
       url.searchParams.set('limit', String(limitParam))
-      if (isAdmin && selectedAuthorId != null) {
+      if (isAdmin && selectedAuthorId != null && selectedAuthorId !== 'all') {
         url.searchParams.set('authorId', String(selectedAuthorId))
       }
       const response = await fetch(url.toString(), {
@@ -161,6 +172,7 @@ export default function BlogMain({
         setTotal(res.total || 0)
         setCurrentPage(res.currentPage || page)
         setTotalPages(res.totalPages || 1)
+        setListPage('blog', res.currentPage || page)
       } else {
         Toast({
           isSuccess: false,
@@ -169,7 +181,6 @@ export default function BlogMain({
         })
       }
     } catch (error) {
-      console.error('Error fetching blogs:', error)
       Toast({
         isSuccess: false,
         description: 'Failed to fetch blogs',
@@ -179,6 +190,17 @@ export default function BlogMain({
       setLoading(false)
     }
   }
+
+  // Restore saved list page when returning from detail (e.g. back from /dashboard/blog/[slug])
+  useEffect(() => {
+    if (restoreAttempted.current) return
+    const savedPage = listPages['blog']
+    if (savedPage != null && savedPage >= 1 && savedPage !== initialCurrentPage) {
+      restoreAttempted.current = true
+      const offset = (savedPage - 1) * limit
+      fetchBlogs(limit, offset, false, savedPage)
+    }
+  }, [listPages['blog'], initialCurrentPage, limit])
 
   useEffect(() => {
     if (!loginDetail || !isAdmin) return
@@ -216,10 +238,14 @@ export default function BlogMain({
       tableSubTitle="Explore all your blogs"
       AddProductButton={
         <div className="flex items-center gap-2 flex-wrap">
-          {isAdmin && authors.length > 0 && (
+          {isAdmin && (
             <Select
-              value={selectedAuthorId != null ? String(selectedAuthorId) : undefined}
+              value={selectedAuthorId == null ? undefined : String(selectedAuthorId)}
               onValueChange={(v) => {
+                if (v === 'all') {
+                  setSelectedAuthorId('all')
+                  return
+                }
                 const id = Number(v)
                 if (!Number.isNaN(id)) setSelectedAuthorId(id)
               }}
@@ -228,6 +254,7 @@ export default function BlogMain({
                 <SelectValue placeholder="Select author" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {authors.map((a) => (
                   <SelectItem key={a.id} value={String(a.id)}>
                     {a.displayName || a.email || `User ${a.id}`}
@@ -274,12 +301,16 @@ export default function BlogMain({
       currentPage={currentPage}
       limit={limit}
       totalPages={totalPages}
-      data={blogs.map((blog) => ({
-        id: blog.id,
-        Title: blog.title,
-        Slug: `/${blog.slug}`,
-        Status: blog.status,
-      }))}
+      data={blogs.map((blog) => {
+        const score = blog.seoScore ?? computeSeoScore(blog)
+        return {
+          id: blog.id,
+          Title: blog.title,
+          Status: blog.status,
+          'SEO Score': score,
+          slug: blog.slug,
+        }
+      })}
       fetchDataFunction={fetchBlogs}
       EllipsisComponent={({ value }: { value: Record<string, any> }) => (
         <Popover>

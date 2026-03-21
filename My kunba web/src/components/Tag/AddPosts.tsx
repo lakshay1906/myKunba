@@ -56,7 +56,6 @@ export default function AddPostsTag({ id }: { id: string }) {
             toast.error('Error', { description: error.message || 'Failed to fetch posts.' })
           }
         } catch (error: unknown) {
-          console.error('Error fetching posts:', error)
           toast.error('Error', { description: 'Failed to fetch posts. Please try again.' })
         } finally {
           setLoading(false)
@@ -89,7 +88,6 @@ export default function AddPostsTag({ id }: { id: string }) {
       toast.success('Success', { description: 'Tag posts updated successfully.' })
       router.push(`/dashboard/tag/${id}`)
     } catch (error: unknown) {
-      console.error('Error saving tag posts:', error)
       toast.error('Error', {
         description: error instanceof Error ? error.message : 'Failed to save. Please try again.',
       })

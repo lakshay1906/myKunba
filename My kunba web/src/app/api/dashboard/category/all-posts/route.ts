@@ -100,7 +100,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    console.error('Error fetching all posts:', error)
     return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 })
   }
 }

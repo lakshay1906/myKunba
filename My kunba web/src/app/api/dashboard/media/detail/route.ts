@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json(details)
   } catch (e) {
-    console.error('[media detail]', e)
     return NextResponse.json(
       { message: e instanceof Error ? e.message : 'Failed to get details' },
       { status: 500 },

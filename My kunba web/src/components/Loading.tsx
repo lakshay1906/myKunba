@@ -1,21 +1,17 @@
-export default function Spinner() {
+function LoadingSpinner() {
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <svg
-        className="w-16 h-16 spinner-rotate"
-        viewBox="0 0 66 66"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          className="spinner-path"
-          fill="none"
-          strokeWidth="6"
-          strokeLinecap="round"
-          cx="33"
-          cy="33"
-          r="30"
-        />
-      </svg>
+    <div className="relative flex h-11 w-11">
+      <div className="spinner-dot rotate-0 delay-0"></div>
+      <div className="spinner-dot rotate-45 delay-1"></div>
+      <div className="spinner-dot rotate-90 delay-2"></div>
+      <div className="spinner-dot rotate-135 delay-3"></div>
+      <div className="spinner-dot rotate-180 delay-4"></div>
+      <div className="spinner-dot rotate-225 delay-5"></div>
+      <div className="spinner-dot rotate-270 delay-6"></div>
+      <div className="spinner-dot rotate-315 delay-7"></div>
     </div>
   )
 }
+
+export default LoadingSpinner
+export { LoadingSpinner as Loading }

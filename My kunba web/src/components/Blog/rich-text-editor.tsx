@@ -21,12 +21,9 @@ import FontFamily from '@tiptap/extension-font-family'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Bold,
   Italic,
@@ -50,10 +47,68 @@ import {
   SubscriptIcon,
   SuperscriptIcon,
 } from 'lucide-react'
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { UploadResponse } from '@/lib/types'
 import UnifiedImageUpload from '@/components/image-uploader/unified-image-upload'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu'
+
+export type ContentImageOption = { src: string; alt?: string }
+
+/** Get images currently in editor content (for translation mode). */
+function getImgsInDoc(editor: {
+  state: {
+    doc: {
+      descendants: (
+        f: (node: { type: { name: string }; attrs?: { src?: string; alt?: string } }) => void,
+      ) => void
+    }
+  }
+}): ContentImageOption[] {
+  const out: ContentImageOption[] = []
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === 'image' && node.attrs?.src) {
+      out.push({ src: node.attrs.src, alt: node.attrs.alt })
+    }
+  })
+  return out
+}
+
+/** Get image src/alt from HTML string. */
+function getImgsFromHtml(html: string): ContentImageOption[] {
+  const out: ContentImageOption[] = []
+  const imgRe = /<img[^>]*>/gi
+  let imgMatch
+  while ((imgMatch = imgRe.exec(html)) !== null) {
+    const tag = imgMatch[0]
+    const srcMatch = tag.match(/\ssrc=["']([^"']+)["']/i)
+    const altMatch = tag.match(/\salt=["']([^"']*)["']/i)
+    if (srcMatch) out.push({ src: srcMatch[1], alt: altMatch?.[1] })
+  }
+  return out
+}
+
+/** Remaining = existing minus one instance per image currently in content (matched by src). */
+function computeRemaining(
+  existing: ContentImageOption[],
+  inContent: ContentImageOption[],
+): ContentImageOption[] {
+  const used = inContent.map((i) => i.src)
+  return existing.filter((img) => {
+    const idx = used.indexOf(img.src)
+    if (idx >= 0) {
+      used.splice(idx, 1)
+      return false
+    }
+    return true
+  })
+}
 
 interface RichTextEditorProps {
   value?: string
@@ -61,6 +116,10 @@ interface RichTextEditorProps {
   placeholder?: string
   height?: string
   onImageUpload?: (imageUrl: string, alt: string) => Promise<string> // Returns uploaded URL
+  /** When true, image button shows dropdown of existingContentImages only (no upload). Used for translations. */
+  translationMode?: boolean
+  /** Images from the original post content (excl. cover). Only used when translationMode is true. */
+  existingContentImages?: ContentImageOption[]
 }
 
 export default function RichTextEditor({
@@ -69,12 +128,17 @@ export default function RichTextEditor({
   placeholder = 'Start writing...',
   height = '400px',
   onImageUpload,
+  translationMode = false,
+  existingContentImages = [],
 }: RichTextEditorProps) {
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showHighlightPicker, setShowHighlightPicker] = useState(false)
   const [currentHeading, setCurrentHeading] = useState('0')
   const [currentFontFamily, setCurrentFontFamily] = useState('unset')
   const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showTableDialog, setShowTableDialog] = useState(false)
+  const [tableRows, setTableRows] = useState(3)
+  const [tableCols, setTableCols] = useState(3)
   const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
     file: null,
     imageUrl: '',
@@ -87,6 +151,18 @@ export default function RichTextEditor({
     isOpen: false,
     coverImage: null,
   })
+  // In translation mode: list of content images not yet inserted (returned to dropdown when removed from content)
+  const [remainingContentImages, setRemainingContentImages] = useState<ContentImageOption[]>([])
+  const existingContentImagesRef = useRef(existingContentImages)
+  existingContentImagesRef.current = existingContentImages
+
+  // Sync remaining images from current value (initial load or when post/content changes)
+  useEffect(() => {
+    if (translationMode) {
+      const inValue = getImgsFromHtml(value)
+      setRemainingContentImages(computeRemaining(existingContentImages, inValue))
+    }
+  }, [translationMode, existingContentImages, value])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -133,6 +209,11 @@ export default function RichTextEditor({
     content: value,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML())
+      const existing = existingContentImagesRef.current
+      if (translationMode && existing.length > 0) {
+        const inDoc = getImgsInDoc(editor)
+        setRemainingContentImages(computeRemaining(existing, inDoc))
+      }
     },
     onSelectionUpdate: ({ editor }) => {
       // Update toolbar state based on current selection
@@ -178,11 +259,6 @@ export default function RichTextEditor({
       // Only set content if it's different from current content
       const currentContent = editor.getHTML()
       if (currentContent !== value) {
-        console.log('Setting editor content from value prop:', {
-          value: value?.substring(0, 100) + '...',
-          currentContent: currentContent?.substring(0, 100) + '...',
-          isDifferent: currentContent !== value,
-        })
         editor.commands.setContent(value)
       }
     }
@@ -261,7 +337,11 @@ export default function RichTextEditor({
       // Insert image with alt text into editor at current cursor position
       // imageSrc is already a data URL (for file uploads) or external URL (for URL uploads)
       // Will be uploaded to Cloudflare R2 only on form submission
-      editor.chain().focus().setImage({ src: imageSrc, alt: alt || '' }).run()
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: imageSrc, alt: alt || '' })
+        .run()
 
       toast.success('Image added', {
         description: 'Image added to content. It will be uploaded when you submit the blog.',
@@ -274,7 +354,7 @@ export default function RichTextEditor({
     [editor, clearImageUpload],
   )
 
-  // Open image upload dialog
+  // Open image upload dialog (normal mode only)
   const addImage = useCallback(() => {
     setShowImageDialog(true)
     setImageUploadData({
@@ -291,11 +371,36 @@ export default function RichTextEditor({
     })
   }, [])
 
+  // Translation mode: insert content image at cursor (remaining list is updated in onUpdate)
+  const insertContentImageAt = useCallback(
+    (index: number) => {
+      if (!editor) return
+      const img = remainingContentImages[index]
+      if (!img) return
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: img.src, alt: img.alt || '' })
+        .run()
+      toast.success('Image inserted')
+    },
+    [editor, remainingContentImages],
+  )
+
+  const openTableDialog = useCallback(() => {
+    setTableRows(3)
+    setTableCols(3)
+    setShowTableDialog(true)
+  }, [])
+
   const insertTable = useCallback(() => {
-    if (editor) {
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    if (editor && tableRows >= 1 && tableCols >= 1) {
+      const rows = Math.min(Math.max(1, tableRows), 20)
+      const cols = Math.min(Math.max(1, tableCols), 10)
+      editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+      setShowTableDialog(false)
     }
-  }, [editor])
+  }, [editor, tableRows, tableCols])
 
   const handleHeadingChange = (value: string) => {
     if (!editor) return
@@ -331,7 +436,7 @@ export default function RichTextEditor({
   return (
     <Card className="w-full">
       {/* Fixed Toolbar */}
-      <div className="sticky top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
+      <div className="sticky top-[7.4rem] sm:top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
         {/* Undo/Redo */}
         <Button
           type="button"
@@ -604,10 +709,48 @@ export default function RichTextEditor({
         <Button type="button" variant="ghost" size="sm" onClick={addLink}>
           <LinkIcon className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={addImage}>
-          <ImageIcon className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
+        {translationMode ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="sm">
+                <ImageIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="max-h-[280px] overflow-y-auto min-w-[200px]"
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Insert image from post content
+              </DropdownMenuLabel>
+              {remainingContentImages.length === 0 ? (
+                <DropdownMenuItem disabled className="text-muted-foreground">
+                  No images left (or none in this post)
+                </DropdownMenuItem>
+              ) : (
+                remainingContentImages.map((img, index) => (
+                  <DropdownMenuItem
+                    key={`${img.src}-${index}`}
+                    onClick={() => insertContentImageAt(index)}
+                    className="flex items-center gap-2 py-2"
+                  >
+                    <img
+                      src={img.src}
+                      alt={img.alt || ''}
+                      className="h-8 w-8 object-cover rounded border shrink-0"
+                    />
+                    <span className="truncate">{img.alt || `Image ${index + 1}`}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" onClick={addImage}>
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        )}
+        <Button type="button" variant="ghost" size="sm" onClick={openTableDialog}>
           <TableIcon className="h-4 w-4" />
         </Button>
       </div>
@@ -625,16 +768,57 @@ export default function RichTextEditor({
         )}
       </div>
 
+      {/* Table Dimensions Dialog */}
+      <Dialog open={showTableDialog} onOpenChange={setShowTableDialog}>
+        <DialogContent className="sm:max-w-[340px]" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertTable(); } }}>
+          <DialogHeader>
+            <DialogTitle>Insert Table</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="table-rows">Rows</Label>
+              <Input
+                id="table-rows"
+                type="number"
+                min={1}
+                max={20}
+                value={tableRows}
+                onChange={(e) => setTableRows(Math.min(20, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="table-cols">Columns</Label>
+              <Input
+                id="table-cols"
+                type="number"
+                min={1}
+                max={10}
+                value={tableCols}
+                onChange={(e) => setTableCols(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowTableDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={insertTable}>
+              Insert Table
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Image Upload Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent 
+        <DialogContent
           className="sm:max-w-[500px] max-h-[calc(100vh-20px)] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader>
             <DialogTitle>Upload Image</DialogTitle>
           </DialogHeader>
-          <div 
+          <div
             className="overflow-y-auto rich-text-image-dialog"
             onClick={(e) => e.stopPropagation()}
           >

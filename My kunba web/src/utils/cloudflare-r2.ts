@@ -7,6 +7,9 @@ import {
 } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 
+/** Max size in bytes for WebP output; if larger after conversion, we reduce quality/size until under this. */
+const MAX_WEBP_SIZE_BYTES = 500 * 1024 // 500 KB
+
 // Validate required environment variables
 function validateEnvVars() {
   const required = [
@@ -106,12 +109,14 @@ export async function getMediaDetails(key: string): Promise<MediaDetails | null>
  * @param buffer - Image buffer to convert
  * @param originalContentType - Original MIME type of the image
  * @param originalFileName - Original filename
+ * @param maxSizeBytes - Max size in bytes for output (default 500 KB). Used to compress until under limit.
  * @returns Object containing the converted buffer, new filename, and content type
  */
 export async function convertToWebP(
   buffer: Buffer,
   originalContentType: string,
   originalFileName: string,
+  maxSizeBytes: number = MAX_WEBP_SIZE_BYTES,
 ): Promise<{ buffer: Buffer; fileName: string; contentType: string }> {
   try {
     // Skip conversion for SVG files - they are vector graphics and cannot be converted to WebP
@@ -160,7 +165,6 @@ export async function convertToWebP(
     const supportedFormats = ['jpeg', 'jpg', 'png', 'gif', 'tiff', 'bmp', 'avif', 'heic']
     if (format && !supportedFormats.includes(format.toLowerCase())) {
       // If format is not in supported list, return original
-      console.warn(`Unsupported format for WebP conversion: ${format}, using original image`)
       return {
         buffer,
         fileName: originalFileName,
@@ -168,9 +172,30 @@ export async function convertToWebP(
       }
     }
 
-    // Convert to WebP with 100% quality
-    // Using quality: 100 for maximum quality preservation
-    const webpBuffer = await sharp(buffer).webp({ quality: 100, effort: 6 }).toBuffer()
+    // Convert to WebP (start with high quality)
+    let webpBuffer = await sharp(buffer).webp({ quality: 100, effort: 6 }).toBuffer()
+
+    // If result is over max size, reduce quality then dimensions until under limit
+    if (webpBuffer.length > maxSizeBytes) {
+      const width = metadata.width ?? 1920
+      const height = metadata.height ?? 1080
+      const qualities = [85, 70, 55, 40, 30, 20]
+      for (const q of qualities) {
+        webpBuffer = await sharp(buffer).webp({ quality: q, effort: 6 }).toBuffer()
+        if (webpBuffer.length <= maxSizeBytes) break
+      }
+      if (webpBuffer.length > maxSizeBytes) {
+        for (let scale = 0.9; scale >= 0.3; scale -= 0.1) {
+          const w = Math.round(width * scale)
+          const h = Math.round(height * scale)
+          webpBuffer = await sharp(buffer)
+            .resize(w, h, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 30, effort: 6 })
+            .toBuffer()
+          if (webpBuffer.length <= maxSizeBytes) break
+        }
+      }
+    }
 
     // Update filename to have .webp extension
     const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '')
@@ -184,7 +209,6 @@ export async function convertToWebP(
   } catch (error) {
     // If conversion fails, return original image
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.warn('Failed to convert image to WebP, using original:', errorMessage)
     return {
       buffer,
       fileName: originalFileName,
@@ -198,12 +222,14 @@ export async function convertToWebP(
  * @param buffer - File buffer to upload
  * @param fileName - Name of the file
  * @param contentType - MIME type of the file
+ * @param keyPrefix - Optional prefix for the object key (e.g. 'profiles/' for profile images)
  * @returns The public URL of the uploaded file
  */
 export async function uploadToCloudflareR2(
   buffer: Buffer,
   fileName: string,
   contentType: string,
+  keyPrefix?: string,
 ): Promise<string> {
   try {
     validateEnvVars()
@@ -214,6 +240,7 @@ export async function uploadToCloudflareR2(
     const timestamp = Date.now()
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
     const uniqueFileName = `${timestamp}-${sanitizedFileName}`
+    const key = keyPrefix ? `${keyPrefix.replace(/\/$/, '')}/${uniqueFileName}` : uniqueFileName
 
     // Get S3 client
     const client = getS3Client()
@@ -221,7 +248,7 @@ export async function uploadToCloudflareR2(
     // Upload to R2
     const command = new PutObjectCommand({
       Bucket: bucketName,
-      Key: uniqueFileName,
+      Key: key,
       Body: buffer,
       ContentType: contentType,
     })
@@ -230,12 +257,11 @@ export async function uploadToCloudflareR2(
 
     // Construct the public URL
     // Cloudflare R2 public URL format:
-    // - Custom domain: https://<your-domain>/<file-name>
-    // - R2.dev subdomain: https://pub-xxxxx.r2.dev/<file-name> (if configured)
-    // Note: You need to configure a public bucket or custom domain in Cloudflare R2
+    // - Custom domain: https://<your-domain>/<key>
+    // - R2.dev subdomain: https://pub-xxxxx.r2.dev/<key> (if configured)
     const publicUrl = process.env.CLOUDFLARE_PUBLIC_URL
-      ? `${process.env.CLOUDFLARE_PUBLIC_URL.replace(/\/$/, '')}/${uniqueFileName}`
-      : `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${uniqueFileName}`
+      ? `${process.env.CLOUDFLARE_PUBLIC_URL.replace(/\/$/, '')}/${key}`
+      : `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`
 
     return publicUrl
   } catch (error) {

@@ -10,7 +10,7 @@ import { revalidatePath, revalidateTag as nextRevalidateTag } from 'next/cache'
 
 /** On-demand invalidation for all SSG pages that use fetch(..., { next: { tags: ['posts'] } }). Call after create/update/delete of any post. */
 export function revalidatePostsTag() {
-  nextRevalidateTag('posts')
+  nextRevalidateTag('posts', 'max')
 }
 
 export function revalidateBlogPost(slug: string) {

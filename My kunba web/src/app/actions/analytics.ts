@@ -3,10 +3,15 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 
 export type AnalyticsDashboardData = {
-  totalViews: number
+  dateRange: { startDate: string; endDate: string }
   activeUsers: number
-  topBlogs: { pageTitle: string; views: number }[]
-  trafficSources: { name: string; views: number }[]
+  sessions: number
+  screenPageViews: number
+  engagementRate: number // 0–1
+  averageSessionDuration: number // seconds
+  dailyTrend: { date: string; views: number }[]
+  topPages: { pageTitle: string; views: number }[]
+  trafficChannels: { name: string; sessions: number }[]
   countries: { name: string; views: number }[]
 }
 
@@ -24,19 +29,44 @@ function getDateRangeLast30Days(): { startDate: string; endDate: string } {
   }
 }
 
+/**
+ * Normalize GA private key from env. Supports:
+ * - Escaped newlines in .env: "-----BEGIN ... KEY-----\nMIIE...\n-----END ... KEY-----"
+ * - Literal newlines (e.g. from a file or multiline env)
+ * - Base64-encoded key (GA_PRIVATE_KEY_BASE64) to avoid newline/escaping issues on Linux/EC2
+ */
+function getPrivateKey(): string | null {
+  const base64 = process.env.GA_PRIVATE_KEY_BASE64
+  if (base64?.trim()) {
+    try {
+      return Buffer.from(base64.trim(), 'base64').toString('utf8')
+    } catch {
+      return null
+    }
+  }
+  const raw = process.env.GA_PRIVATE_KEY
+  if (!raw?.trim()) return null
+  // Restore newlines: escaped \n (from .env) and fix Windows-style line endings
+  const key = raw
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+  return key.includes('BEGIN') && key.includes('END') ? key : null
+}
+
 function createClient(): BetaAnalyticsDataClient | null {
   const propertyId = process.env.GA_PROPERTY_ID
   const clientEmail = process.env.GA_CLIENT_EMAIL
-  const privateKey = process.env.GA_PRIVATE_KEY
+  const key = getPrivateKey()
 
-  if (!propertyId || !clientEmail || !privateKey) {
+  if (!propertyId || !clientEmail || !key) {
     return null
   }
 
-  const key = privateKey.replace(/\\n/g, '\n')
   return new BetaAnalyticsDataClient({
     credentials: {
-      client_email: clientEmail,
+      client_email: clientEmail.trim(),
       private_key: key,
     },
   })
@@ -61,14 +91,24 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
   const { startDate, endDate } = getDateRangeLast30Days()
 
   try {
-    const [totalsRes, topPagesRes, sourcesRes, countriesRes] = await Promise.all([
+    const rawResults = await Promise.all([
       client.runReport({
         property,
         dateRanges: [{ startDate, endDate }],
         metrics: [
           { name: 'activeUsers' },
+          { name: 'sessions' },
           { name: 'screenPageViews' },
+          { name: 'engagementRate' },
+          { name: 'averageSessionDuration' },
         ],
+      }),
+      client.runReport({
+        property,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'date' }],
+        metrics: [{ name: 'screenPageViews' }],
+        orderBys: [{ dimension: { dimensionName: 'date' } }],
       }),
       client.runReport({
         property,
@@ -81,9 +121,9 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
       client.runReport({
         property,
         dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: 'sessionSource' }],
-        metrics: [{ name: 'screenPageViews' }],
-        orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        metrics: [{ name: 'sessions' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 15,
       }),
       client.runReport({
@@ -96,21 +136,43 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
       }),
     ])
 
-    const totalsRow = totalsRes.totals?.[0] ?? totalsRes.rows?.[0]
-    const totalViews = Number(totalsRow?.metricValues?.[1]?.value ?? 0)
-    const activeUsers = Number(totalsRow?.metricValues?.[0]?.value ?? 0)
+    type ReportRow = { dimensionValues?: { value?: string }[]; metricValues?: { value?: string }[] }
+    type ReportRes = { metricHeaders?: { name?: string }[]; totals?: ReportRow[]; rows?: ReportRow[] }
+    const unwrap = (r: unknown): ReportRes => (Array.isArray(r) ? (r[0] as ReportRes) : (r as ReportRes))
+    const totalsRes = unwrap(rawResults[0])
+    const dailyRes = unwrap(rawResults[1])
+    const topPagesRes = unwrap(rawResults[2])
+    const channelsRes = unwrap(rawResults[3])
+    const countriesRes = unwrap(rawResults[4])
 
-    const topBlogs = (topPagesRes.rows ?? []).map((row) => ({
+    const metricIndex = (res: ReportRes, name: string) =>
+      res.metricHeaders?.findIndex((h: { name?: string }) => h.name === name) ?? -1
+    const getMetric = (row: ReportRow | null | undefined, res: ReportRes, name: string) =>
+      Number(row?.metricValues?.[metricIndex(res, name)]?.value ?? 0)
+
+    const totalsRow = totalsRes.totals?.[0] ?? totalsRes.rows?.[0]
+    const activeUsers = getMetric(totalsRow, totalsRes, 'activeUsers')
+    const sessions = getMetric(totalsRow, totalsRes, 'sessions')
+    const screenPageViews = getMetric(totalsRow, totalsRes, 'screenPageViews')
+    const engagementRate = getMetric(totalsRow, totalsRes, 'engagementRate')
+    const averageSessionDuration = getMetric(totalsRow, totalsRes, 'averageSessionDuration')
+
+    const dailyTrend = (dailyRes.rows ?? []).map((row: ReportRow) => ({
+      date: row.dimensionValues?.[0]?.value ?? '',
+      views: Number(row.metricValues?.[0]?.value ?? 0),
+    }))
+
+    const topPages = (topPagesRes.rows ?? []).map((row: ReportRow) => ({
       pageTitle: row.dimensionValues?.[0]?.value ?? '(not set)',
       views: Number(row.metricValues?.[0]?.value ?? 0),
     }))
 
-    const trafficSources = (sourcesRes.rows ?? []).map((row) => ({
+    const trafficChannels = (channelsRes.rows ?? []).map((row: ReportRow) => ({
       name: row.dimensionValues?.[0]?.value ?? '(direct)',
-      views: Number(row.metricValues?.[0]?.value ?? 0),
+      sessions: Number(row.metricValues?.[0]?.value ?? 0),
     }))
 
-    const countries = (countriesRes.rows ?? []).map((row) => ({
+    const countries = (countriesRes.rows ?? []).map((row: ReportRow) => ({
       name: row.dimensionValues?.[0]?.value ?? '(not set)',
       views: Number(row.metricValues?.[0]?.value ?? 0),
     }))
@@ -118,10 +180,15 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsResult> {
     return {
       ok: true,
       data: {
-        totalViews: Number(totalViews),
-        activeUsers: Number(activeUsers),
-        topBlogs,
-        trafficSources,
+        dateRange: { startDate, endDate },
+        activeUsers,
+        sessions,
+        screenPageViews,
+        engagementRate,
+        averageSessionDuration,
+        dailyTrend,
+        topPages,
+        trafficChannels,
         countries,
       },
     }

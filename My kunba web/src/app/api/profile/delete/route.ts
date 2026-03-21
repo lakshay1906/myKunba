@@ -80,7 +80,6 @@ export async function DELETE(req: NextRequest) {
       { status: 200 },
     )
   } catch (e: any) {
-    console.error('Profile delete error:', e)
     return NextResponse.json(
       { message: e.message || 'Failed to delete profile' },
       { status: 500 },

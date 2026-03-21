@@ -18,6 +18,7 @@ import { useAppStore } from '@/lib/context/store'
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import Loading from '@/components/Loading'
 
 type Notification = {
   id: number
@@ -81,7 +82,6 @@ export function NotificationsSheet() {
         setUnreadCount(unread)
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error)
       toast.error('Error', {
         description: 'Failed to load notifications',
       })
@@ -112,7 +112,6 @@ export function NotificationsSheet() {
         setUnreadCount((prev) => Math.max(0, prev - 1))
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
     }
   }
 
@@ -136,7 +135,6 @@ export function NotificationsSheet() {
         toast.success('All notifications marked as read')
       }
     } catch (error) {
-      console.error('Error marking all as read:', error)
       toast.error('Error', {
         description: 'Failed to mark all as read',
       })
@@ -215,7 +213,7 @@ export function NotificationsSheet() {
         <ScrollArea className="h-[calc(100vh-200px)]">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-muted-foreground">Loading notifications...</div>
+              <Loading />
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -234,9 +232,9 @@ export function NotificationsSheet() {
                 return (
                   <div
                     key={notification.id}
-                    className={`p-4 rounded-lg border transition-colors ${
+                    className={`cursor-pointer p-4 rounded-lg border transition-colors ${
                       notification.read ? 'bg-background' : 'bg-muted/50 border-primary/20'
-                    } ${postLink ? 'cursor-pointer hover:bg-muted' : ''}`}
+                    } ${postLink ? 'hover:bg-muted' : ''}`}
                     onClick={() => {
                       if (!notification.read) {
                         markAsRead(notification.id)
@@ -270,7 +268,7 @@ export function NotificationsSheet() {
                         {postLink && (
                           <Link
                             href={postLink}
-                            className="text-xs text-primary hover:underline mt-2 inline-block"
+                            className="cursor-pointer text-xs text-primary hover:underline mt-2 inline-block"
                             onClick={(e) => {
                               e.stopPropagation()
                               setOpen(false)

@@ -133,11 +133,6 @@ export async function POST(request: NextRequest) {
     if (validationError) {
       // If URL has image extension, be more lenient and just warn
       if (hasImageExtension) {
-        console.warn(
-          'Image validation warning:',
-          validationError,
-          '- Allowing due to image extension',
-        )
         // Continue anyway if it has image extension
       } else {
         return NextResponse.json(
@@ -162,7 +157,6 @@ export async function POST(request: NextRequest) {
       message: 'Image URL validated successfully',
     })
   } catch (error) {
-    console.error('Upload from URL error:', error)
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to validate image URL',

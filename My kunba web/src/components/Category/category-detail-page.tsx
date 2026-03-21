@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import type { CategoryResponse } from '@/lib/types'
+import Loading from '@/components/Loading'
 
 export default function CategoryDetailPage({ id, response }: { id: string; response: CategoryResponse | null }) {
   if (!response || !response.id) {
@@ -98,7 +99,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
         )
       }
     } catch (error) {
-      console.error('Error fetching posts:', error)
     } finally {
       setLoading(false)
     }
@@ -148,7 +148,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
           ? null
           : { id: Number(form.parentId), name: parentOptions.find((c) => c.id === Number(form.parentId))?.name }
     } catch (e) {
-      console.error(e)
     } finally {
       setSaveLoading(false)
     }
@@ -304,6 +303,6 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
       />
     </div>
   ) : (
-    <p>Loading</p>
+    <Loading />
   )
 }

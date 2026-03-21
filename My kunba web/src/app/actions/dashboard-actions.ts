@@ -50,7 +50,6 @@ async function getAuthenticatedUser() {
 
     return user.docs[0]
   } catch (error) {
-    console.error('Error getting authenticated user:', error)
     throw error
   }
 }
@@ -80,6 +79,7 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
         publishDate: true,
         createdAt: true,
         updatedAt: true,
+        seoScore: true,
       },
       limit,
       page,
@@ -95,7 +95,6 @@ export async function fetchDashboardBlogs(page: number = 1, limit: number = 10) 
       limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard blogs:', error)
     throw new Error(error.message || 'Failed to fetch blogs')
   }
 }
@@ -169,7 +168,6 @@ export async function fetchDashboardBlogBySlug(slug: string) {
     }
     return normalizePostJsonFields(withJson)
   } catch (error: any) {
-    console.error('Error fetching dashboard blog by slug:', error)
     throw error
   }
 }
@@ -202,7 +200,6 @@ export async function fetchDashboardCategories(page: number = 1, limit: number =
       limit: data.limit ?? limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard categories:', error)
     throw new Error(error.message || 'Failed to fetch categories')
   }
 }
@@ -235,8 +232,70 @@ export async function fetchDashboardTags(page: number = 1, limit: number = 10) {
       limit: data.limit ?? limit,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard tags:', error)
     throw new Error(error.message || 'Failed to fetch tags')
+  }
+}
+
+/**
+ * Fetch post translations for dashboard (author sees own posts’ translations, admin sees all)
+ */
+const AUTH_ERROR_MESSAGE = 'DASHBOARD_AUTH_REQUIRED'
+
+export async function fetchDashboardPostTranslations(page: number = 1, limit: number = 20, postId?: number) {
+  try {
+    const token = (await cookies()).get('access_token')?.value
+    if (!token) throw new Error(AUTH_ERROR_MESSAGE)
+    const url = new URL(`${getServerApiUrl()}/api/dashboard/post-translations`)
+    url.searchParams.set('page', String(page))
+    url.searchParams.set('limit', String(limit))
+    if (postId != null) url.searchParams.set('postId', String(postId))
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(AUTH_ERROR_MESSAGE)
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || 'Failed to fetch translations')
+    }
+    return res.json()
+  } catch (error: any) {
+    if (error?.message === AUTH_ERROR_MESSAGE) throw error
+    throw new Error(error.message || 'Failed to fetch translations')
+  }
+}
+
+/**
+ * Fetch posts list for translation dropdown (current user’s posts or all for admin)
+ */
+export async function fetchDashboardPostsForTranslations() {
+  try {
+    const user = await getAuthenticatedUser()
+    const isAdmin = user.role === 'admin'
+    const blog = await payload.find({
+      collection: 'posts',
+      where: {
+        deleted_at: { equals: null },
+        ...(isAdmin ? {} : { author: { equals: user.id } }),
+      },
+      select: { id: true, title: true, slug: true },
+      limit: 5000,
+      sort: '-updatedAt',
+      depth: 0,
+    })
+    return {
+      docs: blog.docs.map((d) => ({
+        id: (d as { id: number }).id,
+        title: (d as { title?: string | null }).title ?? undefined,
+        slug: (d as { slug?: string | null }).slug ?? undefined,
+      })),
+    }
+  } catch (error: any) {
+    if (error?.message?.includes('token') || error?.message?.includes('User not found') || error?.message === 'No authentication token found') {
+      const authError = new Error(AUTH_ERROR_MESSAGE)
+      ;(authError as any).cause = error
+      throw authError
+    }
+    throw new Error(error.message || 'Failed to fetch posts')
   }
 }
 
@@ -278,7 +337,6 @@ export async function fetchCategoryPosts(categoryId: number, page: number = 1, l
       limit,
     }
   } catch (error: any) {
-    console.error('Error fetching category posts:', error)
     throw new Error(error.message || 'Failed to fetch category posts')
   }
 }

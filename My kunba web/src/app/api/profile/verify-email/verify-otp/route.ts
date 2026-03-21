@@ -70,7 +70,6 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (e: any) {
-    console.error('Verify OTP error:', e)
     return NextResponse.json(
       { message: e?.message || 'Verification failed' },
       { status: 500 },

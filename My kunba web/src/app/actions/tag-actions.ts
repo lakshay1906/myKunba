@@ -25,7 +25,6 @@ export async function createTag(name: string) {
 
     return await response.json()
   } catch (error) {
-    console.error('Error in createTag:', error)
     throw error
   }
 }
@@ -52,10 +51,8 @@ export async function fetchAllTags() {
         ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
           (error as NodeJS.ErrnoException).code === 'ENOTFOUND'))
     if (isNetworkOrUrlError) {
-      console.warn('fetchAllTags: API unavailable (e.g. during build), returning empty list')
       return { docs: [] }
     }
-    console.error('Error in fetchAllTags:', error)
     throw error
   }
 }
@@ -87,7 +84,6 @@ export async function fetchTagData(id: number) {
 
     return data
   } catch (error: unknown) {
-    console.error('Error fetching tag data:', getErrorMessage(error))
     throw error
   }
 }

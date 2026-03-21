@@ -200,7 +200,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('Error fetching comments:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
@@ -208,11 +207,17 @@ export async function GET(req: NextRequest) {
 // POST - Create a new comment
 export async function POST(req: NextRequest) {
   try {
-    const { postId, content, parentId } = await req.json()
+    const { postId, content, parentId, language: bodyLanguage } = await req.json()
 
     if (!postId || !content) {
       return NextResponse.json({ message: 'Post ID and content are required' }, { status: 400 })
     }
+
+    const allowedLocales = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
+    const language =
+      bodyLanguage && allowedLocales.includes(String(bodyLanguage)) ? String(bodyLanguage) : req.cookies.get('locale')?.value && allowedLocales.includes(req.cookies.get('locale')!.value)
+        ? req.cookies.get('locale')!.value
+        : 'en'
 
     // Get token from cookie or header
     const token =
@@ -269,15 +274,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Post not found' }, { status: 404 })
     }
 
-    // Create comment
+    // Create comment (language stored for display/filtering; content stays in original)
     const comment = await payload.create({
       collection: 'comments',
       data: {
         post: Number(postId),
         user: user.id,
         content: content.trim(),
-        status: 'approved', // Auto-approve for now, can be changed to 'pending' for moderation
+        status: 'approved',
         ...(parentId && { parent: Number(parentId) }),
+        language,
       },
     })
 
@@ -311,7 +317,6 @@ export async function POST(req: NextRequest) {
         })
       } catch (notificationError) {
         // Log error but don't fail the comment creation
-        console.error('Error creating notification:', notificationError)
       }
     }
 
@@ -331,7 +336,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ comment: commentWithRelations }, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -433,7 +437,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ comment: commentWithRelations }, { status: 200 })
   } catch (error: any) {
-    console.error('Error updating comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }
@@ -546,7 +549,6 @@ export async function DELETE(req: NextRequest) {
     // Regular users can only delete their own comments (already checked above)
     return NextResponse.json({ message: 'You can only delete your own comments' }, { status: 403 })
   } catch (error: any) {
-    console.error('Error deleting comment:', error)
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })
     }

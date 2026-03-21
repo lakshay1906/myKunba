@@ -116,12 +116,24 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
         const url = (elementNode as any).url || '#'
         return `<a href="${url}">${content}</a>`
 
+      case 'table':
+        return `<table><tbody>${content}</tbody></table>`
+
+      case 'tableRow':
+        return `<tr>${content}</tr>`
+
+      case 'tableHeader':
+        return `<th>${content}</th>`
+
+      case 'tableCell':
+        return `<td>${content}</td>`
+
       case 'image':
         const imageUrl = (elementNode as any).url || ''
         const imageAlt = (elementNode as any).alt || ''
         const imageWidth = (elementNode as any).width
         const imageHeight = (elementNode as any).height
-        
+
         if (imageUrl) {
           let imgTag = `<img src="${imageUrl}" alt="${imageAlt.replace(/"/g, '&quot;')}"`
           if (imageWidth) imgTag += ` width="${imageWidth}"`

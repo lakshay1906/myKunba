@@ -2,17 +2,17 @@
 
 import * as React from 'react'
 import {
-  ArrowUpCircleIcon,
   CameraIcon,
+  DatabaseZap,
   FileCodeIcon,
   FileTextIcon,
   ImageIcon,
-  LayoutDashboardIcon,
   MessageCircleHeart,
   Reply,
   Shapes,
   Tag,
   Trash2,
+  Languages,
 } from 'lucide-react'
 import { NavDocuments } from '@/components/sidebar/nav-documents'
 import { NavMain } from '@/components/sidebar/nav-main'
@@ -29,12 +29,14 @@ import {
 } from '@/components/ui/sidebar'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/lib/context/store'
+import Image from 'next/image'
+import Link from 'next/link'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { loginDetail } = useAppStore()
   const [userData, setUserData] = useState({
-    name: 'Lakshay Bhati',
-    email: 'll3162@srmist.edu.in',
+    name: 'Demo User',
+    email: 'demo_user@gmail.com',
     avatar: 'https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png',
   })
 
@@ -55,21 +57,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const data = {
     navMain: [
+      ...(loginDetail?.role === 'admin'
+        ? [{ title: 'CMS Dashboard', url: '/admin', icon: DatabaseZap }]
+        : []),
       {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutDashboardIcon,
-      },
-      {
-        title: 'Back to Frontend',
+        title: 'Back to UserFront',
         url: '/',
         icon: Reply,
       },
-      // {
-      //   title: 'Team',
-      //   url: '#',
-      //   icon: UsersIcon,
-      // },
     ],
     navClouds: [
       {
@@ -133,6 +128,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: MessageCircleHeart,
       },
       {
+        name: 'Translations',
+        url: '/dashboard/translations',
+        icon: Languages,
+      },
+      {
         name: 'Category',
         url: '/dashboard/category',
         icon: Shapes,
@@ -153,10 +153,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="">
-              <a href="#">
-                <ArrowUpCircleIcon className="h-5 w-5" />
+              <Link href="#">
+                <Image src="/logo.svg" alt="My Kunba" width={32} height={32} />
                 <span className="text-base font-semibold">My Kunba</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

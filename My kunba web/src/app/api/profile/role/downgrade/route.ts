@@ -125,7 +125,6 @@ export async function POST(req: NextRequest) {
           : 'You are now a normal user.',
     })
   } catch (e: any) {
-    console.error('Role downgrade error:', e)
     return NextResponse.json(
       { message: e?.message || 'Downgrade failed' },
       { status: 500 },

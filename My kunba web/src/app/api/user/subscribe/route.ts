@@ -64,11 +64,6 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         emailError = err
-        const errObj = err as { message?: string; code?: string }
-        console.error('Error sending subscription email:', {
-          message: errObj?.message,
-          code: errObj?.code,
-        })
         // Don't fail the request if email fails - subscription is still created
       }
 
@@ -105,11 +100,6 @@ export async function POST(req: NextRequest) {
       })
     } catch (err) {
       emailError = err
-      const errObj = err as { message?: string; code?: string }
-      console.error('Error sending subscription email:', {
-        message: errObj?.message,
-        code: errObj?.code,
-      })
       // Don't fail the request if email fails - subscription is still created
     }
 
@@ -126,18 +116,6 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (error: any) {
-    // Enhanced error logging for debugging
-    console.error('Error in subscription API:', {
-      message: error?.message,
-      name: error?.name,
-      stack: error?.stack,
-      data: error?.data,
-      code: error?.code,
-      status: error?.status,
-      errors: error?.errors,
-      fullError: error,
-    })
-
     // Handle unique constraint violation (email already exists)
     if (error?.data?.name === 'MongoError' && error?.data?.code === 11000) {
       return NextResponse.json(
@@ -160,9 +138,6 @@ export async function POST(req: NextRequest) {
       error?.message?.includes('not found') ||
       error?.message?.includes('does not exist')
     ) {
-      console.error(
-        'Subscription collection might not exist. Please ensure the database migration has been run.',
-      )
       return NextResponse.json(
         {
           message: 'Subscription service is not available. Please contact support.',
@@ -178,7 +153,6 @@ export async function POST(req: NextRequest) {
       error?.message?.includes('timeout') ||
       error?.message?.includes('ECONNREFUSED')
     ) {
-      console.error('Database connection error:', error.message)
       return NextResponse.json(
         { message: 'Database connection failed. Please try again later.' },
         { status: 503 },

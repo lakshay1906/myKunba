@@ -18,7 +18,13 @@ export const Users: CollectionConfig = {
     },
     { name: 'bio', type: 'textarea' },
     { name: 'verified', type: 'checkbox', required: true, defaultValue: false },
-    { name: 'profileImage', type: 'relationship', relationTo: 'media' },
+    {
+      name: 'profileImage',
+      type: 'text',
+      admin: {
+        description: 'Profile picture URL (uploaded to Cloudflare R2 as WebP, max 100KB). Set via profile page upload.',
+      },
+    },
     {
       name: 'role',
       type: 'select',

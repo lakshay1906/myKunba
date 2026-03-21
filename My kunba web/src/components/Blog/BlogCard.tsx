@@ -48,7 +48,6 @@ export default function BlogCard({ post }: BlogCardProps) {
         },
         body: JSON.stringify({ postId: post.id }),
       }).catch((error) => {
-        console.error('Error tracking impression:', error)
         // Silently fail - don't block user navigation
       })
     } catch (error) {
@@ -85,28 +84,16 @@ export default function BlogCard({ post }: BlogCardProps) {
               {category.name}
             </Badge>
           ))}
-          {post.tags?.map((tag) => (
-            <Link
-              key={tag.id}
-              href={`/tag/${tag.slug || tag.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex"
-            >
-              <Badge variant="outline" className="font-medium hover:bg-muted">
-                #{tag.name}
-              </Badge>
-            </Link>
-          ))}
         </div>
         <div>
           <CardHeader className="pt-0 pb-2">
             <h3 className="text-xl font-bold leading-tight transition-colors group-hover:text-primary">
-              {post.title.length > 32 ? `${post.title.substring(0, 32)}...` : post.title}
+              {post.title.length > 62 ? `${post.title.substring(0, 62)}...` : post.title}
             </h3>
           </CardHeader>
           <CardContent className="pb-4">
             <p className="text-muted-foreground line-clamp-3">
-              {post.excerpt.length > 70 ? `${post.excerpt.substring(0, 70)}...` : post.excerpt}
+              {post.excerpt.length > 70 ? `${post.excerpt.substring(0, 90)}...` : post.excerpt}
             </p>
           </CardContent>
           <CardFooter className="flex items-center justify-between border-t py-4">
@@ -114,11 +101,11 @@ export default function BlogCard({ post }: BlogCardProps) {
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src={
-                    post.author.profileImage === null
-                      ? `https://source.unsplash.com/featured/?portrait,${
-                          post.author.displayName?.replace(' ', '') || 'user'
-                        }`
-                      : post.author.profileImage.url
+                    post.author.profileImage && typeof post.author.profileImage === 'string'
+                      ? post.author.profileImage
+                      : typeof post.author.profileImage === 'object' && post.author.profileImage?.url
+                        ? post.author.profileImage.url
+                        : `https://source.unsplash.com/featured/?portrait,${post.author.displayName?.replace(' ', '') || 'user'}`
                   }
                   alt={post.author.displayName || 'Author'}
                 />
