@@ -98,6 +98,7 @@
     "nodemailer": "^7.0.12",
     "payload": "3.33.0",
     "pg": "^8.13.1",
+    "pnpm": "^10.32.1",
     "react": "19.2.3",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.3",
