@@ -62,17 +62,13 @@ export default function BlogCard({ post }: BlogCardProps) {
       onClick={handleClick}
     >
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg size-full flex flex-col justify-between">
-        <div className="h-48 w-full overflow-hidden">
+        <div className="relative h-48 w-full overflow-hidden">
           {post.media && (
             <Image
-              // OLD: Database storage - COMMENTED OUT
-              // src={post.media.url || '/placeholder.svg'} // OLD: Media object with url property
-              // NEW: Cloudflare R2 storage - ACTIVE
-              src={post.media || '/placeholder.svg'} // NEW: Media is now a URL string
+              src={post.media || '/placeholder.svg'}
               alt={post.title}
-              width={300}
-              height={300}
-              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />

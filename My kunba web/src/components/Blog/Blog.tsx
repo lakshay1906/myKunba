@@ -99,81 +99,93 @@ function PaginationLinks({
   }
 
   return (
-    <>
-      {currentPage > 1 ? (
-        hasFilters ? (
-          <button
-            type="button"
-            onClick={() => onPageChange(currentPage - 1)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            &lt; Previous
-          </button>
-        ) : (
-          <Link
-            href={getPageUrl(currentPage - 1)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            &lt; Previous
-          </Link>
-        )
-      ) : (
-        <span className="text-sm text-muted-foreground/60 flex items-center gap-1">&lt; Previous</span>
-      )}
-      <div className="flex items-center gap-1">
-        {pages.map((p, i) =>
-          p === 'ellipsis' ? (
-            <span key={`e-${i}`} className="px-2 text-muted-foreground">
-              ...
-            </span>
-          ) : p === currentPage ? (
-            <span
-              key={p}
-              className="min-w-8 h-8 flex items-center justify-center rounded-md bg-muted px-2 text-sm font-medium text-foreground"
-            >
-              {p}
-            </span>
-          ) : hasFilters ? (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onPageChange(p)}
-              className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            >
-              {p}
-            </button>
+    <nav aria-label="Pagination">
+      <ul className="flex items-center gap-1 list-none p-0 m-0">
+        <li>
+          {currentPage > 1 ? (
+            hasFilters ? (
+              <button
+                type="button"
+                aria-label="Previous page"
+                onClick={() => onPageChange(currentPage - 1)}
+                className="text-sm text-foreground/80 hover:text-foreground flex items-center gap-1 mr-2"
+              >
+                &lt; Previous
+              </button>
+            ) : (
+              <Link
+                href={getPageUrl(currentPage - 1)}
+                aria-label="Previous page"
+                className="text-sm text-foreground/80 hover:text-foreground flex items-center gap-1 mr-2"
+              >
+                &lt; Previous
+              </Link>
+            )
           ) : (
-            <Link
-              key={p}
-              href={getPageUrl(p)}
-              className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            >
-              {p}
-            </Link>
-          ),
-        )}
-      </div>
-      {currentPage < totalPages ? (
-        hasFilters ? (
-          <button
-            type="button"
-            onClick={() => onPageChange(currentPage + 1)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            Next &gt;
-          </button>
-        ) : (
-          <Link
-            href={getPageUrl(currentPage + 1)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            Next &gt;
-          </Link>
-        )
-      ) : (
-        <span className="text-sm text-muted-foreground/60 flex items-center gap-1">Next &gt;</span>
-      )}
-    </>
+            <span aria-disabled="true" className="text-sm text-foreground/50 flex items-center gap-1 mr-2">&lt; Previous</span>
+          )}
+        </li>
+        
+        {pages.map((p, i) => (
+          <li key={p === 'ellipsis' ? `e-${i}` : p}>
+            {p === 'ellipsis' ? (
+              <span aria-hidden="true" className="px-2 text-muted-foreground w-8 text-center flex justify-center">
+                ...
+              </span>
+            ) : p === currentPage ? (
+              <span
+                aria-current="page"
+                className="min-w-8 h-8 flex items-center justify-center rounded-md bg-muted px-2 text-sm font-medium text-foreground"
+              >
+                {p}
+              </span>
+            ) : hasFilters ? (
+              <button
+                type="button"
+                aria-label={`Page ${p}`}
+                onClick={() => onPageChange(p as number)}
+                className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                {p}
+              </button>
+            ) : (
+              <Link
+                href={getPageUrl(p as number)}
+                aria-label={`Page ${p}`}
+                className="min-w-8 h-8 flex items-center justify-center rounded-md px-2 text-sm text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                {p}
+              </Link>
+            )}
+          </li>
+        ))}
+
+        <li>
+          {currentPage < totalPages ? (
+            hasFilters ? (
+              <button
+                type="button"
+                aria-label="Next page"
+                onClick={() => onPageChange(currentPage + 1)}
+                className="text-sm text-foreground/80 hover:text-foreground flex items-center gap-1 ml-2"
+              >
+                Next &gt;
+              </button>
+            ) : (
+              <Link
+                href={getPageUrl(currentPage + 1)}
+                aria-label="Next page"
+                className="text-sm text-foreground/80 hover:text-foreground flex items-center gap-1 ml-2"
+              >
+                Next &gt;
+              </Link>
+            )
+          ) : (
+            <span aria-disabled="true" className="text-sm text-foreground/50 flex items-center gap-1 ml-2">Next &gt;</span>
+          )}
+        </li>
+      </ul>
+    </nav>
   )
 }
 
