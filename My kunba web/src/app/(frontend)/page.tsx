@@ -1,34 +1,42 @@
 import Blog from '@/components/Blog/Blog'
-import { getPublicUrl, getServerApiUrl } from '@/lib/env'
+import { getServerApiUrl } from '@/lib/env'
 import { buildAlternateLanguages } from '@/lib/i18n/seo'
 import { getCachedFeaturedBlogs } from '@/app/actions/blog-actions'
 import { getCachedAuthors } from '@/app/actions/authors-actions'
 import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { headers } from 'next/headers'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 // SSG: static until on-demand revalidation via revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
 export const metadata: Metadata = {
-  title: 'Home',
+  title: 'Latest 2026 News, Trends, Health & Government Schemes India',
   description:
-    'Discover the latest articles, insights, and stories on technology, design, and personal development. Explore featured blogs and browse by categories on My Kunba.',
+    'Discover fresh 2026 insights on My Kunba: Strait of Hormuz crisis, free seat selection rules India, magnesium deficiency symptoms, modern marriage problems, government schemes & more.',
+  robots: {
+    index: true,
+    follow: true,
+    'max-image-preview': 'large',
+  },
   openGraph: {
-    title: 'My Kunba - Discover Latest Articles and Insights',
+    title: 'My Kunba | Latest 2026 News, Trends & Insights India',
     description:
-      'Discover the latest articles, insights, and stories on technology, design, and personal development.',
-    url: '/',
+      'Fresh 2026 articles on Hormuz crisis, free seat selection rules, health alerts, government schemes & relationships. By Sanju Bhati.',
+    url: 'https://mykunba.org/',
+    images: [{ url: 'https://mykunba.org/full_logo.svg' }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'My Kunba - Discover Latest Articles and Insights',
-    description:
-      'Discover the latest articles, insights, and stories on technology, design, and personal development.',
   },
   alternates: {
-    canonical: '/',
+    canonical: 'https://mykunba.org/',
     languages: buildAlternateLanguages('/'),
   },
 }
@@ -60,48 +68,30 @@ export default async function Home({
   const categories = categoriesData?.docs || []
 
   // Generate structured data for homepage (public URL for canonical/schema)
-  const publicUrl = getPublicUrl()
-  const organizationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'My Kunba',
-    url: publicUrl,
-    logo: `${publicUrl}/full_logo.png`,
-    description:
-      'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',
-    sameAs: [
-      // Add your social media links here when available
-      'https://x.com/mykunba',
-      'https://m.facebook.com/mykunba/',
-    ],
-  }
-
-  const websiteSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'My Kunba',
-    url: publicUrl,
-    description:
-      'My Kunba is an open blogging platform where writers share knowledge, insights, and stories.',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `${publicUrl}/?search={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
+  const websiteAndOrgSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "My Kunba",
+    "url": "https://mykunba.org",
+    "description": "Latest 2026 news, trends, health, government schemes & relationships insights for Indian families",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://mykunba.org/?s={search_term_string}",
+      "query-input": "required name=search_term_string"
     },
+    "publisher": {
+      "@type": "Organization",
+      "name": "My Kunba",
+      "url": "https://mykunba.org",
+      "logo": "https://mykunba.org/full_logo.svg"
+    }
   }
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteAndOrgSchema) }}
       />
       {featuredBlogs.length > 0 && (
         <div className="mb-8">
