@@ -136,7 +136,9 @@ export default function RootLayout({
             `,
           }}
         />
-        {children}
+        <main id="main-content" className="flex-1 flex flex-col">
+          {children}
+        </main>
       </body>
     </html>
   )

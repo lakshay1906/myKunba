@@ -113,6 +113,7 @@ export default function Footer() {
           <form onSubmit={handleSubmit} className="flex xs:flex-row flex-col gap-2">
             <Input
               type="email"
+              aria-label="Email address for newsletter"
               placeholder={t('footer_enter_email')}
               className="w-full xs:w-[20rem] text-sm"
               value={email}
