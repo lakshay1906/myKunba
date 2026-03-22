@@ -86,6 +86,8 @@ export default function CategoryCards({
               alt={category.title}
               fill
               className="object-cover"
+              loading="lazy"
+              sizes="280px"
             />
             <div className="absolute bottom-0 left-0 p-4 z-20 w-full">
               <h3 className="text-white text-xl font-bold">{category.title}</h3>

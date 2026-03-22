@@ -104,6 +104,10 @@ export default function RootLayout({
     <html lang="en-US" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <link rel="alternate" type="application/rss+xml" title="My Kunba Blog" href={feedUrl} />
+        <link rel="dns-prefetch" href="https://pub-7c609686c4f44beaabae4f01c8b08f9c.r2.dev" />
+        <link rel="preconnect" href="https://pub-7c609686c4f44beaabae4f01c8b08f9c.r2.dev" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <Script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
@@ -128,7 +132,7 @@ export default function RootLayout({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', ${process.env.NEXT_PUBLIC_GA_PROPERTY_ID});
+              gtag('config', '${process.env.NEXT_PUBLIC_GA_PROPERTY_ID}');
             `,
           }}
         />
