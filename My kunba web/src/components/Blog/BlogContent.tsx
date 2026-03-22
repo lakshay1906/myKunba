@@ -231,7 +231,8 @@ export default function BlogContent({
             fill
             className="object-cover"
             priority
-            sizes="(max-width: 1024px) 100vw, 896px"
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            fetchPriority="high"
           />
         </div>
       )}

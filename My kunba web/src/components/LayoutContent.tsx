@@ -1,8 +1,10 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Navbar from '@/components/Home/navbar'
-import Footer from '@/components/Home/footer'
+
+const Footer = dynamic(() => import('@/components/Home/footer'), { ssr: false })
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
