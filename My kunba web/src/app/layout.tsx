@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(getPublicUrl()),
   title: {
     default: 'My Kunba - Open Blogging Platform',
-    template: '%s | My Kunba',
+    template: 'My Kunba | %s',
   },
   description:
     'My Kunba is an open blogging platform where writers share knowledge, insights, and stories on technology, design, and personal development.',

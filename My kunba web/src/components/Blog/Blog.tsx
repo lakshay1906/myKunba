@@ -484,7 +484,7 @@ export default function Blog({
   return (
     <div id="blog" className="container mx-auto! px-4!">
       <div className="mt-2 md:mt-4 lg:mt-6">
-        <h1 className="text-2xl font-semibold">Blog</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Latest 2026 News, Trends & Insights for Indian Families</h1>
         <p className="text-sm text-muted-foreground mb-6 mt-1">
           Discover stories, insights, and updates from our community.
         </p>
