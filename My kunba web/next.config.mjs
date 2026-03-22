@@ -49,6 +49,54 @@ const nextConfig = {
   async redirects() {
     return [{ source: '/rss', destination: '/feed.xml', permanent: true }]
   },
+  async headers() {
+    return [
+      // Aggressive CDN caching for public pages — freshness via on-demand purge
+      {
+        source: '/',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=31536000, stale-while-revalidate=59' },
+        ],
+      },
+      {
+        source: '/:slug([^/]+)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=31536000, stale-while-revalidate=59' },
+        ],
+      },
+      {
+        source: '/category/:slug*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=31536000, stale-while-revalidate=59' },
+        ],
+      },
+      {
+        source: '/tag/:slug*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=31536000, stale-while-revalidate=59' },
+        ],
+      },
+      {
+        source: '/author/:slug*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=31536000, stale-while-revalidate=59' },
+        ],
+      },
+      // No caching for dashboard and admin routes
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, no-cache, must-revalidate' },
+        ],
+      },
+      {
+        source: '/admin/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, no-cache, must-revalidate' },
+        ],
+      },
+    ]
+  },
   sassOptions: {
     includePaths: payloadUIScssPaths,
   },

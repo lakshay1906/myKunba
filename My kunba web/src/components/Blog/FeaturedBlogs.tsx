@@ -155,7 +155,8 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                       fill
                       className="object-cover"
                       priority={index < 3}
-                      sizes="100vw"
+                      sizes="(max-width: 1200px) 100vw, 1200px"
+                      fetchPriority="high"
                     />
                   )}
                   <div

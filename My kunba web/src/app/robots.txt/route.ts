@@ -37,7 +37,6 @@ export async function GET() {
     '# AND RELATED RIGHTS IN THE DIGITAL SINGLE MARKET.',
     '',
     'User-agent: *',
-    'Content-Signal: search=yes,ai-train=no',
     'Allow: /',
     'Disallow: /dashboard/',
     'Disallow: /admin/',

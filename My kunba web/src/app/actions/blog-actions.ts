@@ -77,7 +77,7 @@ export async function fetchBlogPostBySlug(slug: string) {
   return unstable_cache(
     () => fetchBlogPostBySlugInternal(slug),
     ['post', slug],
-    { tags: ['posts'] },
+    { tags: ['posts', `post-${slug}`] },
   )()
 }
 
