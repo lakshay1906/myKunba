@@ -13,20 +13,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Build Docker image from subfolder
+      # 2️⃣ Build Docker image (WITH BUILD ARGS)
       - name: Build Docker image
-        run: docker build -t mykunba:latest "./My kunba web"
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_NEXT_URL=${{ secrets.NEXT_PUBLIC_NEXT_URL }} \
+            --build-arg NEXT_PUBLIC_PUBLIC_URL=${{ secrets.NEXT_PUBLIC_PUBLIC_URL }} \
+            --build-arg NEXT_PUBLIC_ADSENSE_ID=${{ secrets.NEXT_PUBLIC_ADSENSE_ID }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_1=${{ secrets.NEXT_PUBLIC_ADS_SLOT_1 }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_2=${{ secrets.NEXT_PUBLIC_ADS_SLOT_2 }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_3=${{ secrets.NEXT_PUBLIC_ADS_SLOT_3 }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_4=${{ secrets.NEXT_PUBLIC_ADS_SLOT_4 }} \
+            --build-arg NEXT_PUBLIC_GA_PROPERTY_ID=${{ secrets.NEXT_PUBLIC_GA_PROPERTY_ID }} \
+            -t mykunba:latest "./My kunba web"
 
-      # 3️⃣ Save Docker image as tar at repo root
+      # 3️⃣ Save Docker image
       - name: Save Docker image
         run: docker save mykunba:latest > mykunba.tar
 
-      # 4️⃣ Create the credentials file (Directly avoids delimiter issues)
+      # 4️⃣ Create Google credentials file
       - name: Create Google credentials file
         run: |
           echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google_creds.json
 
-      # 5️⃣ Copy image tar to EC2
+      # 5️⃣ Copy image to EC2
       - name: Copy image to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -36,7 +46,7 @@ jobs:
           source: mykunba.tar
           target: /home/ec2-user
 
-      # 5b Copy Google credentials file to EC2
+      # 5b Copy Google credentials
       - name: Copy Google credentials to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -46,7 +56,7 @@ jobs:
           source: google_creds.json
           target: /home/ec2-user
 
-      # 6️⃣ Load image, Setup Secrets & run container on EC2
+      # 6️⃣ Deploy
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -56,8 +66,8 @@ jobs:
           script: |
             set -e
 
-            # Setup directory and move the secret file
             mkdir -p /home/ec2-user/mykunba/secrets
+
             if [ -f /home/ec2-user/google_creds.json ]; then
               mv /home/ec2-user/google_creds.json /home/ec2-user/mykunba/secrets/service-account.json
               chmod 600 /home/ec2-user/mykunba/secrets/service-account.json
@@ -66,14 +76,14 @@ jobs:
             echo "Loading Docker image..."
             docker load < /home/ec2-user/mykunba.tar
 
-            echo "Stopping old container (if any)..."
+            echo "Stopping old container..."
             docker stop mykunba || true
             docker rm mykunba || true
 
             echo "Cleaning unused images..."
             docker image prune -f
 
-            echo "Starting new container with Google Credentials mounted..."
+            echo "Starting container..."
             docker run -d \
               --name mykunba \
               --restart unless-stopped \
@@ -83,17 +93,11 @@ jobs:
               -p 3000:3000 \
               mykunba:latest
 
-            echo "Waiting for app to be ready..."
             sleep 15
 
-            echo "Running i18n migrations..."
             docker exec mykunba node scripts/run-migration.js || true
-
-            # Trigger the 2026 Strategy: Bulk Indexing for 40 existing blogs
-            echo "Submitting URLs to Google Indexing API..."
             docker exec mykunba node scripts/submit-blog-urls-to-google.js || true
 
-            echo "Cleaning up tar file..."
             rm -f /home/ec2-user/mykunba.tar
 
             echo "Deployment completed successfully."
