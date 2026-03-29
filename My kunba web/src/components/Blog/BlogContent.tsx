@@ -342,7 +342,7 @@ export default function BlogContent({
           }
         >
           <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-4">References & Sources</h2>
+            <h2 className="text-xl font-semibold mb-4">External link{blog.externalLinks.length > 1 ? 's' : ''}</h2>
             <ul className="space-y-2">
               {blog.externalLinks.map((link, index) => (
                 <li key={index}>

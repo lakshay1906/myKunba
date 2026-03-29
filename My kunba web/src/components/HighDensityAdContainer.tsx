@@ -11,6 +11,7 @@ const DEFAULT_AD_SLOTS = [
   process.env.NEXT_PUBLIC_ADS_SLOT_3 ?? '',
   process.env.NEXT_PUBLIC_ADS_SLOT_4 ?? '',
 ]
+console.log('DEFAULT_AD_SLOTS', DEFAULT_AD_SLOTS)
 
 export interface HighDensityAdContainerProps {
   /** Array of 4 unique ad-slot IDs. Falls back to env-based defaults. */
@@ -46,40 +47,43 @@ export function HighDensityAdContainer({
       >
         {/* Desktop placeholder grid */}
         <div className={`${mobileOnly ? 'hidden' : 'hidden md:grid'} grid-cols-2 gap-4`} style={{ minHeight: 500 }}>
-          {slots.map((slot, i) => (
-            <div
-              key={`placeholder-${slot}-${i}`}
-              className="flex items-center justify-center rounded-xl border-2 border-dashed border-amber-500/30 bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30"
-              style={{ minHeight: 240 }}
-            >
-              <div className="flex flex-col items-center gap-2 px-4 text-center">
-                <div className="rounded-lg bg-amber-500/10 p-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-amber-600 dark:text-amber-400"
-                  >
-                    <rect width="18" height="18" x="3" y="3" rx="2" />
-                    <path d="M9 3v18" />
-                    <path d="M3 9h18" />
-                  </svg>
+          {slots.map((slot, i) => {
+            console.log('slot', slot, i)
+            return (
+              <div
+                key={`placeholder-${slot}-${i}`}
+                className="flex items-center justify-center rounded-xl border-2 border-dashed border-amber-500/30 bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30"
+                style={{ minHeight: 240 }}
+              >
+                <div className="flex flex-col items-center gap-2 px-4 text-center">
+                  <div className="rounded-lg bg-amber-500/10 p-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-amber-600 dark:text-amber-400"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" />
+                      <path d="M9 3v18" />
+                      <path d="M3 9h18" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                    myKunba Ad #{i + 1}
+                  </span>
+                  <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">
+                    Slot: {slot || 'N/A'}
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                  myKunba Ad #{i + 1}
-                </span>
-                <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">
-                  Slot: {slot || 'N/A'}
-                </span>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Mobile placeholder — always show first slot */}
