@@ -3,26 +3,19 @@
 # =========================
 FROM node:20-alpine AS base
 
-# Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # =========================
-# Dependencies stage
+# Dependencies
 # =========================
 FROM base AS deps
 
-# Native deps required by sharp (Payload CMS)
-RUN apk add --no-cache \
-  libc6-compat \
-  vips \
-  vips-dev
+RUN apk add --no-cache libc6-compat vips vips-dev
 
 WORKDIR /app
 
-# Copy lock files only (better cache)
 COPY package.json pnpm-lock.yaml* yarn.lock* package-lock.json* ./
 
-# Install dependencies (use npm to install pnpm to avoid Corepack fetching registry on 503)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
   npm install -g pnpm@9 && pnpm install --frozen-lockfile; \
@@ -41,19 +34,34 @@ FROM base AS builder
 
 WORKDIR /app
 
-# Reuse dependencies
-COPY --from=deps /app/node_modules ./node_modules
+# 🔥 ADD BUILD ARGS HERE
+ARG NEXT_PUBLIC_NEXT_URL
+ARG NEXT_PUBLIC_PUBLIC_URL
+ARG NEXT_PUBLIC_ADSENSE_ID
+ARG NEXT_PUBLIC_ADS_SLOT_1
+ARG NEXT_PUBLIC_ADS_SLOT_2
+ARG NEXT_PUBLIC_ADS_SLOT_3
+ARG NEXT_PUBLIC_ADS_SLOT_4
+ARG NEXT_PUBLIC_GA_PROPERTY_ID
 
-# Copy source code
+# 🔥 EXPOSE TO NEXT BUILD
+ENV NEXT_PUBLIC_NEXT_URL=$NEXT_PUBLIC_NEXT_URL
+ENV NEXT_PUBLIC_PUBLIC_URL=$NEXT_PUBLIC_PUBLIC_URL
+ENV NEXT_PUBLIC_ADSENSE_ID=$NEXT_PUBLIC_ADSENSE_ID
+ENV NEXT_PUBLIC_ADS_SLOT_1=$NEXT_PUBLIC_ADS_SLOT_1
+ENV NEXT_PUBLIC_ADS_SLOT_2=$NEXT_PUBLIC_ADS_SLOT_2
+ENV NEXT_PUBLIC_ADS_SLOT_3=$NEXT_PUBLIC_ADS_SLOT_3
+ENV NEXT_PUBLIC_ADS_SLOT_4=$NEXT_PUBLIC_ADS_SLOT_4
+ENV NEXT_PUBLIC_GA_PROPERTY_ID=$NEXT_PUBLIC_GA_PROPERTY_ID
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build Next.js with standalone output (required for this Dockerfile)
 ENV DOCKER_BUILD=1
-# Use --webpack so standalone file tracing generates middleware.js.nft.json (Turbopack can omit it)
 RUN npx next build --webpack
 
 # =========================
-# Runtime stage (minimal & secure)
+# Runtime
 # =========================
 FROM node:20-alpine AS runner
 
@@ -62,34 +70,25 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Runtime dependency for sharp
 RUN apk add --no-cache vips
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser  --system --uid 1001 nextjs
+  && adduser --system --uid 1001 nextjs
 
-# Copy public assets
 COPY --from=builder /app/public ./public
-
-# Copy standalone server & static files
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy migration scripts (for docker-entrypoint: wait-for-db + migrate)
 COPY --from=builder /app/scripts ./scripts
 
-# Install pg for migration runner in a vendor dir (standalone node_modules layout is not reliable for cp)
 RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8 && \
     mkdir -p /app/vendor && cp -r /tmp/pg-install/node_modules/* /app/vendor/ && rm -rf /tmp/pg-install
+
 ENV NODE_PATH=/app/vendor
 
-# Ensure permissions (nextjs user runs entrypoint and needs scripts + vendor)
 RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor package.json package-lock.json 2>/dev/null || true
 
 USER nextjs
 
 EXPOSE 3000
 
-# Wait for DB, run idempotent migrations, then start the app
 CMD ["node", "scripts/docker-entrypoint.js"]
