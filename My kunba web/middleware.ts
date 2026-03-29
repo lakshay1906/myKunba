@@ -13,7 +13,7 @@ const allowedOrigins = [
   'https://new.mykunba.org',
   'https://mykunba.org',
   'http://3.6.239.45:3000',
-  'http://172.31.7.147:3000'
+  'http://172.31.7.147:3000',
   // Add your production domain(s) here
   // 'https://your-production-domain.com',
 ]
@@ -26,8 +26,41 @@ const allowedOrigins = [
  * - /dashboard: add header with pathname for redirect param
  * - API routes: CORS and rate limiting
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
+  // WordPress legacy paths -> 410 Gone
+  if (
+    pathname.startsWith('/wp-admin') ||
+    pathname.startsWith('/wp-content') ||
+    pathname.endsWith('.php') ||
+    request.nextUrl.searchParams.has('p') ||
+    request.nextUrl.searchParams.has('author')
+  ) {
+    return new NextResponse('Gone', { status: 410 })
+  }
+
+  // Smart Category/Tag Check
+  if (pathname.startsWith('/category/') || pathname.startsWith('/tag/')) {
+    const isCategory = pathname.startsWith('/category/')
+    const prefix = isCategory ? '/category/' : '/tag/'
+    const slug = pathname.slice(prefix.length)
+    if (slug) {
+      try {
+        const urlReq = new URL(`/api/user/${isCategory ? 'category' : 'tag'}`, request.url)
+        const res = await fetch(urlReq.toString(), { next: { revalidate: 3600 } })
+        if (res.ok) {
+          const data = await res.json()
+          const exists = data?.docs?.some((doc: any) => doc.slug === slug)
+          if (!exists) {
+            return new NextResponse('Gone', { status: 410 })
+          }
+        }
+      } catch (e) {
+        // fail gracefully
+      }
+    }
+  }
 
   // Dashboard: pass pathname in request header so layout can redirect to /unauthorised?redirect=pathname when auth fails
   if (pathname.startsWith('/dashboard')) {
@@ -119,13 +152,10 @@ export function middleware(request: NextRequest) {
   // Apply CORS for browser requests
   if (origin) {
     if (!allowedOrigins.includes(origin)) {
-      return new NextResponse(
-        JSON.stringify({ message: 'CORS Not Allowed' }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      )
+      return new NextResponse(JSON.stringify({ message: 'CORS Not Allowed' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
     // Add CORS headers for allowed origins
     const rateLimitHeaders = getRateLimitHeaders(
@@ -145,10 +175,7 @@ export function middleware(request: NextRequest) {
   }
 
   // For mobile/server requests (no origin), allow but still apply rate limiting
-  const rateLimitHeaders = getRateLimitHeaders(
-    rateLimitResult.remaining,
-    rateLimitResult.resetTime,
-  )
+  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult.remaining, rateLimitResult.resetTime)
   const response = NextResponse.next()
   // Add rate limit headers
   Object.entries(rateLimitHeaders).forEach(([key, value]) => {
@@ -159,5 +186,13 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Run on frontend pages (locale, blog redirect, dashboard) and API
-  matcher: ['/', '/:path*', '/dashboard', '/dashboard/:path*', '/blog', '/blog/:path*', '/api/:path*'],
+  matcher: [
+    '/',
+    '/:path*',
+    '/dashboard',
+    '/dashboard/:path*',
+    '/blog',
+    '/blog/:path*',
+    '/api/:path*',
+  ],
 }
