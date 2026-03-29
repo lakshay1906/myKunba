@@ -102,9 +102,9 @@ const nextConfig = {
   },
   // Standalone output for Docker; leave unset for local dev (e.g. Windows)
   ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
-  compiler: {
-    removeConsole: true,
-  },
+  // compiler: {
+  //   removeConsole: true,
+  // },
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({

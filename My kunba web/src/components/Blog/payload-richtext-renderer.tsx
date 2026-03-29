@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import { HighDensityAdContainer } from '@/components/HighDensityAdContainer'
 import Image from 'next/image'
 import {
   Table,
@@ -81,8 +82,27 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         </HeadingTag>
       )
 
-    case 'paragraph':
+    case 'paragraph': {
       const paragraphNode = node as PayloadElementNode
+      
+      // Pre-scan children to see if they contain AD_BLOCK to avoid invalid HTML nesting 
+      // i.e., rendering a <div id="high-density-ad-container"> inside a <p> tag
+      const hasAdBlock = paragraphNode.children?.some((child) => 
+        child.type === 'text' && 
+        ((child as PayloadTextNode).text?.includes('[[AD_BLOCK:all]]') || 
+         (child as PayloadTextNode).text?.includes('[[AD_BLOCK:mobile]]'))
+      )
+
+      if (hasAdBlock) {
+        return (
+          <div className="leading-relaxed mb-4 text-justify">
+            {paragraphNode.children?.map((child, index) => (
+              <RenderNode key={index} node={child} />
+            ))}
+          </div>
+        )
+      }
+
       return (
         <p className="leading-relaxed mb-4 text-justify">
           {paragraphNode.children?.map((child, index) => (
@@ -90,10 +110,25 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
           ))}
         </p>
       )
+    }
 
-    case 'text':
+    case 'text': {
       const textNode = node as PayloadTextNode
-      let textElement = <span>{textNode.text}</span>
+      const text = textNode.text || ''
+      const hasAd = text.includes('[[AD_BLOCK:all]]') || text.includes('[[AD_BLOCK:mobile]]')
+
+      let baseContent: React.ReactNode = text
+      if (hasAd) {
+        // Regex split matching the tags
+        const parts = text.split(/(\[\[AD_BLOCK:all\]\]|\[\[AD_BLOCK:mobile\]\])/)
+        baseContent = parts.map((part, index) => {
+          if (part === '[[AD_BLOCK:all]]') return <HighDensityAdContainer key={`ad-${index}`} />
+          if (part === '[[AD_BLOCK:mobile]]') return <HighDensityAdContainer key={`ad-${index}`} mobileOnly={true} />
+          return part ? <span key={index}>{part}</span> : null
+        })
+      }
+
+      let textElement = <span>{baseContent}</span>
 
       // Handle text formatting based on format number
       if (textNode.format && textNode.format > 0) {
@@ -107,10 +142,11 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         if (isItalic) className += ' italic'
         if (isUnderline) className += ' underline'
 
-        textElement = <span className={className.trim()}>{textNode.text}</span>
+        textElement = <span className={className.trim()}>{baseContent}</span>
       }
 
       return textElement
+    }
 
     case 'list':
       const listNode = node as PayloadElementNode
