@@ -125,7 +125,7 @@ function PaginationLinks({
             <span aria-disabled="true" className="text-sm text-foreground/50 flex items-center gap-1 mr-2">&lt; Previous</span>
           )}
         </li>
-        
+
         {pages.map((p, i) => (
           <li key={p === 'ellipsis' ? `e-${i}` : p}>
             {p === 'ellipsis' ? (
@@ -213,7 +213,7 @@ export default function Blog({
   const setBlogCategorySlugs = store?.setBlogCategorySlugs ?? setLocalCategorySlugs
   const blogAuthorEmails = store?.blogAuthorEmails ?? localAuthorEmails
   const setBlogAuthorEmails = store?.setBlogAuthorEmails ?? setLocalAuthorEmails
-  const setOriginalBlogData = store?.setOriginalBlogData ?? (() => {})
+  const setOriginalBlogData = store?.setOriginalBlogData ?? (() => { })
 
   const [data, setData] = useState<any[]>(Array.isArray(posts?.docs) ? posts.docs : [])
   const [loading, setLoading] = useState(false)
@@ -496,7 +496,7 @@ export default function Blog({
   return (
     <div id="blog" className="container mx-auto! px-4!">
       <div className="mt-2 md:mt-4 lg:mt-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Latest 2026 News, Trends & Insights for Indian Families</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Smart Insights on Health, Tech & Finance</h1>
         <p className="text-sm text-muted-foreground mb-6 mt-1">
           Discover stories, insights, and updates from our community.
         </p>
