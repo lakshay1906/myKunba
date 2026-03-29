@@ -61,6 +61,7 @@ export default buildConfig({
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
       connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
     },
+    push: false,
   }),
   sharp: sharp as unknown as SharpDependency,
   plugins: [

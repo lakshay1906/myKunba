@@ -46,6 +46,7 @@ import {
   Type,
   SubscriptIcon,
   SuperscriptIcon,
+  Megaphone,
 } from 'lucide-react'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
@@ -705,7 +706,26 @@ export default function RichTextEditor({
 
         <Separator orientation="vertical" className="h-8" />
 
-        {/* Media and Table */}
+        {/* Media, Table and Ad Blocks */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" title="Insert Ad Block">
+              <Megaphone className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Insert Ad Block
+            </DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => editor.chain().focus().insertContent('[[AD_BLOCK:all]]').run()}>
+              For all screens
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().insertContent('[[AD_BLOCK:mobile]]').run()}>
+              For Mobile screens only
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button type="button" variant="ghost" size="sm" onClick={addLink}>
           <LinkIcon className="h-4 w-4" />
         </Button>

@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 // SSG: static until on-demand revalidation via revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
 export const metadata: Metadata = {
-  title: 'Latest 2026 News, Trends, Health & Government Schemes India',
+  title: 'Smart Insights on Health, Tech & Finance',
   description:
     'Discover fresh 2026 insights on My Kunba: Strait of Hormuz crisis, free seat selection rules India, magnesium deficiency symptoms, modern marriage problems, government schemes & more.',
   robots: {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     'max-image-preview': 'large',
   },
   openGraph: {
-    title: 'My Kunba | Latest 2026 News, Trends & Insights India',
+    title: 'My Kunba | Smart Insights on Health, Tech & Finance',
     description:
       'Fresh 2026 articles on Hormuz crisis, free seat selection rules, health alerts, government schemes & relationships. By Sanju Bhati.',
     url: 'https://mykunba.org/',
@@ -73,7 +73,7 @@ export default async function Home({
     "@type": "WebSite",
     "name": "My Kunba",
     "url": "https://mykunba.org",
-    "description": "Latest 2026 news, trends, health, government schemes & relationships insights for Indian families",
+    "description": "Master your future with myKunba. Discover the latest 2026 trends in tech, health, and finance. Smart, actionable insights for every modern household",
     "potentialAction": {
       "@type": "SearchAction",
       "target": "https://mykunba.org/?s={search_term_string}",
