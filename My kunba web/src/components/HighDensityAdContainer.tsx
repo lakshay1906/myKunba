@@ -6,6 +6,8 @@ const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_ID
 
 console.log('ADSENSE_CLIENT_ID', ADSENSE_CLIENT_ID === 'ca-pub-7109032559501931');
 console.log('Slot_1', process.env.NEXT_PUBLIC_ADS_SLOT_1 === '9402357349');
+console.log('Slot_2', process.env.NEXT_PUBLIC_GA_PROPERTY_ID === 'G-6END5TZJTY');
+console.log('PUBLIC_URL', process.env.NEXT_PUBLIC_PUBLIC_URL)
 /** Default ad slot IDs sourced from environment variables */
 const DEFAULT_AD_SLOTS = [
   process.env.NEXT_PUBLIC_ADS_SLOT_1 ?? '',
