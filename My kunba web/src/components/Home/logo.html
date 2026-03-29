@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Include Three.js via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+
+        // 2. Camera Setup
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000,
+        );
+        camera.position.z = 55;
+
+        // 3. Renderer Setup
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // 4. Generate Particle Coordinates by Sampling the SVG Path
+        // We render the SVG text path onto an offscreen canvas, then sample filled pixels.
+        const points = [];
+
+        // SVG gradient colors for vertex coloring
+        // Linear gradient: #FED76D (0%) -> #FDAF43 (14.7%) -> #FC8718 (80.2%)
+        function gradientColor(t) {
+            // t is 0..1 across the horizontal span
+            let r, g, b;
+            if (t < 0.147) {
+                const f = t / 0.147;
+                r = 254 + (253 - 254) * f;
+                g = 215 + (175 - 215) * f;
+                b = 109 + (67 - 109) * f;
+            } else if (t < 0.802) {
+                const f = (t - 0.147) / (0.802 - 0.147);
+                r = 253 + (252 - 253) * f;
+                g = 175 + (135 - 175) * f;
+                b = 67 + (24 - 67) * f;
+            } else {
+                r = 252;
+                g = 135;
+                b = 24;
+            }
+            return { r: r / 255, g: g / 255, b: b / 255 };
+        }
+
+        // Create offscreen canvas and render the SVG path
+        const svgWidth = 1145;
+        const svgHeight = 245;
+        const sampleScale = 0.5; // Render at half resolution for sampling
+        const canvasW = Math.floor(svgWidth * sampleScale);
+        const canvasH = Math.floor(svgHeight * sampleScale);
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = canvasW;
+        offCanvas.height = canvasH;
+        const ctx = offCanvas.getContext('2d');
+
+        // Draw the SVG path
+        ctx.scale(sampleScale, sampleScale);
+        ctx.fillStyle = '#000';
+        const pathData = "M161.455 44.59C171.908 44.59 181.218 46.795 189.385 51.205C197.552 55.4517 204.003 61.9033 208.74 70.56C213.477 79.2167 215.845 89.7517 215.845 102.165V181.3H193.795V105.35C193.795 91.9567 190.447 81.7483 183.75 74.725C177.217 67.5383 168.315 63.945 157.045 63.945C145.448 63.945 136.22 67.7017 129.36 75.215C122.5 82.565 119.07 93.2633 119.07 107.31V181.3H97.02V105.35C97.02 91.9567 93.6717 81.7483 86.975 74.725C80.4417 67.5383 71.54 63.945 60.27 63.945C48.6733 63.945 39.445 67.7017 32.585 75.215C25.725 82.565 22.295 93.2633 22.295 107.31V181.3H-3.76999e-06V47.04H22.295V66.395C26.705 59.3717 32.585 53.9817 39.935 50.225C47.4483 46.4683 55.6967 44.59 64.68 44.59C75.95 44.59 85.9133 47.1217 94.57 52.185C103.227 57.2483 109.678 64.68 113.925 74.48C117.682 65.0067 123.888 57.6567 132.545 52.43C141.202 47.2033 150.838 44.59 161.455 44.59ZM368.057 47.04L287.207 244.51H264.177L290.637 179.83L236.492 47.04H261.237L303.377 155.82L345.027 47.04H368.057ZM483.079 181.3L412.764 103.39V181.3H390.469V10.535H412.764V89.67L483.324 10.535H511.499L434.079 96.04L512.234 181.3H483.079ZM656.204 47.04V181.3H633.909V161.455C629.662 168.315 623.7 173.705 616.024 177.625C608.51 181.382 600.18 183.26 591.034 183.26C580.58 183.26 571.189 181.137 562.859 176.89C554.529 172.48 547.914 165.947 543.014 157.29C538.277 148.633 535.909 138.098 535.909 125.685V47.04H557.959V122.745C557.959 135.975 561.307 146.183 568.004 153.37C574.7 160.393 583.847 163.905 595.444 163.905C607.367 163.905 616.759 160.23 623.619 152.88C630.479 145.53 633.909 134.832 633.909 120.785V47.04H656.204ZM759.263 44.59C775.596 44.59 788.826 49.5717 798.953 59.535C809.079 69.335 814.143 83.545 814.143 102.165V181.3H792.093V105.35C792.093 91.9567 788.744 81.7483 782.048 74.725C775.351 67.5383 766.204 63.945 754.608 63.945C742.848 63.945 733.456 67.62 726.433 74.97C719.573 82.32 716.143 93.0183 716.143 107.065V181.3H693.848V47.04H716.143V66.15C720.553 59.29 726.514 53.9817 734.028 50.225C741.704 46.4683 750.116 44.59 759.263 44.59ZM872.857 72.03C877.43 64.0267 884.127 57.4933 892.947 52.43C901.767 47.3667 911.812 44.835 923.082 44.835C935.168 44.835 946.03 47.6933 955.667 53.41C965.303 59.1267 972.898 67.2117 978.452 77.665C984.005 87.955 986.782 99.96 986.782 113.68C986.782 127.237 984.005 139.323 978.452 149.94C972.898 160.557 965.222 168.805 955.422 174.685C945.785 180.565 935.005 183.505 923.082 183.505C911.485 183.505 901.277 180.973 892.457 175.91C883.8 170.847 877.267 164.395 872.857 156.555V181.3H850.562V7.15256e-07H872.857V72.03ZM963.997 113.68C963.997 103.553 961.955 94.7333 957.872 87.22C953.788 79.7067 948.235 73.99 941.212 70.07C934.352 66.15 926.757 64.19 918.427 64.19C910.26 64.19 902.665 66.2317 895.642 70.315C888.782 74.235 883.228 80.0333 878.982 87.71C874.898 95.2233 872.857 103.962 872.857 113.925C872.857 124.052 874.898 132.953 878.982 140.63C883.228 148.143 888.782 153.942 895.642 158.025C902.665 161.945 910.26 163.905 918.427 163.905C926.757 163.905 934.352 161.945 941.212 158.025C948.235 153.942 953.788 148.143 957.872 140.63C961.955 132.953 963.997 123.97 963.997 113.68ZM1007.8 113.68C1007.8 99.96 1010.57 87.955 1016.13 77.665C1021.68 67.2117 1029.28 59.1267 1038.91 53.41C1048.71 47.6933 1059.57 44.835 1071.5 44.835C1083.26 44.835 1093.47 47.3667 1102.12 52.43C1110.78 57.4933 1117.23 63.8633 1121.48 71.54V47.04H1144.02V181.3H1121.48V156.31C1117.07 164.15 1110.45 170.683 1101.63 175.91C1092.98 180.973 1082.85 183.505 1071.25 183.505C1059.33 183.505 1048.55 180.565 1038.91 174.685C1029.28 168.805 1021.68 160.557 1016.13 149.94C1010.57 139.323 1007.8 127.237 1007.8 113.68ZM1121.48 113.925C1121.48 103.798 1119.44 94.9783 1115.35 87.465C1111.27 79.9517 1105.72 74.235 1098.69 70.315C1091.83 66.2317 1084.24 64.19 1075.91 64.19C1067.58 64.19 1059.98 66.15 1053.12 70.07C1046.26 73.99 1040.79 79.7067 1036.71 87.22C1032.62 94.7333 1030.58 103.553 1030.58 113.68C1030.58 123.97 1032.62 132.953 1036.71 140.63C1040.79 148.143 1046.26 153.942 1053.12 158.025C1059.98 161.945 1067.58 163.905 1075.91 163.905C1084.24 163.905 1091.83 161.945 1098.69 158.025C1105.72 153.942 1111.27 148.143 1115.35 140.63C1119.44 132.953 1121.48 124.052 1121.48 113.925Z";
+
+        const path2D = new Path2D(pathData);
+        ctx.fill(path2D);
+
+        // Read pixels and sample points where the path is filled
+        const imageData = ctx.getImageData(0, 0, canvasW, canvasH);
+        const pixels = imageData.data;
+
+        // 3D coordinate conversion constants
+        // Scale factor to fit the text nicely in the scene
+        const scale3D = 0.04;
+        const offsetX = (svgWidth * scale3D) / 2;
+        const offsetY = (svgHeight * scale3D) / 2;
+
+        // Sample every Nth pixel to control density
+        const sampleStep = 1;
+
+        for (let y = 0; y < canvasH; y += sampleStep) {
+            for (let x = 0; x < canvasW; x += sampleStep) {
+                const idx = (y * canvasW + x) * 4;
+                const alpha = pixels[idx + 3];
+                if (alpha > 128) {
+                    // Convert canvas pixel coords back to SVG coords then to 3D
+                    const svgX = x / sampleScale;
+                    const svgY = y / sampleScale;
+
+                    const px = svgX * scale3D - offsetX;
+                    const py = -(svgY * scale3D - offsetY);
+                    const pz = (Math.random() - 0.5) * 3;
+
+                    // Horizontal t for gradient (0..1)
+                    const t = svgX / svgWidth;
+                    const color = gradientColor(t);
+
+                    points.push({
+                        baseX: px,
+                        baseY: py,
+                        baseZ: pz,
+                        r: color.r,
+                        g: color.g,
+                        b: color.b,
+                    });
+                }
+            }
+        }
+
+        // Add some random floating stray particles
+        for (let i = 0; i < 150; i++) {
+            const t = Math.random();
+            const color = gradientColor(t);
+            points.push({
+                baseX: (Math.random() - 0.5) * 80,
+                baseY: (Math.random() - 0.5) * 30,
+                baseZ: (Math.random() - 0.5) * 40,
+                isStray: true,
+                r: color.r,
+                g: color.g,
+                b: color.b,
+            });
+        }
+
+        // 5. Create Three.js Geometry and Materials
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(points.length * 3);
+        const basePositions = new Float32Array(points.length * 3);
+        const velocities = new Float32Array(points.length * 3);
+        const colors = new Float32Array(points.length * 3);
+
+        points.forEach((pt, i) => {
+            positions[i * 3] = pt.baseX + (Math.random() - 0.5) * 800;
+            positions[i * 3 + 1] = pt.baseY + (Math.random() - 0.5) * 800;
+            positions[i * 3 + 2] = pt.baseZ + (Math.random() - 0.5) * 800;
+
+            basePositions[i * 3] = pt.baseX;
+            basePositions[i * 3 + 1] = pt.baseY;
+            basePositions[i * 3 + 2] = pt.baseZ;
+
+            velocities[i * 3] = 0;
+            velocities[i * 3 + 1] = 0;
+            velocities[i * 3 + 2] = 0;
+
+            colors[i * 3] = pt.r;
+            colors[i * 3 + 1] = pt.g;
+            colors[i * 3 + 2] = pt.b;
+        });
+
+        geometry.setAttribute(
+            "position",
+            new THREE.BufferAttribute(positions, 3),
+        );
+        geometry.setAttribute(
+            "basePosition",
+            new THREE.BufferAttribute(basePositions, 3),
+        );
+        geometry.setAttribute(
+            "velocity",
+            new THREE.BufferAttribute(velocities, 3),
+        );
+        geometry.setAttribute(
+            "color",
+            new THREE.BufferAttribute(colors, 3),
+        );
+
+        // Use vertex colors to apply the SVG gradient across the text
+        const material = new THREE.PointsMaterial({
+            vertexColors: true,
+            size: 0.27,
+            transparent: true,
+            opacity: 1,
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // 6. Interaction Elements
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(-9999, -9999);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        const mouse3D = new THREE.Vector3();
+
+        window.addEventListener("mousemove", (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        let isVisible = false;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        if (!isVisible) {
+                            isVisible = true;
+                            const pos = geometry.attributes.position;
+                            for (let i = 0; i < pos.count; i++) {
+                                const isStray = i >= pos.count - 150;
+                                if (!isStray) {
+                                    pos.setXYZ(
+                                        i,
+                                        pos.getX(i) + (Math.random() - 0.5) * 800,
+                                        pos.getY(i) + (Math.random() - 0.5) * 800,
+                                        pos.getZ(i) + (Math.random() - 0.5) * 800,
+                                    );
+                                }
+                            }
+                            pos.needsUpdate = true;
+                        }
+                    } else {
+                        isVisible = false;
+                    }
+                });
+            },
+            { threshold: 0.1 },
+        );
+        observer.observe(renderer.domElement);
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 7. Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+
+            particleSystem.rotation.y = Math.sin(elapsedTime * 0.3) * 0.15;
+            particleSystem.rotation.x = Math.sin(elapsedTime * 0.2) * 0.05;
+
+            raycaster.setFromCamera(mouse, camera);
+            raycaster.ray.intersectPlane(plane, mouse3D);
+
+            const posAttribute = geometry.attributes.position;
+            const baseAttribute = geometry.attributes.basePosition;
+            const velAttribute = geometry.attributes.velocity;
+
+            const repelRadius = 16.0;
+            const forceMagnitude = 1.2;
+            const friction = 0.88;
+            const spring = 0.03;
+
+            const localMouse = mouse3D.clone();
+            particleSystem.worldToLocal(localMouse);
+
+            for (let i = 0; i < posAttribute.count; i++) {
+                const px = posAttribute.getX(i);
+                const py = posAttribute.getY(i);
+                const pz = posAttribute.getZ(i);
+
+                const bx = baseAttribute.getX(i);
+                const by = baseAttribute.getY(i);
+                const bz = baseAttribute.getZ(i);
+
+                let vx = velAttribute.getX(i);
+                let vy = velAttribute.getY(i);
+                let vz = velAttribute.getZ(i);
+
+                const dxMouse = px - localMouse.x;
+                const dyMouse = py - localMouse.y;
+                const dzMouse = pz - localMouse.z;
+                const distSq =
+                    dxMouse * dxMouse +
+                    dyMouse * dyMouse +
+                    Math.max(dzMouse * dzMouse, 0.1);
+
+                if (distSq < repelRadius * repelRadius) {
+                    const dist = Math.sqrt(distSq) || 0.1;
+                    const force = Math.pow((repelRadius - dist) / repelRadius, 2.0);
+
+                    vx += (dxMouse / dist) * force * forceMagnitude;
+                    vy += (dyMouse / dist) * force * forceMagnitude;
+                    vz += force * forceMagnitude * 0.5;
+                }
+
+                const floatOffsetY = Math.sin(elapsedTime * 1.5 + bx * 0.5) * 0.2;
+
+                vx += (bx - px) * spring;
+                vy += (by + floatOffsetY - py) * spring;
+                vz += (bz - pz) * spring;
+
+                vx *= friction;
+                vy *= friction;
+                vz *= friction;
+
+                velAttribute.setXYZ(i, vx, vy, vz);
+                posAttribute.setXYZ(i, px + vx, py + vy, pz + vz);
+            }
+
+            posAttribute.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+
+</html>
