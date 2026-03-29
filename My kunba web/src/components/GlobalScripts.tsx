@@ -12,7 +12,9 @@ export function GlobalScripts() {
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/api')) {
     return null
   }
-
+  console.log('ADSENSE_ID', process.env.NEXT_PUBLIC_ADSENSE_ID)
+  console.log('GA_PROPERTY_ID', process.env.NEXT_PUBLIC_GA_PROPERTY_ID)
+  console.log('PUBLIC_URL', process.env.NEXT_PUBLIC_PUBLIC_URL)
   return (
     <>
       <Script
