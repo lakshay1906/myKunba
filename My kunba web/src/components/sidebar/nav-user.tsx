@@ -2,7 +2,6 @@
 
 import {
   BellIcon,
-  CreditCardIcon,
   LogOutIcon,
   MoreVerticalIcon,
   UserCircleIcon,
@@ -39,7 +38,7 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const { logout } = useAppStore()
   const router = useRouter()
-  console.log(user)
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>

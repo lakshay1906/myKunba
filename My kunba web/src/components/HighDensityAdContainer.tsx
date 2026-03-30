@@ -11,7 +11,6 @@ const DEFAULT_AD_SLOTS = [
   process.env.NEXT_PUBLIC_ADS_SLOT_3 ?? '',
   process.env.NEXT_PUBLIC_ADS_SLOT_4 ?? '',
 ]
-console.log('DEFAULT_AD_SLOTS', DEFAULT_AD_SLOTS)
 
 export interface HighDensityAdContainerProps {
   /** Array of 4 unique ad-slot IDs. Falls back to env-based defaults. */
