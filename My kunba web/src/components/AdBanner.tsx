@@ -37,12 +37,27 @@ export function AdBanner({
   useEffect(() => {
     if (!ADSENSE_CLIENT_ID || !dataAdSlot) return
 
-    try {
-      const w = window as Window & { adsbygoogle?: unknown[] }
-      w.adsbygoogle = w.adsbygoogle || []
-      w.adsbygoogle.push({})
-    } catch (e) {
-      console.warn('AdSense push failed:', e)
+    const pushAd = () => {
+      try {
+        const w = window as Window & { adsbygoogle?: unknown[] }
+        w.adsbygoogle = w.adsbygoogle || []
+        w.adsbygoogle.push({})
+      } catch (e) {
+        console.warn('AdSense push failed:', e)
+      }
+    }
+
+    // Use requestIdleCallback to defer ad init until the browser is idle,
+    // reducing main-thread blocking during page load.
+    if ('requestIdleCallback' in window) {
+      const idleId = (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(pushAd, { timeout: 2000 })
+      return () => {
+        ;(window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId)
+      }
+    } else {
+      // Fallback for Safari and older browsers
+      const timerId = setTimeout(pushAd, 200)
+      return () => clearTimeout(timerId)
     }
   }, [dataAdSlot, pathname])
 
@@ -65,7 +80,8 @@ export function AdBanner({
   }
 
   return (
-    <div
+    <section
+      aria-label="Advertisement"
       className={`ad-banner-wrapper rounded-md bg-muted/30 ${className}`}
       style={{ minHeight: reservedHeight, ...style }}
     >
@@ -77,12 +93,13 @@ export function AdBanner({
       <ins
         ref={adRef}
         className="adsbygoogle block"
+        aria-label="Advertisement"
         data-ad-client={ADSENSE_CLIENT_ID}
         data-ad-slot={dataAdSlot}
         {...(dataAdFormat && { 'data-ad-format': dataAdFormat })}
         data-full-width-responsive="false"
         style={{ display: 'block', minHeight: reservedHeight }}
       />
-    </div>
+    </section>
   )
 }

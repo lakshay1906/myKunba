@@ -168,7 +168,7 @@ export default function Navbar({
   }
 
   return (
-    <div className="w-full border-b fixed top-0 z-50 bg-background">
+    <header className="w-full border-b fixed top-0 z-50 bg-background">
       <section className="p-4 container mx-auto! px-3!">
         <nav className="hidden justify-between lg:flex w-full container mx-auto">
           <div className="flex items-center gap-6">
@@ -230,7 +230,7 @@ export default function Navbar({
         </nav>
 
         {/* Mobile Navbar */}
-        <div className="block lg:hidden w-full container mx-auto">
+        <nav aria-label="Mobile navigation" className="block lg:hidden w-full container mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-between flex-1 min-w-0">
               <Link href={logo.url} className="flex items-center gap-2 shrink-0 min-w-0">
@@ -311,9 +311,9 @@ export default function Navbar({
               </div>
             </div>
           </div>
-        </div>
+        </nav>
       </section>
-    </div>
+    </header>
   )
 }
 
