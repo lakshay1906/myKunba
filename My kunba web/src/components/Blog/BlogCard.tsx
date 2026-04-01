@@ -60,6 +60,7 @@ export default function BlogCard({ post }: BlogCardProps) {
       href={`/${post.slug}`}
       className="group cursor-pointer size-full"
       onClick={handleClick}
+      aria-label={`Read more about ${post.title}`}
     >
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg size-full flex flex-col justify-between">
         <div className="relative h-48 w-full overflow-hidden">

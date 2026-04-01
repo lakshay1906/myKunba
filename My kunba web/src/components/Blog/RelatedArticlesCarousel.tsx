@@ -105,7 +105,7 @@ export default function RelatedArticlesCarousel({ articles }: RelatedArticlesCar
               key={article.id}
               className="pl-0 pr-4 md:pr-6 basis-full md:basis-1/2"
             >
-              <Link href={`/${article.slug}`} className="group block h-full" rel="related">
+              <Link href={`/${article.slug}`} className="group block h-full" rel="related" aria-label={`Read related article: ${article.title}`}>
                 <Card className="h-full transition-all duration-300 hover:shadow-lg">
                   <CardContent className="p-0">
                     {article.media && (

@@ -128,6 +128,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
               <Link
                 href={`/${blog.slug}`}
                 className="cursor-pointer"
+                aria-label={`Read full article: ${blog.title}`}
                 onClick={async () => {
                   // Track impression on click
                   try {
@@ -154,9 +155,9 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                       alt={blog.title}
                       fill
                       className="object-cover"
-                      priority={index < 3}
-                      sizes="(max-width: 1200px) 100vw, 1200px"
-                      fetchPriority="high"
+                      priority={index === 0}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
+                      {...(index === 0 ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
                     />
                   )}
                   <div
