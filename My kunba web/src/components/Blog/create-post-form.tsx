@@ -44,7 +44,6 @@ import { fetchAllTags } from '@/app/actions/tag-actions'
 import { useAppStore } from '@/lib/context/store'
 import ImageUploadDialog from '../image-uploader/image-upload-dialog'
 import { ImageUploadData, UploadResponse } from '@/lib/types'
-import Toast from '../Toast'
 import { Spinner } from '@/components/ui/spinner'
 import {
   saveDraftToCookie,
@@ -54,7 +53,6 @@ import {
   type BlogDraftData,
 } from '@/lib/utils/cookies'
 import { getSEOScoreAndChecks } from '@/lib/utils/seo-validation'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Dialog,
   DialogContent,

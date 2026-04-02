@@ -446,7 +446,7 @@ export default function RichTextEditor({
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
         >
-          <Undo className="h-4 w-4" />
+          <Undo className="size-4" />
         </Button>
         <Button
           type="button"
@@ -455,7 +455,7 @@ export default function RichTextEditor({
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
         >
-          <Redo className="h-4 w-4" />
+          <Redo className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -498,7 +498,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          <Bold className="h-4 w-4" />
+          <Bold className="size-4" />
         </Button>
         <Button
           type="button"
@@ -506,7 +506,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <Italic className="h-4 w-4" />
+          <Italic className="size-4" />
         </Button>
         <Button
           type="button"
@@ -514,7 +514,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
-          <UnderlineIcon className="h-4 w-4" />
+          <UnderlineIcon className="size-4" />
         </Button>
         <Button
           type="button"
@@ -522,7 +522,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
-          <Strikethrough className="h-4 w-4" />
+          <Strikethrough className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -535,7 +535,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => setShowColorPicker(!showColorPicker)}
           >
-            <Type className="h-4 w-4" />
+            <Type className="size-4" />
           </Button>
           {showColorPicker && (
             <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
@@ -575,7 +575,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
           >
-            <Palette className="h-4 w-4" />
+            <Palette className="size-4" />
           </Button>
           {showHighlightPicker && (
             <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
@@ -617,7 +617,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
         >
-          <AlignLeft className="h-4 w-4" />
+          <AlignLeft className="size-4" />
         </Button>
         <Button
           type="button"
@@ -625,7 +625,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
         >
-          <AlignCenter className="h-4 w-4" />
+          <AlignCenter className="size-4" />
         </Button>
         <Button
           type="button"
@@ -633,7 +633,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
         >
-          <AlignRight className="h-4 w-4" />
+          <AlignRight className="size-4" />
         </Button>
         <Button
           type="button"
@@ -641,7 +641,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
         >
-          <AlignJustify className="h-4 w-4" />
+          <AlignJustify className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -653,7 +653,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
-          <List className="h-4 w-4" />
+          <List className="size-4" />
         </Button>
         <Button
           type="button"
@@ -661,7 +661,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
-          <ListOrdered className="h-4 w-4" />
+          <ListOrdered className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -673,7 +673,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
-          <Quote className="h-4 w-4" />
+          <Quote className="size-4" />
         </Button>
         <Button
           type="button"
@@ -681,7 +681,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
-          <Code className="h-4 w-4" />
+          <Code className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -693,7 +693,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleSubscript().run()}
         >
-          <SubscriptIcon className="h-4 w-4" />
+          <SubscriptIcon className="size-4" />
         </Button>
         <Button
           type="button"
@@ -701,7 +701,7 @@ export default function RichTextEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleSuperscript().run()}
         >
-          <SuperscriptIcon className="h-4 w-4" />
+          <SuperscriptIcon className="size-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -710,7 +710,7 @@ export default function RichTextEditor({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="ghost" size="sm" title="Insert Ad Block">
-              <Megaphone className="h-4 w-4" />
+              <Megaphone className="size-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center">
@@ -727,13 +727,13 @@ export default function RichTextEditor({
         </DropdownMenu>
 
         <Button type="button" variant="ghost" size="sm" onClick={addLink}>
-          <LinkIcon className="h-4 w-4" />
+          <LinkIcon className="size-4" />
         </Button>
         {translationMode ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="sm">
-                <ImageIcon className="h-4 w-4" />
+                <ImageIcon className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -767,11 +767,11 @@ export default function RichTextEditor({
           </DropdownMenu>
         ) : (
           <Button type="button" variant="ghost" size="sm" onClick={addImage}>
-            <ImageIcon className="h-4 w-4" />
+            <ImageIcon className="size-4" />
           </Button>
         )}
         <Button type="button" variant="ghost" size="sm" onClick={openTableDialog}>
-          <TableIcon className="h-4 w-4" />
+          <TableIcon className="size-4" />
         </Button>
       </div>
 
@@ -812,9 +812,9 @@ export default function RichTextEditor({
                 id="table-cols"
                 type="number"
                 min={1}
-                max={10}
+                max={20}
                 value={tableCols}
-                onChange={(e) => setTableCols(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                onChange={(e) => setTableCols(Math.min(20, Math.max(1, parseInt(e.target.value, 20) || 1)))}
               />
             </div>
           </div>
