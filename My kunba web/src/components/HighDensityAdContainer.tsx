@@ -121,7 +121,8 @@ export function HighDensityAdContainer({
   }
 
   return (
-    <div
+    <section
+      aria-label="Advertisements"
       className={`mx-auto w-full max-w-4xl my-8 ${mobileOnly ? 'block md:hidden' : ''}`}
       id="high-density-ad-container"
     >
@@ -153,6 +154,6 @@ export function HighDensityAdContainer({
           showSponsoredLabel
         />
       </div>
-    </div>
+    </section>
   )
 }

@@ -15,7 +15,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -118,16 +118,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
+
 html {
   scroll-behavior: smooth !important;
 }
+
 body {
   font-family: Arial, Helvetica, sans-serif;
   scroll-behavior: smooth !important;
+  overflow-y: hidden;
 }
 
 .spinner-rotate {
@@ -145,6 +149,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(270deg);
   }
@@ -154,10 +159,12 @@ body {
   0% {
     stroke-dashoffset: 187;
   }
+
   50% {
     stroke-dashoffset: 46.75;
     transform: rotate(135deg);
   }
+
   100% {
     stroke-dashoffset: 187;
     transform: rotate(450deg);
@@ -168,15 +175,19 @@ body {
   0% {
     stroke: #4285f4;
   }
+
   25% {
     stroke: #de3e35;
   }
+
   50% {
     stroke: #f7c223;
   }
+
   75% {
     stroke: #1b9a59;
   }
+
   100% {
     stroke: #4285f4;
   }
@@ -185,19 +196,9 @@ body {
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hidden {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
-/* Updated to Tailwind v4 theme configuration syntax */
-
-/* Removed @apply border-border as it's not needed in v4 */
-* {
-  border-color: hsl(var(--color-border));
-}
-
-body {
-  background-color: hsl(var(--color-background));
-  color: hsl(var(--color-foreground));
-}
+
