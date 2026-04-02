@@ -101,11 +101,13 @@ export default function RelatedArticlesCarousel({ articles }: RelatedArticlesCar
       <Carousel className="w-full" setApi={setApi} opts={{ loop: true, align: 'start' }}>
         <CarouselContent className="ml-0 -mr-4 md:-mr-6">
           {articles.map((article) => (
-            <CarouselItem
-              key={article.id}
-              className="pl-0 pr-4 md:pr-6 basis-full md:basis-1/2"
-            >
-              <Link href={`/${article.slug}`} className="group block h-full" rel="related" aria-label={`Read related article: ${article.title}`}>
+            <CarouselItem key={article.id} className="pl-0 pr-4 md:pr-6 basis-full md:basis-1/2">
+              <Link
+                href={`/${article.slug}`}
+                className="group block h-full"
+                rel="related"
+                aria-label={`Read related article: ${article.title}`}
+              >
                 <Card className="h-full transition-all duration-300 hover:shadow-lg">
                   <CardContent className="p-0">
                     {article.media && (
@@ -143,7 +145,7 @@ export default function RelatedArticlesCarousel({ articles }: RelatedArticlesCar
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="flex gap-2 mt-4 justify-center md:justify-end">
+        <div className="flex gap-2 mt-8 justify-center md:justify-end">
           <CarouselPrevious className="static" />
           <CarouselNext className="static" />
         </div>
