@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 // SSG: static until on-demand revalidation via revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
 export const metadata: Metadata = {
-  title: 'Smart Insights on Health, Tech & Finance',
+  title: 'myKunba | Smart Insights on Health, Tech & Finance',
   description:
     'Discover fresh 2026 insights on My Kunba: Strait of Hormuz crisis, free seat selection rules India, magnesium deficiency symptoms, modern marriage problems, government schemes & more.',
   robots: {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     'max-image-preview': 'large',
   },
   openGraph: {
-    title: 'My Kunba | Smart Insights on Health, Tech & Finance',
+    title: 'myKunba | Smart Insights on Health, Tech & Finance',
     description:
       'Fresh 2026 articles on Hormuz crisis, free seat selection rules, health alerts, government schemes & relationships. By Sanju Bhati.',
     url: 'https://mykunba.org/',

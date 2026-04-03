@@ -6,6 +6,7 @@ import {
   Search,
   Users,
   UserX,
+  UserLock,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -248,7 +249,7 @@ export default function PageViewsDashboard() {
             </SelectItem>
             <SelectItem value="authenticated">
               <span className="flex items-center gap-2">
-                <Users className="h-3 w-3" /> Authenticated
+                <UserLock className="h-3 w-3"/> Authenticated
               </span>
             </SelectItem>
             <SelectItem value="anonymous">
