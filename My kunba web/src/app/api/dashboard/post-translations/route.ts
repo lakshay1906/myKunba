@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
         collection: 'posts',
         where: { author: { equals: user.id }, deleted_at: { equals: null } },
         limit: 10000,
-        select: { id: true } as Parameters<typeof payload.find>[0]['select'],
+        select: { id: true } as any,
         depth: 0,
       })
       const ids = myPosts.docs.map((p) => (p as { id: number }).id)

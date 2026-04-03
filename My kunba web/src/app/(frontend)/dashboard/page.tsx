@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
-import DashboardHome from '@/components/dashboard/DashboardHome'
+import PageViewsDashboard from '@/components/dashboard/PageViewsDashboard'
 import { getDashboardUser } from '@/lib/dashboard-session'
 
 export const dynamic = 'force-dynamic'
 
-/** Overview analytics — admins only; authors use /dashboard/blog */
+/** Site analytics — admins only; authors use /dashboard/blog */
 export default async function DashboardPage() {
   const user = await getDashboardUser()
   if (!user) {
@@ -13,5 +13,5 @@ export default async function DashboardPage() {
   if (user.role === 'author') {
     redirect('/dashboard/blog')
   }
-  return <DashboardHome />
+  return <PageViewsDashboard />
 }

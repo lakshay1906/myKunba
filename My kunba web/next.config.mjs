@@ -71,7 +71,7 @@ const nextConfig = {
     return config
   },
   typescript: {
-    ignoreBuildErrors: true, // Fix for Payload 3.33 compatibility
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [

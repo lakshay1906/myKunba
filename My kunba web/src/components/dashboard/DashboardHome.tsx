@@ -202,10 +202,18 @@ export default function DashboardHome() {
             Overview of your {dbStats?.isAdmin ? 'platform' : 'blog'} performance
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Sync
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Site Analytics
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Sync
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}

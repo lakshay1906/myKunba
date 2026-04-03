@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import {
+  BarChart3,
   CameraIcon,
   DatabaseZap,
   FileCodeIcon,
@@ -124,7 +125,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     documents: [
       ...(loginDetail?.role === 'admin'
-        ? [{ name: 'Overview', url: '/dashboard', icon: LayoutDashboard }]
+        ? [
+            { name: 'Overview', url: '/dashboard', icon: LayoutDashboard },
+            { name: 'Google Analytics', url: '/dashboard/google-analytics', icon: BarChart3 },
+          ]
         : []),
       {
         name: 'Blog',

@@ -79,6 +79,7 @@ export interface Config {
     tags: Tag;
     notifications: Notification;
     subscriptions: Subscription;
+    page_views: PageView;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -97,6 +98,7 @@ export interface Config {
     tags: TagsSelect<false> | TagsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    page_views: PageViewsSelect<false> | PageViewsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -496,6 +498,19 @@ export interface Subscription {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page_views".
+ */
+export interface PageView {
+  id: number;
+  url: string;
+  username?: string | null;
+  ipAddress: string;
+  userAgent?: string | null;
+  referrer?: string | null;
+  timestamp: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -548,6 +563,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscriptions';
         value: number | Subscription;
+      } | null)
+    | ({
+        relationTo: 'page_views';
+        value: number | PageView;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -788,6 +807,18 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   unsubscribedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page_views_select".
+ */
+export interface PageViewsSelect<T extends boolean = true> {
+  url?: T;
+  username?: T;
+  ipAddress?: T;
+  userAgent?: T;
+  referrer?: T;
+  timestamp?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -12,6 +12,7 @@ import { LocaleProvider } from '@/lib/i18n/locale-context'
 import { getMessages } from '@/lib/i18n/messages'
 import type { Locale } from '@/lib/i18n/translations'
 import LayoutContent from '@/components/LayoutContent'
+import PageViewTracker from '@/components/PageViewTracker'
 import { headers } from 'next/headers'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -115,6 +116,7 @@ export default async function FrontendLayout({
             <LocaleProvider initialLocale={locale}>
               <NextIntlClientProvider locale={locale} messages={messages}>
                 <main id="main-content" className="flex-1 flex flex-col">
+                  <PageViewTracker />
                   <LayoutContent>{children}</LayoutContent>
                 </main>
                 <Toaster />
