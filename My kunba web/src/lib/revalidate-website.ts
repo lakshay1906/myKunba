@@ -1,5 +1,5 @@
 import { revalidatePath, revalidateTag as nextRevalidateTag } from 'next/cache'
-import { purgeCloudflareCache } from './cloudflare-purge'
+import { purgeCloudflareCache } from './cloudflare'
 
 /**
  * Revalidate public website cache after content changes (post, category, profile).

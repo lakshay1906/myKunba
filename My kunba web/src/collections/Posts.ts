@@ -1,5 +1,7 @@
 import { CollectionConfig } from 'payload'
 
+import { getPostChangePurgeUrls, purgeCloudflareCache } from '@/lib/cloudflare'
+
 export const Posts: CollectionConfig = {
   slug: 'posts',
   admin: {
@@ -161,7 +163,7 @@ export const Posts: CollectionConfig = {
   hooks: {
     afterChange: [
       async ({ req, operation, doc }) => {
-        if (!['create', 'update', 'delete'].includes(operation)) return
+        if (!['create', 'update'].includes(operation)) return
         if (!doc) return
         const userId = doc.author?.id
         if (!userId) {
@@ -181,6 +183,17 @@ export const Posts: CollectionConfig = {
           } catch (error) {
           }
         }, 0)
+      },
+      ({ doc }) => {
+        const slug = typeof doc?.slug === 'string' ? doc.slug : undefined
+        void purgeCloudflareCache(getPostChangePurgeUrls(slug))
+        return doc
+      },
+    ],
+    afterDelete: [
+      ({ doc }) => {
+        const slug = typeof doc?.slug === 'string' ? doc.slug : undefined
+        void purgeCloudflareCache(getPostChangePurgeUrls(slug))
       },
     ],
   },

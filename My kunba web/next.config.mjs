@@ -77,7 +77,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'pub-7c609686c4f44beaabae4f01c8b08f9c.r2.dev',
+        hostname: process.env.CLOUDFLARE_HOSTNAME,
       },
     ],
     formats: ['image/avif', 'image/webp'],
