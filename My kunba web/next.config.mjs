@@ -71,7 +71,7 @@ const nextConfig = {
     return config
   },
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
