@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import { cookies, headers } from 'next/headers'
+import { headers } from 'next/headers'
 import { DashboardLayoutProvider } from '@/lib/context/dashboard-layout-context'
 import { DashboardListPageProvider } from '@/lib/context/dashboard-list-page-context'
 import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client'
 import { redirect } from 'next/navigation'
-import jwt from 'jsonwebtoken'
-import { payload } from '@/payload-client'
+import { getDashboardUser } from '@/lib/dashboard-session'
 
 async function getRedirectUrl(): Promise<string> {
   try {
@@ -41,54 +40,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Server-side authorization check
-  try {
-    const token = (await cookies()).get('access_token')?.value
-
-    if (!token) {
-      redirect(await getRedirectUrl())
-    }
-
-    const accessSecret = process.env.ACCESS_SECRET
-    if (!accessSecret) {
-      redirect(await getRedirectUrl())
-    }
-
-    // Verify JWT token
-    const jwtData: any = jwt.verify(token, accessSecret)
-
-    // Verify user exists and has proper role
-    const user = await payload.find({
-      collection: 'users',
-      where: {
-        email: {
-          equals: jwtData.email,
-        },
-        uid: {
-          equals: jwtData.uid,
-        },
-        deleted_at: {
-          equals: null,
-        },
-        role: {
-          in: ['admin', 'author'],
-        },
-      },
-    })
-
-    if (user.docs.length === 0) {
-      redirect(await getRedirectUrl())
-    }
-
-    const currentUser = user.docs[0]
-
-    const allowedRoles = ['admin', 'author']
-    const hasValidRole = allowedRoles.includes(currentUser.role)
-
-    if (!hasValidRole) {
-      redirect(await getRedirectUrl())
-    }
-  } catch (error) {
+  // Server-side authorization: only admin and author may access dashboard routes
+  const dashboardUser = await getDashboardUser()
+  if (!dashboardUser) {
     redirect(await getRedirectUrl())
   }
 

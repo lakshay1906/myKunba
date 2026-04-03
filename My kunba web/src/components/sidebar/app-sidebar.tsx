@@ -7,6 +7,7 @@ import {
   FileCodeIcon,
   FileTextIcon,
   ImageIcon,
+  LayoutDashboard,
   MessageCircleHeart,
   Reply,
   Shapes,
@@ -122,6 +123,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
     ],
     documents: [
+      ...(loginDetail?.role === 'admin'
+        ? [{ name: 'Overview', url: '/dashboard', icon: LayoutDashboard }]
+        : []),
       {
         name: 'Blog',
         url: '/dashboard/blog',

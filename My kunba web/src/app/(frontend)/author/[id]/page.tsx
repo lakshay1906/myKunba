@@ -269,7 +269,13 @@ export default async function AuthorPage({
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="size-24 border-4 border-background shadow-lg">
                 <AvatarImage
-                  src={typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url ?? ''}
+                  src={
+                    typeof profile.profileImage === 'string'
+                      ? profile.profileImage
+                      : profile.profileImage != null && typeof profile.profileImage === 'object'
+                        ? String((profile.profileImage as { url?: string }).url ?? '')
+                        : ''
+                  }
                   alt={profile.displayName ?? undefined}
                 />
                 <AvatarFallback className="text-2xl">

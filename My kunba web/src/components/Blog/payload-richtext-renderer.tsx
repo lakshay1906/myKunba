@@ -84,13 +84,14 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
 
     case 'paragraph': {
       const paragraphNode = node as PayloadElementNode
-      
-      // Pre-scan children to see if they contain AD_BLOCK to avoid invalid HTML nesting 
+
+      // Pre-scan children to see if they contain AD_BLOCK to avoid invalid HTML nesting
       // i.e., rendering a <div id="high-density-ad-container"> inside a <p> tag
-      const hasAdBlock = paragraphNode.children?.some((child) => 
-        child.type === 'text' && 
-        ((child as PayloadTextNode).text?.includes('[[AD_BLOCK:all]]') || 
-         (child as PayloadTextNode).text?.includes('[[AD_BLOCK:mobile]]'))
+      const hasAdBlock = paragraphNode.children?.some(
+        (child) =>
+          child.type === 'text' &&
+          ((child as PayloadTextNode).text?.includes('[[AD_BLOCK:all]]') ||
+            (child as PayloadTextNode).text?.includes('[[AD_BLOCK:mobile]]')),
       )
 
       if (hasAdBlock) {
@@ -123,7 +124,8 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         const parts = text.split(/(\[\[AD_BLOCK:all\]\]|\[\[AD_BLOCK:mobile\]\])/)
         baseContent = parts.map((part, index) => {
           if (part === '[[AD_BLOCK:all]]') return <HighDensityAdContainer key={`ad-${index}`} />
-          if (part === '[[AD_BLOCK:mobile]]') return <HighDensityAdContainer key={`ad-${index}`} mobileOnly={true} />
+          if (part === '[[AD_BLOCK:mobile]]')
+            return <HighDensityAdContainer key={`ad-${index}`} mobileOnly={true} />
           return part ? <span key={index}>{part}</span> : null
         })
       }
@@ -188,9 +190,12 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
 
     case 'table':
       const tableNode = node as PayloadElementNode
-      const tableRows = tableNode.children?.filter((c) => (c as PayloadElementNode).type === 'tableRow') ?? []
+      const tableRows =
+        tableNode.children?.filter((c) => (c as PayloadElementNode).type === 'tableRow') ?? []
       const firstRow = tableRows[0] as PayloadElementNode | undefined
-      const firstRowHasHeader = firstRow?.children?.some((c) => (c as PayloadElementNode).type === 'tableHeader')
+      const firstRowHasHeader = firstRow?.children?.some(
+        (c) => (c as PayloadElementNode).type === 'tableHeader',
+      )
       return (
         <div className="my-6 w-full overflow-x-auto rounded-lg border">
           <Table className="min-w-[400px]">
@@ -199,7 +204,7 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
                 <TableRow>
                   {firstRow.children?.map((cell, i) => (
                     <TableHead key={i} className="px-4 py-2 font-medium max-w-[200px]">
-                      <div className="line-clamp-2 break-words">
+                      <div className="line-clamp-2 wrap-break-word">
                         {(cell as PayloadElementNode).children?.map((child, j) => (
                           <RenderNode key={j} node={child} />
                         ))}
@@ -217,7 +222,7 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
                   <TableRow key={rowIdx}>
                     {cells.map((cell, cellIdx) => (
                       <TableCell key={cellIdx} className="px-4 py-2 max-w-[200px]">
-                        <div className="line-clamp-2 break-words">
+                        <div className="line-clamp-2 wrap-break-word">
                           {(cell as PayloadElementNode).children?.map((child, j) => (
                             <RenderNode key={j} node={child} />
                           ))}
@@ -272,7 +277,12 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
 
     case 'upload':
     case 'image':
-      const imageNode = node as PayloadElementNode & { url?: string; alt?: string; width?: number; height?: number }
+      const imageNode = node as PayloadElementNode & {
+        url?: string
+        alt?: string
+        width?: number
+        height?: number
+      }
       if (imageNode.url) {
         return (
           <div className="my-6 w-full aspect-video relative rounded-lg overflow-hidden">
