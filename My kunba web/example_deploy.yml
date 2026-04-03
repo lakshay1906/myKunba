@@ -15,7 +15,10 @@ jobs:
 
       # 2️⃣ Build Docker image from subfolder
       - name: Build Docker image
-        run: docker build -t mykunba:latest "./My kunba web"
+        run: |
+          docker build \
+            --build-arg CLOUDFLARE_HOSTNAME=${{ secrets.CLOUDFLARE_HOSTNAME }} \
+            -t mykunba:latest "./My kunba web"
 
       # 3️⃣ Save Docker image as tar at repo root
       - name: Save Docker image
