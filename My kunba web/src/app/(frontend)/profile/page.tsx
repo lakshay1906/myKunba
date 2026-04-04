@@ -8,19 +8,20 @@ import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'
 import { parseSocialLinks } from '@/lib/utils'
 
-function profileUnauthorised(): never {
-  redirect('/unauthorised?redirect=' + encodeURIComponent('/profile'))
+/** Not logged in — send to home; profile is only for authenticated users */
+function redirectIfNotAuthenticated(): never {
+  redirect('/')
 }
 
 export default async function Page() {
   const token = (await cookies()).get('access_token')?.value
   if (!token || token === '') {
-    return profileUnauthorised()
+    return redirectIfNotAuthenticated()
   }
 
   const accessSecret = process.env.ACCESS_SECRET
   if (!accessSecret) {
-    return profileUnauthorised()
+    return redirectIfNotAuthenticated()
   }
 
   try {
@@ -36,7 +37,7 @@ export default async function Page() {
     })
 
     if (!data.docs || data.docs.length === 0) {
-      return profileUnauthorised()
+      return redirectIfNotAuthenticated()
     }
 
     const user = data.docs[0] as unknown as Record<string, unknown>
@@ -48,6 +49,6 @@ export default async function Page() {
     }
     return <Profile user={normalizedUser} />
   } catch (error) {
-    return profileUnauthorised()
+    return redirectIfNotAuthenticated()
   }
 }

@@ -60,8 +60,6 @@ import { useAppStore } from '@/lib/context/store'
 import { toast } from 'sonner'
 import { parseSocialLinks } from '@/lib/utils'
 
-const PROFILE_UNAUTHORISED_HREF = '/unauthorised?redirect=' + encodeURIComponent('/profile')
-
 // Mock user data based on your schema
 // const mockUser = {
 //   username: 'johndoe',
@@ -119,8 +117,9 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   useEffect(() => {
     if (!authInitialized || authLoading) return
     if (loginDetail) return
-    router.replace(PROFILE_UNAUTHORISED_HREF)
-  }, [authInitialized, authLoading, loginDetail, router])
+    // Hard navigation: soft router.replace often fails to leave /profile after sign-out (RSC/cache/Radix)
+    window.location.replace('/')
+  }, [authInitialized, authLoading, loginDetail])
 
   // Email verification OTP
   const [verifyOtpInput, setVerifyOtpInput] = useState('')
@@ -180,7 +179,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
 
   const handleSignOut = async () => {
     await logout()
-    router.replace(PROFILE_UNAUTHORISED_HREF)
+    window.location.assign('/')
   }
 
   const getDeleteWarningMessage = () => {
@@ -205,10 +204,9 @@ export default function Profile({ user }: { user: Record<string, any> }) {
         return
       }
       setDeleteDialogOpen(false)
-      await fetch('/api/user/auth/jwt/delete', { method: 'DELETE', credentials: 'include' })
-      logout()
+      await logout()
       toast.success('Account deleted', { description: 'You have been signed out.' })
-      router.push('/')
+      window.location.assign('/')
     } catch (e: any) {
       toast.error('Error', { description: e.message || 'Failed to delete account' })
     } finally {
@@ -475,7 +473,13 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                 Edit Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+              <DropdownMenuItem
+                className="text-red-600"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  void handleSignOut()
+                }}
+              >
                 <LogOut className="mr-2 size-4" />
                 Sign Out
               </DropdownMenuItem>

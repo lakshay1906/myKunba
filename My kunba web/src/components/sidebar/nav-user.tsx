@@ -24,7 +24,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { useAppStore } from '@/lib/context/store'
-import { useRouter } from 'next/navigation'
 
 export function NavUser({
   user,
@@ -37,7 +36,6 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { logout } = useAppStore()
-  const router = useRouter()
 
   return (
     <SidebarMenu>
@@ -94,9 +92,9 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                logout()
-                router.push('/')
+              onClick={async () => {
+                await logout()
+                window.location.assign('/')
               }}
             >
               <LogOutIcon />
