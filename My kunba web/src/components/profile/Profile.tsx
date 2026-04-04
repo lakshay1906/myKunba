@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   MoreHorizontal,
   Edit,
@@ -58,6 +59,8 @@ import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/lib/context/store'
 import { toast } from 'sonner'
 import { parseSocialLinks } from '@/lib/utils'
+
+const PROFILE_UNAUTHORISED_HREF = '/unauthorised?redirect=' + encodeURIComponent('/profile')
 
 // Mock user data based on your schema
 // const mockUser = {
@@ -111,7 +114,13 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null)
   const [profileImageSaving, setProfileImageSaving] = useState(false)
   const router = useRouter()
-  const { logout, setLoginDetail } = useAppStore()
+  const { logout, setLoginDetail, loginDetail, loading: authLoading, authInitialized } = useAppStore()
+
+  useEffect(() => {
+    if (!authInitialized || authLoading) return
+    if (loginDetail) return
+    router.replace(PROFILE_UNAUTHORISED_HREF)
+  }, [authInitialized, authLoading, loginDetail, router])
 
   // Email verification OTP
   const [verifyOtpInput, setVerifyOtpInput] = useState('')
@@ -169,8 +178,9 @@ export default function Profile({ user }: { user: Record<string, any> }) {
     setIsEditSheetOpen(true)
   }
 
-  const handleSignOut = () => {
-    logout()
+  const handleSignOut = async () => {
+    await logout()
+    router.replace(PROFILE_UNAUTHORISED_HREF)
   }
 
   const getDeleteWarningMessage = () => {
@@ -424,6 +434,20 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   }
 
   useEffect(() => {}, [editData])
+
+  if (!authInitialized || authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+        <Skeleton className="h-[280px] w-full rounded-xl" />
+      </div>
+    )
+  }
+
+  if (!loginDetail) {
+    return null
+  }
 
   return (
     // <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

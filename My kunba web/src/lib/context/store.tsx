@@ -28,6 +28,8 @@ type AppContextType = {
   emailSignUp: ({ email, password }: { email: string; password: string }) => Promise<User>
   loading: boolean
   setLoading: React.Dispatch<SetStateAction<boolean>>
+  /** True after the first client-side JWT/session check finishes (success or failure). */
+  authInitialized: boolean
   searchResults: unknown[] | null
   setSearchResults: React.Dispatch<SetStateAction<unknown[] | null>>
   searchQuery: string
@@ -57,6 +59,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
   const [originalBlogData, setOriginalBlogData] = useState<unknown[] | null>(null)
   const [blogCategorySlugs, setBlogCategorySlugs] = useState<string[]>([])
   const [blogAuthorEmails, setBlogAuthorEmails] = useState<string[]>([])
+  const [authInitialized, setAuthInitialized] = useState(false)
 
   async function googleSignIn() {
     const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth')
@@ -90,16 +93,22 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
     const { signOut } = await import('firebase/auth')
     const { getFirebaseAuth } = await import('@/lib/firebase')
     const auth = getFirebaseAuth()
-    if (auth) {
-      await signOut(auth)
-        .then(async () => {
-          const rawRes = await fetch('/api/user/auth/jwt/delete', {
-            method: 'DELETE',
-          })
-          if (rawRes.ok) setLoginDetail(null)
-        })
-        .catch(() => {})
+    try {
+      if (auth) {
+        await signOut(auth)
+      }
+    } catch {
+      // ignore Firebase sign-out errors
     }
+    try {
+      await fetch('/api/user/auth/jwt/delete', {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+    } catch {
+      // ignore network errors
+    }
+    setLoginDetail(null)
   }
 
   useEffect(() => {
@@ -129,6 +138,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
       } catch {
       } finally {
         setLoading(false)
+        setAuthInitialized(true)
       }
     })()
   }, [])
@@ -144,6 +154,7 @@ export const AppProvider = ({ token, children }: { token: string | null; childre
         emailSignUp,
         loading,
         setLoading,
+        authInitialized,
         searchResults,
         setSearchResults,
         searchQuery,
