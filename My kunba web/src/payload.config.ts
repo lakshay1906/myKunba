@@ -20,6 +20,7 @@ import { Admin } from './collections/Admin'
 import { Notifications } from './collections/Notifications'
 import { Subscriptions } from './collections/Subscriptions'
 import { PageViews } from './collections/PageViews'
+import { migrations as prodMigrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -64,6 +65,8 @@ export default buildConfig({
       connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
     },
     push: false,
+    /** Registered with Payload so `pnpm run payload migrate` / `pnpm migrate` applies schema. */
+    prodMigrations,
   }),
   sharp: sharp as unknown as SharpDependency,
   plugins: [

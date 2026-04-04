@@ -96,7 +96,8 @@ jobs:
 
             sleep 15
 
-            docker exec mykunba node scripts/run-migration.js || true
+            echo "Running SQL migrations (do not use || true here — failures must be visible)..."
+            docker exec mykunba node scripts/run-migration.js
             docker exec mykunba node scripts/submit-blog-urls-to-google.js || true
 
             rm -f /home/ec2-user/mykunba.tar
