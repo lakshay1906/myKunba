@@ -7,12 +7,11 @@ import { checkRateLimit, getRateLimitConfig, getRateLimitHeaders } from '@/utils
  * Add your production domain here
  */
 const allowedOrigins = [
-  process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  process.env.NEXT_PUBLIC_PUBLIC_URL,
   'http://localhost:3000',
   'http://localhost:3001',
   'https://new.mykunba.org',
   'https://mykunba.org',
-  'http://3.6.239.45:3000',
   'http://172.31.7.147:3000',
   // Add your production domain(s) here
   // 'https://your-production-domain.com',

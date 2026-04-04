@@ -60,7 +60,9 @@ const nextConfig = {
   },
   ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Keep console.error / console.warn in production so API failures show in `docker logs`
+    removeConsole:
+      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   webpack: (config, { webpack }) => {
     config.plugins.push(
