@@ -142,7 +142,7 @@ export default function DataTable({
   return (
     <Card
       id="Main-DataTable"
-      className={`${cardStyle} flex h-[calc(100vh-69px-16px-16px)] min-h-0 flex-col`}
+      className={`${cardStyle} flex h-[calc(100vh-69px-16px-16px)] min-h-0 flex-col overflow-hidden`}
     >
       {tableTitle !== undefined && (
         <div className="p-5 flex justify-between items-center border-b shrink-0">

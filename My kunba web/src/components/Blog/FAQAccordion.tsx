@@ -17,11 +17,15 @@ export default function FAQAccordion({ items }: { items: FAQItem[] }) {
 
   return (
     <aside className="w-full lg:w-80 shrink-0">
-      <div className="sticky top-24 mt-8 rounded-lg border bg-card p-4">
+      <div className="mt-8 rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold mb-3">FAQ</h2>
         <Accordion type="single" collapsible className="w-full">
           {items.map((item, index) => (
-            <AccordionItem key={index} value={`faq-${index}`} className={`${items.length - 1 === index ? 'border-b-0' : 'border-b'}`}>
+            <AccordionItem
+              key={index}
+              value={`faq-${index}`}
+              className={`${items.length - 1 === index ? 'border-b-0' : 'border-b'}`}
+            >
               <AccordionTrigger className="text-left">
                 {item.question || 'Question'}
               </AccordionTrigger>

@@ -13,6 +13,12 @@ import PayloadRichTextRenderer, { PayloadRichTextContent } from './payload-richt
 import { DeferredSection } from '@/components/DeferredSection'
 import BlogCard from './BlogCard'
 import RelatedArticlesCarousel from './RelatedArticlesCarousel'
+import { AdBanner } from '@/components/AdBanner'
+
+/** Below-title AdSense unit (`NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE`) */
+const BELOW_TITLE_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE ?? ''
+/** In-article AdSense unit after 2nd paragraph (`NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE`) */
+const IN_ARTICLE_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE ?? ''
 
 function InternalLinksCards({
   internalLinks,
@@ -33,9 +39,7 @@ function InternalLinksCards({
     updatedAt: string
   }> | null>(null)
 
-  const slugs = internalLinks
-    .map((l) => l.url.replace(/^\//, '').trim())
-    .filter(Boolean)
+  const slugs = internalLinks.map((l) => l.url.replace(/^\//, '').trim()).filter(Boolean)
 
   useEffect(() => {
     if (slugs.length === 0) {
@@ -89,7 +93,11 @@ function InternalLinksCards({
           <ul className="space-y-2">
             {internalLinks.map((link, index) => (
               <li key={index}>
-                <Link href={link.url} className="text-primary hover:underline font-medium" rel="internal">
+                <Link
+                  href={link.url}
+                  className="text-primary hover:underline font-medium"
+                  rel="internal"
+                >
                   {link.anchorText}
                 </Link>
               </li>
@@ -218,9 +226,20 @@ export default function BlogContent({
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-4 md:mt-6 lg:mt-8">
+    <div className="max-w-[720px] mx-auto mt-4 md:mt-6 lg:mt-8">
       {/* Priority: Title, Cover Image, Content - load immediately */}
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
+
+      {BELOW_TITLE_AD_SLOT ? (
+        <div className="mb-4 flex w-full justify-center">
+          <AdBanner
+            dataAdSlot={BELOW_TITLE_AD_SLOT}
+            dataAdFormat="fluid"
+            className="w-full"
+            minHeight={100}
+          />
+        </div>
+      ) : null}
 
       {/* Featured Image - priority load */}
       {blog.media && (
@@ -239,7 +258,11 @@ export default function BlogContent({
 
       {/* Blog Content - render immediately (SSR) */}
       <div className="mb-10">
-        <PayloadRichTextRenderer content={blog.content} className="prose prose-lg max-w-none" />
+        <PayloadRichTextRenderer
+          content={blog.content}
+          className="prose prose-lg max-w-none"
+          inArticleAdSlot={IN_ARTICLE_AD_SLOT || undefined}
+        />
       </div>
 
       {/* Deferred: Author and Date */}
@@ -342,7 +365,9 @@ export default function BlogContent({
           }
         >
           <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-4">External link{blog.externalLinks.length > 1 ? 's' : ''}</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              External link{blog.externalLinks.length > 1 ? 's' : ''}
+            </h2>
             <ul className="space-y-2">
               {blog.externalLinks.map((link, index) => (
                 <li key={index}>
@@ -377,9 +402,18 @@ export default function BlogContent({
           <nav className="mb-8 flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground mr-1">Tags:</span>
             {blog.tags.map((tag) => {
-              const id = typeof tag === 'object' && tag !== null && 'id' in tag ? (tag as { id: number }).id : (tag as number)
-              const name = typeof tag === 'object' && tag !== null && 'name' in tag ? (tag as { name?: string }).name : undefined
-              const slug = typeof tag === 'object' && tag !== null && 'slug' in tag ? (tag as { slug?: string }).slug : undefined
+              const id =
+                typeof tag === 'object' && tag !== null && 'id' in tag
+                  ? (tag as { id: number }).id
+                  : (tag as number)
+              const name =
+                typeof tag === 'object' && tag !== null && 'name' in tag
+                  ? (tag as { name?: string }).name
+                  : undefined
+              const slug =
+                typeof tag === 'object' && tag !== null && 'slug' in tag
+                  ? (tag as { slug?: string }).slug
+                  : undefined
               const label = name ?? `#${id}`
               const href = slug ? `/tag/${slug}` : `/tag/${id}`
               return (

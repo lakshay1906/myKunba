@@ -42,6 +42,9 @@ ARG NEXT_PUBLIC_ADS_SLOT_1
 ARG NEXT_PUBLIC_ADS_SLOT_2
 ARG NEXT_PUBLIC_ADS_SLOT_3
 ARG NEXT_PUBLIC_ADS_SLOT_4
+ARG NEXT_PUBLIC_ADS_SLOT_IN_FEED
+ARG NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE
+ARG NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE
 ARG NEXT_PUBLIC_GA_PROPERTY_ID
 # Used by next.config.mjs (images.remotePatterns) at build time — must match GitHub Actions --build-arg
 ARG CLOUDFLARE_HOSTNAME
@@ -54,6 +57,9 @@ ENV NEXT_PUBLIC_ADS_SLOT_1=$NEXT_PUBLIC_ADS_SLOT_1
 ENV NEXT_PUBLIC_ADS_SLOT_2=$NEXT_PUBLIC_ADS_SLOT_2
 ENV NEXT_PUBLIC_ADS_SLOT_3=$NEXT_PUBLIC_ADS_SLOT_3
 ENV NEXT_PUBLIC_ADS_SLOT_4=$NEXT_PUBLIC_ADS_SLOT_4
+ENV NEXT_PUBLIC_ADS_SLOT_IN_FEED=$NEXT_PUBLIC_ADS_SLOT_IN_FEED
+ENV NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE=$NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE
+ENV NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE=$NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE
 ENV NEXT_PUBLIC_GA_PROPERTY_ID=$NEXT_PUBLIC_GA_PROPERTY_ID
 ENV CLOUDFLARE_HOSTNAME=$CLOUDFLARE_HOSTNAME
 
@@ -84,7 +90,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/scripts ./scripts
 
 RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8 && \
-    mkdir -p /app/vendor && cp -r /tmp/pg-install/node_modules/* /app/vendor/ && rm -rf /tmp/pg-install
+  mkdir -p /app/vendor && cp -r /tmp/pg-install/node_modules/* /app/vendor/ && rm -rf /tmp/pg-install
 
 ENV NODE_PATH=/app/vendor
 

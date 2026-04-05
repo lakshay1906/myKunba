@@ -1,5 +1,6 @@
-import type { JSX } from 'react'
+import { Fragment, type JSX } from 'react'
 import { HighDensityAdContainer } from '@/components/HighDensityAdContainer'
+import { AdBanner } from '@/components/AdBanner'
 import Image from 'next/image'
 import {
   Table,
@@ -48,21 +49,44 @@ export interface PayloadRichTextContent {
 interface PayloadRichTextRendererProps {
   content: PayloadRichTextContent
   className?: string
+  /** AdSense in-article slot; rendered once after the 2nd top-level paragraph */
+  inArticleAdSlot?: string
 }
 
 export default function PayloadRichTextRenderer({
   content,
   className = '',
+  inArticleAdSlot,
 }: PayloadRichTextRendererProps) {
   if (!content?.root?.children) {
     return <div className={className}>No content available</div>
   }
 
+  const rootChildren = content.root.children
+  let paragraphCount = 0
+
   return (
     <div className={className}>
-      {content.root.children.map((node, index) => (
-        <RenderNode key={index} node={node} />
-      ))}
+      {rootChildren.map((node, index) => {
+        const isParagraph = node.type === 'paragraph'
+        if (isParagraph) paragraphCount += 1
+
+        return (
+          <Fragment key={index}>
+            <RenderNode node={node} />
+            {inArticleAdSlot && isParagraph && paragraphCount === 2 ? (
+              <div className="my-6 flex w-full max-w-none justify-center not-prose">
+                <AdBanner
+                  dataAdSlot={inArticleAdSlot}
+                  dataAdFormat="fluid"
+                  className="w-full"
+                  minHeight={120}
+                />
+              </div>
+            ) : null}
+          </Fragment>
+        )
+      })}
     </div>
   )
 }
@@ -105,7 +129,7 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       }
 
       return (
-        <p className="leading-relaxed mb-4 text-justify">
+        <p className="leading-relaxed mb-4 text-justify text-lg">
           {paragraphNode.children?.map((child, index) => (
             <RenderNode key={index} node={child} />
           ))}

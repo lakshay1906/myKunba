@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
 import EmptyBlogState from './EmptyBlogState'
+import { AdBanner } from '@/components/AdBanner'
 import { useAppStoreOptional } from '@/lib/context/store'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
@@ -32,6 +33,8 @@ import {
 const AUTHORS_CACHE_KEY = 'blog_authors_cache'
 const LIMIT = 24
 const SEARCH_DEBOUNCE_MS = 800
+/** In-feed AdSense slot; shown after every 4 cards on the homepage grid */
+const FEED_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_IN_FEED ?? ''
 
 type BlogProps = {
   posts: Record<string, unknown>
@@ -571,11 +574,29 @@ export default function Blog({
           {data.length > 0 ? (
             <>
               <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
-                {data.map((ele) => (
-                  <div key={ele.id} className="size-full">
-                    <BlogCard key={ele.id} post={ele} />
-                  </div>
-                ))}
+                {data.flatMap((ele, index) => {
+                  const nodes = [
+                    <div key={ele.id} className="size-full">
+                      <BlogCard post={ele} />
+                    </div>,
+                  ]
+                  if (FEED_AD_SLOT && (index + 1) % 4 === 0) {
+                    nodes.push(
+                      <div
+                        key={`feed-ad-${String(ele.id)}`}
+                        className="col-span-full flex w-full justify-center py-1 sm:py-2"
+                      >
+                        <AdBanner
+                          dataAdSlot={FEED_AD_SLOT}
+                          dataAdFormat="fluid"
+                          className="w-full max-w-4xl"
+                          minHeight={120}
+                        />
+                      </div>,
+                    )
+                  }
+                  return nodes
+                })}
               </div>
               {totalPages > 1 && (
                 <nav
