@@ -101,10 +101,14 @@ export default function CategoryMain({
     offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
     setLoading(true)
     try {
-      const rawRes = await fetch(`/api/dashboard/category?page=${page}&limit=${limitParam}`, {
+      const params = new URLSearchParams({ page: String(page), limit: String(limitParam) })
+      const q = options?.search?.trim()
+      if (q) params.set('search', q)
+      const rawRes = await fetch(`/api/dashboard/category?${params}`, {
         headers: loginDetail?.token
           ? { Authorization: `bearer ${loginDetail.token}` }
           : undefined,

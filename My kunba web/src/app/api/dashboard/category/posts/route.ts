@@ -58,11 +58,25 @@ export async function GET(req: NextRequest) {
     const pageNum = page ? Number(page) : 1
     const limitNum = limit ? Number(limit) : 10
 
-    const where: Where = {
+    const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+    const baseWhere: Where = {
       categories: { contains: Number(categoryId) },
       deleted_at: { equals: null },
       ...(isAdmin ? {} : { author: { equals: currentUser.id } }),
     }
+    const where: Where = searchTrim
+      ? {
+          and: [
+            baseWhere,
+            {
+              or: [
+                { title: { contains: searchTrim } },
+                { slug: { contains: searchTrim } },
+              ],
+            },
+          ],
+        }
+      : baseWhere
 
     // Fetch posts that belong to this category - only necessary fields
     const posts = await payload.find({

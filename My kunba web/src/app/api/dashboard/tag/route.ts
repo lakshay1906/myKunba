@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import type { Where } from 'payload'
 import { payload } from '@/payload-client'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser } from '@/utils/auth'
@@ -56,11 +57,26 @@ export async function GET(req: NextRequest) {
     const limit = req.nextUrl.searchParams.get('limit')
     const pageNum = page ? Number(page) : 1
     const limitNum = limit ? Number(limit) : 10
+    const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+    const baseWhere: Where = { deleted_at: { equals: null } }
+    const where: Where = searchTrim
+      ? {
+          and: [
+            baseWhere,
+            {
+              or: [
+                { name: { contains: searchTrim } },
+                { slug: { contains: searchTrim } },
+              ],
+            },
+          ],
+        }
+      : baseWhere
     const data = await payload.find({
       collection: 'tags',
       depth: 0,
       select: selectWithCreatedBy,
-      where: { deleted_at: { equals: null } },
+      where,
       pagination: true,
       limit: limitNum,
       page: pageNum,

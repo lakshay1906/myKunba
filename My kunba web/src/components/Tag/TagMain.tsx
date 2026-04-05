@@ -104,10 +104,14 @@ export default function TagMain({
     _offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
     setLoading(true)
     try {
-      const rawRes = await fetch(`/api/dashboard/tag?page=${page}&limit=${limitParam}`, {
+      const params = new URLSearchParams({ page: String(page), limit: String(limitParam) })
+      const q = options?.search?.trim()
+      if (q) params.set('search', q)
+      const rawRes = await fetch(`/api/dashboard/tag?${params}`, {
         headers: loginDetail?.token ? { Authorization: `bearer ${loginDetail.token}` } : undefined,
       })
       if (!rawRes.ok) {

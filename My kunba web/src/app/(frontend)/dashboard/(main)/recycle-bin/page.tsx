@@ -43,14 +43,20 @@ export default function RecycleBinPage() {
   const [selectedUsers, setSelectedUsers] = useState<Record<string, any>[]>([])
 
   const fetchRecycle = useCallback(
-    async (type: TabType, page: number) => {
+    async (type: TabType, page: number, search?: string) => {
       if (!loginDetail?.token) return
       setLoading(true)
       try {
-        const res = await fetch(
-          `/api/dashboard/recycle-bin?type=${type}&page=${page}&limit=${LIMIT}`,
-          { headers: { Authorization: `Bearer ${loginDetail.token}` } },
-        )
+        const params = new URLSearchParams({
+          type,
+          page: String(page),
+          limit: String(LIMIT),
+        })
+        const q = search?.trim()
+        if (q) params.set('search', q)
+        const res = await fetch(`/api/dashboard/recycle-bin?${params}`, {
+          headers: { Authorization: `Bearer ${loginDetail.token}` },
+        })
         const json = await res.json()
         if (!res.ok) throw new Error(json.message || 'Failed to fetch')
         const pageNum = json.currentPage ?? page
@@ -87,8 +93,14 @@ export default function RecycleBinPage() {
   )
 
   const fetchCurrent = useCallback(
-    (limitParam: number, _offset: number, _skipScroll: boolean, page: number) => {
-      fetchRecycle(activeTab, page)
+    async (
+      _limitParam: number,
+      _offset: number,
+      _skipScroll: boolean,
+      page: number,
+      options?: { search?: string },
+    ) => {
+      await fetchRecycle(activeTab, page, options?.search)
     },
     [activeTab, fetchRecycle],
   )

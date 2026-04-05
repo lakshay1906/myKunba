@@ -53,10 +53,23 @@ export async function GET(req: NextRequest) {
 
     const page = Math.max(1, Number(req.nextUrl.searchParams.get('page')) || 1)
     const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 20))
+    const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+    let whereFinal: import('payload').Where = where
+    if (searchTrim) {
+      const searchWhere: import('payload').Where = {
+        or: [
+          { title: { contains: searchTrim } },
+          { slug: { contains: searchTrim } },
+          { locale: { contains: searchTrim } },
+        ],
+      }
+      const hasBase = where && Object.keys(where as object).length > 0
+      whereFinal = hasBase ? { and: [where, searchWhere] } : searchWhere
+    }
 
     const result = await payload.find({
       collection: 'post-translation-entries' as never,
-      where: where as never,
+      where: whereFinal as never,
       depth: 0,
       page,
       limit,

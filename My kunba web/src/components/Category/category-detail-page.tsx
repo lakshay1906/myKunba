@@ -75,6 +75,7 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
     offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
     if (!loginDetail) {
       setLoading(false)
@@ -82,13 +83,17 @@ export default function CategoryDetailPage({ id, response }: { id: string; respo
     }
     setLoading(true)
     try {
-      const res = await fetch(
-        `/api/dashboard/category/posts?categoryId=${id}&page=${page}&limit=${limitParam}`,
-        {
-          method: 'GET',
-          headers: { Authorization: `bearer ${loginDetail.token}` },
-        },
-      )
+      const params = new URLSearchParams({
+        categoryId: String(id),
+        page: String(page),
+        limit: String(limitParam),
+      })
+      const q = options?.search?.trim()
+      if (q) params.set('search', q)
+      const res = await fetch(`/api/dashboard/category/posts?${params}`, {
+        method: 'GET',
+        headers: { Authorization: `bearer ${loginDetail.token}` },
+      })
       if (res.ok) {
         const result = await res.json()
         setPosts(result.posts || [])

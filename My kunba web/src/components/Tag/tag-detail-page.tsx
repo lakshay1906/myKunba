@@ -56,6 +56,7 @@ export default function TagDetailPage({
     _offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
     if (!loginDetail) {
       setLoading(false)
@@ -63,13 +64,17 @@ export default function TagDetailPage({
     }
     setLoading(true)
     try {
-      const res = await fetch(
-        `/api/dashboard/tag/posts?tagId=${id}&page=${page}&limit=${limitParam}`,
-        {
-          method: 'GET',
-          headers: { Authorization: `bearer ${loginDetail.token}` },
-        },
-      )
+      const params = new URLSearchParams({
+        tagId: String(id),
+        page: String(page),
+        limit: String(limitParam),
+      })
+      const q = options?.search?.trim()
+      if (q) params.set('search', q)
+      const res = await fetch(`/api/dashboard/tag/posts?${params}`, {
+        method: 'GET',
+        headers: { Authorization: `bearer ${loginDetail.token}` },
+      })
       if (res.ok) {
         const result = await res.json()
         setPosts(result.posts || [])

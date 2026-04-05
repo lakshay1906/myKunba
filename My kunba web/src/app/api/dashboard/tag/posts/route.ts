@@ -29,11 +29,25 @@ export async function GET(req: NextRequest) {
     }
 
     const isAdmin = user.role === 'admin'
-    const where: Where = {
+    const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+    const baseWhere: Where = {
       tags: { contains: Number(tagId) },
       deleted_at: { equals: null },
       ...(isAdmin ? {} : { author: { equals: user.id } }),
     }
+    const where: Where = searchTrim
+      ? {
+          and: [
+            baseWhere,
+            {
+              or: [
+                { title: { contains: searchTrim } },
+                { slug: { contains: searchTrim } },
+              ],
+            },
+          ],
+        }
+      : baseWhere
 
     const page = req.nextUrl.searchParams.get('page')
     const limit = req.nextUrl.searchParams.get('limit')

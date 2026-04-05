@@ -131,10 +131,13 @@ export default function TranslationsMain({
     return posts.find((x) => x.id === p)?.title ?? `Post #${p}`
   }
 
-  async function loadList(page: number = currentPage) {
+  async function loadList(page: number = currentPage, search?: string) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/post-translations?page=${page}&limit=${limit}`, {
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+      const q = search?.trim()
+      if (q) params.set('search', q)
+      const res = await fetch(`/api/dashboard/post-translations?${params}`, {
         headers: getHeaders(),
       })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Failed to load')
@@ -157,8 +160,9 @@ export default function TranslationsMain({
     _offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
-    await loadList(page)
+    await loadList(page, options?.search)
   }
 
   useEffect(() => {

@@ -112,7 +112,7 @@ export default function AddPostsTag({ id }: { id: string }) {
         currentPage={1}
         total={posts.length}
         data={posts}
-        fetchDataFunction={() => {}}
+        fetchDataFunction={async () => {}}
         isCheckBoxRequired={true}
         isEllipsisRequired={false}
         limit={10}

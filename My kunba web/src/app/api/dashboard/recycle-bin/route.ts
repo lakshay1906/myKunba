@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     const type = req.nextUrl.searchParams.get('type') as 'blogs' | 'categories' | 'tags' | 'users' | null
     const page = Math.max(1, Number(req.nextUrl.searchParams.get('page')) || 1)
     const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 10))
+    const searchTrim = req.nextUrl.searchParams.get('search')?.trim() ?? ''
 
     if (!type || !['blogs', 'categories', 'tags', 'users'].includes(type)) {
       return NextResponse.json({ message: 'Invalid type. Use blogs, categories, tags, or users.' }, { status: 400 })
@@ -44,10 +45,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'blogs') {
-      const where: Where = {
+      const base: Where = {
         deleted_at: { not_equals: null },
         ...(isAdmin ? {} : { author: { equals: userId } }),
       }
+      const where: Where = searchTrim
+        ? {
+            and: [
+              base,
+              {
+                or: [
+                  { title: { contains: searchTrim } },
+                  { slug: { contains: searchTrim } },
+                ],
+              },
+            ],
+          }
+        : base
       const result = await payload.find({
         collection: 'posts',
         where,
@@ -75,10 +89,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'categories') {
-      const where: Where = {
+      const base: Where = {
         deleted_at: { not_equals: null },
         ...(isAdmin ? {} : { createdBy: { equals: userId } }),
       }
+      const where: Where = searchTrim
+        ? {
+            and: [
+              base,
+              {
+                or: [
+                  { name: { contains: searchTrim } },
+                  { slug: { contains: searchTrim } },
+                ],
+              },
+            ],
+          }
+        : base
       const result = await payload.find({
         collection: 'categories',
         where,
@@ -104,10 +131,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'tags') {
-      const where: Where = {
+      const base: Where = {
         deleted_at: { not_equals: null },
         ...(isAdmin ? {} : { createdBy: { equals: userId } }),
       }
+      const where: Where = searchTrim
+        ? {
+            and: [
+              base,
+              {
+                or: [
+                  { name: { contains: searchTrim } },
+                  { slug: { contains: searchTrim } },
+                ],
+              },
+            ],
+          }
+        : base
       const result = await payload.find({
         collection: 'tags',
         where,
@@ -133,9 +173,23 @@ export async function GET(req: NextRequest) {
     }
 
     // type === 'users' (admin only)
+    const usersBase: Where = { deleted_at: { not_equals: null } }
+    const usersWhere: Where = searchTrim
+      ? {
+          and: [
+            usersBase,
+            {
+              or: [
+                { displayName: { contains: searchTrim } },
+                { email: { contains: searchTrim } },
+              ],
+            },
+          ],
+        }
+      : usersBase
     const result = await payload.find({
       collection: 'users',
-      where: { deleted_at: { not_equals: null } },
+      where: usersWhere,
       select: { id: true, displayName: true, email: true, role: true, deleted_at: true },
       depth: 0,
       page,

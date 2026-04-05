@@ -146,6 +146,7 @@ export default function BlogMain({
     offset: number,
     _skipScroll: boolean,
     page: number,
+    options?: { search?: string },
   ) => {
     if (!loginDetail) {
       setLoading(false)
@@ -157,6 +158,8 @@ export default function BlogMain({
       const url = new URL('/api/dashboard/blog', window.location.origin)
       url.searchParams.set('page', String(page))
       url.searchParams.set('limit', String(limitParam))
+      const q = options?.search?.trim()
+      if (q) url.searchParams.set('search', q)
       if (isAdmin && selectedAuthorId != null && selectedAuthorId !== 'all') {
         url.searchParams.set('authorId', String(selectedAuthorId))
       }
