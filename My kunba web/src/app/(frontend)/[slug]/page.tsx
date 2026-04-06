@@ -42,7 +42,8 @@ export async function generateMetadata({
     .filter(Boolean)
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = getPublicUrl()
-  const postUrl = `${siteUrl}/${post.slug}`
+  const canonicalBaseUrl = 'https://mykunba.org'
+  const postUrl = `${canonicalBaseUrl}/posts/${post.slug}`
 
   const keywords: string[] = [...focusKeywords]
   if (post.categories && Array.isArray(post.categories)) {
@@ -176,6 +177,23 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const siteUrl = getPublicUrl()
 
   const faqItems = blog.faq && blog.faq.length > 0 ? blog.faq : []
+  const faqJsonLd =
+    faqItems.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqItems
+            .filter((item: { question?: string; answer?: string }) => item?.question && item?.answer)
+            .map((item: { question: string; answer: string }) => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+              },
+            })),
+        }
+      : null
 
   return (
     <>
@@ -214,6 +232,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         }}
         siteUrl={siteUrl}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <main className="container mx-auto px-3">
         <div className="flex flex-col lg:flex-row gap-8 py-4">
           <div className="min-w-0 flex-1">

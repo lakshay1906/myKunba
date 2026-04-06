@@ -50,7 +50,7 @@ export default function BlogSchema({
   siteUrl?: string
 }) {
   const siteUrl = siteUrlProp || getPublicUrl()
-  const blogUrl = `${siteUrl}/${post.slug}`
+  const blogUrl = `${siteUrl}/posts/${post.slug}`
   const authorName =
     (post.author && typeof post.author === 'object' && post.author.displayName) || 'Author'
   const authorSlug =
@@ -112,23 +112,28 @@ export default function BlogSchema({
     }),
   }
 
+  const primaryCategory =
+    post.categories && post.categories.length > 0 ? post.categories[0] : null
+
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
       { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/` },
-      ...(post.categories && post.categories.length > 0
-        ? post.categories.map((cat, index) => ({
-          '@type': 'ListItem' as const,
-          position: 3 + index,
-          name: cat.name,
-          item: `${siteUrl}/?category=${cat.id}`,
-        }))
+      ...(primaryCategory
+        ? [
+          {
+            '@type': 'ListItem' as const,
+            position: 3,
+            name: primaryCategory.name,
+            item: `${siteUrl}/category/${primaryCategory.slug}`,
+          },
+        ]
         : []),
       {
         '@type': 'ListItem',
-        position: 3 + (post.categories?.length || 0) + 1,
+        position: primaryCategory ? 4 : 3,
         name: post.title,
         item: blogUrl,
       },
