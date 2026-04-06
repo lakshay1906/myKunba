@@ -24,6 +24,9 @@ jobs:
             --build-arg NEXT_PUBLIC_ADS_SLOT_2=${{ secrets.NEXT_PUBLIC_ADS_SLOT_2 }} \
             --build-arg NEXT_PUBLIC_ADS_SLOT_3=${{ secrets.NEXT_PUBLIC_ADS_SLOT_3 }} \
             --build-arg NEXT_PUBLIC_ADS_SLOT_4=${{ secrets.NEXT_PUBLIC_ADS_SLOT_4 }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_IN_FEED=${{ secrets.NEXT_PUBLIC_ADS_SLOT_IN_FEED }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE=${{ secrets.NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE }} \
+            --build-arg NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE=${{ secrets.NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE }} \
             --build-arg NEXT_PUBLIC_GA_PROPERTY_ID=${{ secrets.NEXT_PUBLIC_GA_PROPERTY_ID }} \
             --build-arg CLOUDFLARE_HOSTNAME=${{ secrets.CLOUDFLARE_HOSTNAME }} \
             -t mykunba:latest "./My kunba web"
