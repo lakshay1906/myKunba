@@ -285,9 +285,11 @@ export default function BlogContent({
         ) : null}
       </DeferredSection>
 
-      {/* Continue Reading — horizontal carousel of internal-link posts */}
+      {/* Continue Reading — horizontal carousel of internal-link posts (below lg only) */}
       {internalLinkPosts && internalLinkPosts.length > 0 && (
-        <ContinueReadingCarousel posts={internalLinkPosts} />
+        <div className="lg:hidden">
+          <ContinueReadingCarousel posts={internalLinkPosts} />
+        </div>
       )}
 
       {/* Deferred: External Links */}

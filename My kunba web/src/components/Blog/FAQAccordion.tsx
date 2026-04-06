@@ -27,13 +27,13 @@ export default function FAQAccordion({
   return (
     <aside className="w-full lg:w-80 shrink-0">
       <div className="mt-8 rounded-lg border bg-card p-4">
-        <h2 className="text-lg font-semibold mb-3">FAQ</h2>
+        <h2 className="text-xl font-semibold mb-3">FAQ</h2>
         <Accordion type="single" collapsible className="w-full">
           {items.map((item, index) => (
             <AccordionItem
               key={index}
               value={`faq-${index}`}
-              className={`${items.length - 1 === index ? 'border-b-0' : 'border-b'}`}
+              className={`text-base! ${items.length - 1 === index ? 'border-b-0' : 'border-b'}`}
             >
               <AccordionTrigger className="text-left">
                 {item.question || 'Question'}

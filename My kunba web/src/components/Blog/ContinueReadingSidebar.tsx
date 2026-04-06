@@ -12,6 +12,7 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 type Post = {
   id: number
@@ -19,6 +20,7 @@ type Post = {
   slug: string
   excerpt: string
   media: string | null
+  categories?: Record<string, any>[]
   [key: string]: unknown
 }
 
@@ -106,14 +108,14 @@ function ContinueReadingSidebarInner({ posts }: { posts: Post[] }) {
 
   return (
     <div className="mt-4 hidden lg:block">
-      <h3 className="text-base font-semibold mb-3">Continue Reading</h3>
+      <h3 className="text-xl font-semibold mb-3">Continue Reading</h3>
       <Carousel
         orientation="vertical"
         className="w-full"
         setApi={setApi}
         opts={{ loop: true, align: 'start' }}
       >
-        <CarouselContent className="-mt-3" style={{ maxHeight: 420 }}>
+        <CarouselContent className="-mt-3 h-[930px]">
           {posts.map((post) => (
             <CarouselItem key={post.id} className="pt-3 basis-1/3">
               <Link
@@ -122,27 +124,36 @@ function ContinueReadingSidebarInner({ posts }: { posts: Post[] }) {
                 rel="internal"
                 aria-label={`Continue reading: ${post.title}`}
               >
-                <Card className="h-full transition-all duration-300 hover:shadow-md">
-                  <CardContent className="p-0 flex gap-3">
+                <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                  <CardContent className="p-0 h-full">
                     {post.media && (
-                      <div className="relative w-24 min-h-[80px] shrink-0 overflow-hidden rounded-l-lg">
+                      <div className="relative w-full h-28 overflow-hidden rounded-t-lg">
                         <Image
                           src={post.media}
                           alt={post.title}
                           fill
-                          className="object-cover"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
-                          sizes="96px"
+                          sizes="(max-width: 1280px) 320px, 320px"
                         />
                       </div>
                     )}
-                    <div className="py-2 pr-3 flex flex-col justify-center min-w-0">
-                      <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                    <div className="p-3">
+                      <h4 className="text-base font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                         {post.title}
                       </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                         {post.excerpt}
                       </p>
+                      {post.categories && post.categories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {post.categories.slice(0, 2).map((cat) => (
+                            <Badge key={cat.id} variant="secondary" className="text-xs">
+                              {cat.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -15,38 +15,6 @@ import { headers } from 'next/headers'
 
 // SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
-type Blog = {
-  id: number
-  title: string
-  slug: string
-  excerpt: string
-  content: unknown
-  media: string | null
-  imageAltText: string | null
-  status: string
-  publishDate: string
-  updatedAt: string | null
-  metaTitle: string | null
-  metaDescription: string | null
-  focusKeyword: string | null
-  externalLinks: Array<{ url: string; anchorText: string }> | null
-  internalLinks: Array<{ url: string; anchorText: string }> | null
-  faq: Array<{ question: string; answer: string }> | null
-  author: {
-    id: number
-    displayName: string
-    bio: string | null
-    profileImage: string | null
-    role: string
-  }
-  categories: Array<{
-    id: number
-    name: string
-    slug: string
-  }>
-  tags?: Array<unknown>
-}
-
 export async function generateMetadata({
   params,
 }: {

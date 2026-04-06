@@ -47,7 +47,13 @@ type CommentItemProps = {
   depth: number
   postId: number
   postAuthorId: number
-  loginDetail: { token: string; email: string; profile_pic: string; name: string; role: string } | null
+  loginDetail: {
+    token: string
+    email: string
+    profile_pic: string
+    name: string
+    role: string
+  } | null
   currentUserId: number | null
   submitting: boolean
   editingCommentId: number | null
@@ -412,8 +418,7 @@ export default function Comments({
           setPostDislikes(data.dislikes || 0)
           setUserReaction(data.userReaction || null)
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
     fetchPostReactions()
   }, [postId])
@@ -453,8 +458,7 @@ export default function Comments({
               setCurrentUserId(data.id)
             }
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       fetchCurrentUser()
@@ -893,7 +897,7 @@ export default function Comments({
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold mb-2">
-            {totalComments > 0 ? totalComments : comments.length}{' '}
+            {/* {totalComments > 0 ? totalComments : comments.length}{' '} */}
             {(totalComments > 0 ? totalComments : comments.length) === 1 ? 'Comment' : 'Comments'}
           </h2>
           <div className="flex items-center gap-3">
@@ -907,7 +911,7 @@ export default function Comments({
                   }`}
                 >
                   <ThumbsUp className={`size-5 ${userReaction === 'like' ? 'fill-current' : ''}`} />
-                  <span>{postLikes}</span>
+                  {/* <span>{postLikes}</span> */}
                 </button>
                 <button
                   onClick={() => handlePostLikeDislike('dislike')}
@@ -919,7 +923,7 @@ export default function Comments({
                   <ThumbsDown
                     className={`size-5 ${userReaction === 'dislike' ? 'fill-current' : ''}`}
                   />
-                  <span>{postDislikes}</span>
+                  {/* <span>{postDislikes}</span> */}
                 </button>
               </>
             ) : (
