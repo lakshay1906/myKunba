@@ -28,6 +28,34 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/lib/context/store'
 import { useDashboardListPage } from '@/lib/context/dashboard-list-page-context'
 
+const BLOG_AUTHOR_SCOPE_STORAGE_PREFIX = 'mykunba_dashboard_blog_author_scope'
+
+function authorScopeStorageKey(userId: number | undefined) {
+  return userId != null ? `${BLOG_AUTHOR_SCOPE_STORAGE_PREFIX}_${userId}` : BLOG_AUTHOR_SCOPE_STORAGE_PREFIX
+}
+
+function readStoredAuthorScope(userId: number | undefined): 'all' | number | null {
+  if (typeof window === 'undefined' || userId == null) return null
+  try {
+    const raw = localStorage.getItem(authorScopeStorageKey(userId))
+    if (raw === 'all') return 'all'
+    const n = Number(raw)
+    if (!Number.isNaN(n) && n > 0) return n
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeStoredAuthorScope(userId: number | undefined, value: number | 'all') {
+  if (typeof window === 'undefined' || userId == null) return
+  try {
+    localStorage.setItem(authorScopeStorageKey(userId), value === 'all' ? 'all' : String(value))
+  } catch {
+    /* ignore */
+  }
+}
+
 function computeSeoScore(blog: Record<string, any>): number {
   let score = 0
   if (blog.metaTitle && String(blog.metaTitle).trim().length > 0) score += 25
@@ -73,21 +101,24 @@ export default function BlogMain({
     fetch('/api/dashboard/authors', {
       headers: { Authorization: `bearer ${loginDetail.token}` },
     })
-      .then((res) => res.ok ? res.json() : { authors: [] })
+      .then((res) => (res.ok ? res.json() : { authors: [] }))
       .then((data) => {
-        setAuthors(data.authors || [])
-        if (selectedAuthorId == null && currentUserId != null) {
+        const list = data.authors || []
+        setAuthors(list)
+        const stored = readStoredAuthorScope(currentUserId)
+        if (stored === 'all') {
+          setSelectedAuthorId('all')
+        } else if (
+          typeof stored === 'number' &&
+          (stored === currentUserId || list.some((a: { id: number }) => a.id === stored))
+        ) {
+          setSelectedAuthorId(stored)
+        } else if (currentUserId != null) {
           setSelectedAuthorId(currentUserId)
         }
       })
       .catch(() => setAuthors([]))
-  }, [isAdmin, loginDetail?.token])
-
-  useEffect(() => {
-    if (isAdmin && currentUserId != null && selectedAuthorId == null) {
-      setSelectedAuthorId(currentUserId)
-    }
-  }, [isAdmin, currentUserId, selectedAuthorId])
+  }, [isAdmin, loginDetail?.token, currentUserId])
 
   async function deleteBlog(
     id: string,
@@ -247,10 +278,14 @@ export default function BlogMain({
               onValueChange={(v) => {
                 if (v === 'all') {
                   setSelectedAuthorId('all')
+                  writeStoredAuthorScope(currentUserId, 'all')
                   return
                 }
                 const id = Number(v)
-                if (!Number.isNaN(id)) setSelectedAuthorId(id)
+                if (!Number.isNaN(id)) {
+                  setSelectedAuthorId(id)
+                  writeStoredAuthorScope(currentUserId, id)
+                }
               }}
             >
               <SelectTrigger className="w-[180px] h-9">
