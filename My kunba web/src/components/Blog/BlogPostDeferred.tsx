@@ -12,7 +12,13 @@ export function FloatingShareClient() {
   return <FloatingShare />
 }
 
-export function FAQAccordionClient({ items }: { items: FAQItem[] }) {
+export function FAQAccordionClient({
+  items,
+  children,
+}: {
+  items: FAQItem[]
+  children?: React.ReactNode
+}) {
   if (!items || items.length === 0) return null
-  return <FAQAccordion items={items} />
+  return <FAQAccordion items={items}>{children}</FAQAccordion>
 }

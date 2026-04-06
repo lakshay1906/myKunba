@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import PayloadRichTextRenderer, { PayloadRichTextContent } from './payload-richtext-renderer'
 import { DeferredSection } from '@/components/DeferredSection'
-import BlogCard from './BlogCard'
 import RelatedArticlesCarousel from './RelatedArticlesCarousel'
 import { AdBanner } from '@/components/AdBanner'
 
@@ -20,25 +19,24 @@ const BELOW_TITLE_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE ?? ''
 /** In-article AdSense unit after 2nd paragraph (`NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE`) */
 const IN_ARTICLE_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE ?? ''
 
-function InternalLinksCards({
-  internalLinks,
-}: {
-  internalLinks: Array<{ url: string; anchorText: string }>
-}) {
-  const [posts, setPosts] = useState<Array<{
-    id: number
-    title: string
-    slug: string
-    excerpt: string
-    media: string | null
-    author: Record<string, any>
-    categories: Record<string, any>[]
-    tags?: Record<string, any>[]
-    content: string
-    createdAt: string
-    updatedAt: string
-  }> | null>(null)
+type InternalLinkPost = {
+  id: number
+  title: string
+  slug: string
+  excerpt: string
+  media: string | null
+  author: Record<string, any>
+  categories: Record<string, any>[]
+  tags?: Record<string, any>[]
+  content: string
+  createdAt: string
+  updatedAt: string
+}
 
+function useInternalLinkPosts(
+  internalLinks: Array<{ url: string; anchorText: string }>,
+): InternalLinkPost[] | null {
+  const [posts, setPosts] = useState<InternalLinkPost[] | null>(null)
   const slugs = internalLinks.map((l) => l.url.replace(/^\//, '').trim()).filter(Boolean)
 
   useEffect(() => {
@@ -48,87 +46,25 @@ function InternalLinksCards({
     }
     fetch(`/api/user/blog?slugs=${encodeURIComponent(slugs.join(','))}`)
       .then((res) => res.json())
-      .then((data) => {
-        const docs = data?.docs ?? []
-        setPosts(docs)
-      })
+      .then((data) => setPosts(data?.docs ?? []))
       .catch(() => setPosts([]))
   }, [slugs.join(',')])
 
-  if (posts === null) {
-    return (
-      <DeferredSection
-        skeleton={
-          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-64 rounded-lg" />
-            <Skeleton className="h-64 rounded-lg" />
-            <Skeleton className="h-64 rounded-lg" />
-          </div>
-        }
-      >
-        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {internalLinks.map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-lg" />
-            ))}
-          </div>
-        </div>
-      </DeferredSection>
-    )
-  }
-
-  if (posts.length === 0) {
-    return (
-      <DeferredSection
-        skeleton={
-          <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-            <Skeleton className="h-6 w-32 mb-4" />
-            <Skeleton className="h-4 w-full" />
-          </div>
-        }
-      >
-        <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">Related Content</h2>
-          <ul className="space-y-2">
-            {internalLinks.map((link, index) => (
-              <li key={index}>
-                <Link
-                  href={link.url}
-                  className="text-primary hover:underline font-medium"
-                  rel="internal"
-                >
-                  {link.anchorText}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </DeferredSection>
-    )
-  }
-
-  return (
-    <DeferredSection
-      skeleton={
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-64 rounded-lg" />
-          <Skeleton className="h-64 rounded-lg" />
-          <Skeleton className="h-64 rounded-lg" />
-        </div>
-      }
-    >
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Related Content</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {posts.map((post) => (
-            <BlogCard key={post.id} post={post} />
-          ))}
-        </div>
-      </div>
-    </DeferredSection>
-  )
+  return posts
 }
+
+const ContinueReadingCarousel = dynamic(() => import('./ContinueReadingCarousel'), {
+  ssr: false,
+  loading: () => (
+    <div className="mb-8 space-y-4">
+      <Skeleton className="h-6 w-40" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
+      </div>
+    </div>
+  ),
+})
 
 const Comments = dynamic(() => import('./Comments'), {
   ssr: false,
@@ -206,6 +142,7 @@ export default function BlogContent({
   currentUserId = null,
   relatedArticles = [],
 }: BlogContentProps) {
+  const internalLinkPosts = useInternalLinkPosts(blog.internalLinks ?? [])
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -348,9 +285,9 @@ export default function BlogContent({
         ) : null}
       </DeferredSection>
 
-      {/* Deferred: Internal Links (as cards) */}
-      {blog.internalLinks && blog.internalLinks.length > 0 && (
-        <InternalLinksCards internalLinks={blog.internalLinks} />
+      {/* Continue Reading — horizontal carousel of internal-link posts */}
+      {internalLinkPosts && internalLinkPosts.length > 0 && (
+        <ContinueReadingCarousel posts={internalLinkPosts} />
       )}
 
       {/* Deferred: External Links */}

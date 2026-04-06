@@ -1,6 +1,7 @@
 import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
 import { FloatingShareClient, FAQAccordionClient } from '@/components/Blog/BlogPostDeferred'
+import ContinueReadingSidebar from '@/components/Blog/ContinueReadingSidebar'
 import type { Metadata } from 'next'
 import { getPublicUrl } from '@/lib/env'
 import { buildAlternateLanguages } from '@/lib/i18n/seo'
@@ -266,7 +267,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               relatedArticles={relatedArticles}
             />
           </div>
-          {faqItems.length > 0 && <FAQAccordionClient items={faqItems} />}
+          {faqItems.length > 0 && (
+            <FAQAccordionClient items={faqItems}>
+              {blog.internalLinks && blog.internalLinks.length > 0 && (
+                <ContinueReadingSidebar
+                  internalLinks={blog.internalLinks as Array<{ url: string; anchorText: string }>}
+                />
+              )}
+            </FAQAccordionClient>
+          )}
         </div>
       </main>
     </>

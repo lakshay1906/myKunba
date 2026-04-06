@@ -6,13 +6,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { AdBanner } from '@/components/AdBanner'
+
+const FAQ_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_4 ?? ''
 
 export type FAQItem = {
   question: string
   answer: string
 }
 
-export default function FAQAccordion({ items }: { items: FAQItem[] }) {
+export default function FAQAccordion({
+  items,
+  children,
+}: {
+  items: FAQItem[]
+  children?: React.ReactNode
+}) {
   if (!items || items.length === 0) return null
 
   return (
@@ -36,6 +45,19 @@ export default function FAQAccordion({ items }: { items: FAQItem[] }) {
           ))}
         </Accordion>
       </div>
+
+      {FAQ_AD_SLOT ? (
+        <div className="hidden lg:block mt-4 w-full">
+          <AdBanner
+            dataAdSlot={FAQ_AD_SLOT}
+            dataAdFormat="fluid"
+            className="w-full rounded-lg"
+            minHeight={250}
+          />
+        </div>
+      ) : null}
+
+      {children}
     </aside>
   )
 }

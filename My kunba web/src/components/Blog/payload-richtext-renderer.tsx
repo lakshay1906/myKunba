@@ -64,6 +64,7 @@ export default function PayloadRichTextRenderer({
 
   const rootChildren = content.root.children
   let paragraphCount = 0
+  let h3Count = 0
 
   return (
     <div className={className}>
@@ -71,10 +72,20 @@ export default function PayloadRichTextRenderer({
         const isParagraph = node.type === 'paragraph'
         if (isParagraph) paragraphCount += 1
 
+        const isH3 =
+          node.type === 'heading' &&
+          (node as PayloadElementNode).tag === 'h3'
+        if (isH3) h3Count += 1
+
+        const showAfterParagraph =
+          inArticleAdSlot && isParagraph && paragraphCount === 2
+        const showAfterH3 =
+          inArticleAdSlot && isH3 && h3Count >= 3
+
         return (
           <Fragment key={index}>
             <RenderNode node={node} />
-            {inArticleAdSlot && isParagraph && paragraphCount === 2 ? (
+            {showAfterParagraph || showAfterH3 ? (
               <div className="my-6 flex w-full max-w-none justify-center not-prose">
                 <AdBanner
                   dataAdSlot={inArticleAdSlot}
