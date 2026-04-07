@@ -125,10 +125,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     documents: [
       ...(loginDetail?.role === 'admin'
-        ? [
-            { name: 'Overview', url: '/dashboard', icon: LayoutDashboard },
-            { name: 'Google Analytics', url: '/dashboard/google-analytics', icon: BarChart3 },
-          ]
+        ? [{ name: 'Dashboard', url: '/dashboard', icon: LayoutDashboard }]
         : []),
       {
         name: 'Blog',
