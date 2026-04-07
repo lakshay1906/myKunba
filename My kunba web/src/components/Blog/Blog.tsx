@@ -584,14 +584,16 @@ export default function Blog({
                     nodes.push(
                       <div
                         key={`feed-ad-${String(ele.id)}`}
-                        className="col-span-full flex w-full justify-center py-1 sm:py-2"
+                        className="col-span-full"
                       >
-                        <AdBanner
-                          dataAdSlot={FEED_AD_SLOT}
-                          dataAdFormat="fluid"
-                          className="w-full max-w-4xl"
-                          minHeight={120}
-                        />
+                        <div className="size-full flex w-full justify-center py-1 sm:py-2">
+                          <AdBanner
+                            dataAdSlot={FEED_AD_SLOT}
+                            dataAdFormat="fluid"
+                            className="w-full max-w-4xl"
+                            minHeight={120}
+                          />
+                        </div>
                       </div>,
                     )
                   }

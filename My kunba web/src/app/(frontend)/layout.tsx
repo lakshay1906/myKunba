@@ -102,7 +102,7 @@ export default async function FrontendLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased p-0! m-0!`}
         suppressHydrationWarning
       >
         <GlobalScripts />
