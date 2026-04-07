@@ -16,12 +16,22 @@ export const PageViews: CollectionConfig = {
     {
       name: 'username',
       type: 'text',
+      defaultValue: 'anonymous',
       index: true,
     },
     {
       name: 'ipAddress',
       type: 'text',
       required: true,
+    },
+    {
+      name: 'city',
+      type: 'text',
+    },
+    {
+      name: 'country',
+      type: 'text',
+      index: true,
     },
     {
       name: 'userAgent',
