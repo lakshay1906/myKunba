@@ -5,7 +5,12 @@ import { payload } from '@/payload-client'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    let body: any = {}
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 400 })
+    }
     const url = typeof body.url === 'string' ? body.url.trim() : null
     if (!url) {
       return NextResponse.json({ ok: false }, { status: 400 })
@@ -21,6 +26,7 @@ export async function POST(req: NextRequest) {
 
     await payload.create({
       collection: 'page_views',
+      overrideAccess: true,
       data: {
         url,
         username: username ?? undefined,
@@ -32,7 +38,8 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    console.error('[analytics/collect] failed', error)
     return NextResponse.json({ ok: false }, { status: 500 })
   }
 }

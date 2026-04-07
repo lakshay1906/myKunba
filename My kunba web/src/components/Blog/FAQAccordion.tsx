@@ -50,7 +50,7 @@ export default function FAQAccordion({
           <AdBanner
             dataAdSlot={FAQ_AD_SLOT}
             dataAdFormat="fluid"
-            className="w-full rounded-lg h-auto! aspect-square!"
+            className="w-full rounded-lg h-auto!"
             minHeight={250}
           />
         </div>
@@ -61,7 +61,7 @@ export default function FAQAccordion({
           <AdBanner
             dataAdSlot={FAQ_AD_SLOT}
             dataAdFormat="fluid"
-            className="w-full rounded-lg h-auto! aspect-square!"
+            className="w-full rounded-lg h-auto!"
             minHeight={250}
           />
         </div>
