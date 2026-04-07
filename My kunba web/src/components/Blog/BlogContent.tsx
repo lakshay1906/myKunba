@@ -378,31 +378,33 @@ export default function BlogContent({
         initialCurrentUserId={currentUserId}
       />
 
-      {/* Deferred: Related Articles - Swiper with infinite loop */}
+      {/* Deferred: Related Articles - mobile/tablet (below lg) */}
       {relatedArticles && relatedArticles.length > 0 && (
-        <DeferredSection
-          skeleton={
-            <div className="mt-12 space-y-6">
-              <Skeleton className="h-8 w-48" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="p-0">
-                      <Skeleton className="h-48 w-full rounded-t-lg" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+        <div className="lg:hidden">
+          <DeferredSection
+            skeleton={
+              <div className="mt-12 space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[1, 2].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-0">
+                        <Skeleton className="h-48 w-full rounded-t-lg" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-          }
-        >
-          <RelatedArticlesCarousel articles={relatedArticles} />
-        </DeferredSection>
+            }
+          >
+            <RelatedArticlesCarousel articles={relatedArticles} />
+          </DeferredSection>
+        </div>
       )}
     </div>
   )

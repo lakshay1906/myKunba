@@ -45,19 +45,27 @@ export default function FAQAccordion({
           ))}
         </Accordion>
       </div>
-
       {FAQ_AD_SLOT ? (
         <div className="hidden lg:block mt-4 w-full">
           <AdBanner
             dataAdSlot={FAQ_AD_SLOT}
             dataAdFormat="fluid"
-            className="w-full rounded-lg"
+            className="w-full rounded-lg h-auto! aspect-square!"
             minHeight={250}
           />
         </div>
       ) : null}
-
       {children}
+      {FAQ_AD_SLOT ? (
+        <div className="hidden lg:block mt-4 w-full">
+          <AdBanner
+            dataAdSlot={FAQ_AD_SLOT}
+            dataAdFormat="fluid"
+            className="w-full rounded-lg h-auto! aspect-square!"
+            minHeight={250}
+          />
+        </div>
+      ) : null}
     </aside>
   )
 }

@@ -2,6 +2,7 @@ import BlogContent from '@/components/Blog/BlogContent'
 import BlogSchema from '@/components/Blog/BlogSchema'
 import { FloatingShareClient, FAQAccordionClient } from '@/components/Blog/BlogPostDeferred'
 import ContinueReadingSidebar from '@/components/Blog/ContinueReadingSidebar'
+import RelatedArticlesSidebar from '@/components/Blog/RelatedArticlesSidebar'
 import type { Metadata } from 'next'
 import { getPublicUrl } from '@/lib/env'
 import { buildAlternateLanguages } from '@/lib/i18n/seo'
@@ -12,6 +13,7 @@ import { getCategoryTranslation } from '@/lib/category-translations'
 import { getTagTranslation } from '@/lib/tag-translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
+import { AdBanner } from '@/components/AdBanner'
 
 // SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
@@ -103,6 +105,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const allowedLocales = ['en', 'zh', 'hi', 'es', 'fr', 'ar']
   const rawLocale = headersList.get('x-locale') ?? 'en'
   const locale = allowedLocales.includes(rawLocale) ? rawLocale : 'en'
+  const FAQ_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_3 ?? ''
 
   let blog = await fetchBlogPostBySlug(slug.trim())
   if (!blog) notFound()
@@ -183,7 +186,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
           mainEntity: faqItems
-            .filter((item: { question?: string; answer?: string }) => item?.question && item?.answer)
+            .filter(
+              (item: { question?: string; answer?: string }) => item?.question && item?.answer,
+            )
             .map((item: { question: string; answer: string }) => ({
               '@type': 'Question',
               name: item.question,
@@ -265,6 +270,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 <ContinueReadingSidebar
                   internalLinks={blog.internalLinks as Array<{ url: string; anchorText: string }>}
                 />
+              )}
+              {FAQ_AD_SLOT ? (
+                <div className="hidden lg:block mt-4 w-full">
+                  <AdBanner
+                    dataAdSlot={FAQ_AD_SLOT}
+                    dataAdFormat="fluid"
+                    className="w-full rounded-lg h-auto! aspect-square!"
+                    minHeight={250}
+                  />
+                </div>
+              ) : null}
+              {relatedArticles && relatedArticles.length > 0 && (
+                <RelatedArticlesSidebar articles={relatedArticles} />
               )}
             </FAQAccordionClient>
           )}
