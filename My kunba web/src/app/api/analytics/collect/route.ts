@@ -3,6 +3,18 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { payload } from '@/payload-client'
 
+function resolveCountryName(rawCountry?: string | null): string | undefined {
+  const normalized = rawCountry?.trim().toUpperCase()
+  if (!normalized) return undefined
+  if (!/^[A-Z]{2}$/.test(normalized)) return normalized
+  try {
+    const display = new Intl.DisplayNames(['en'], { type: 'region' })
+    return display.of(normalized) ?? normalized
+  } catch {
+    return normalized
+  }
+}
+
 export async function POST(req: NextRequest) {
   let body: any = {}
   try {
@@ -25,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const userAgent = req.headers.get('user-agent') ?? null
   const city = req.headers.get('cf-ipcity') ?? undefined
-  const country = req.headers.get('cf-ipcountry') ?? undefined
+  const country = resolveCountryName(req.headers.get('cf-ipcountry'))
 
   // Fire-and-forget: don't block the response on DB write
   payload

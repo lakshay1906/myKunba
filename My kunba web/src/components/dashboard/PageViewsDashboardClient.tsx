@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, Fragment } from 'react'
+import { useMemo, useState, useTransition, Fragment } from 'react'
 import {
   BarChart,
   Bar,
@@ -19,6 +19,11 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  CalendarIcon,
+  Check,
+  ChevronsUpDown,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,17 +35,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Calendar } from '@/components/ui/calendar'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart'
-import type { AnalyticsDashboardPayload } from '@/app/actions/analytics-actions'
+import type { AnalyticsDashboardPayload, DatePreset } from '@/app/actions/analytics-actions'
 import { fetchAnalyticsData } from '@/app/actions/analytics-actions'
+import type { DateRange } from 'react-day-picker'
 
 function timeAgo(ts: string): string {
   const diff = Date.now() - new Date(ts).getTime()
@@ -71,25 +82,99 @@ type Props = {
   initialData: AnalyticsDashboardPayload
 }
 
+const DATE_PRESET_LABELS: Record<DatePreset, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  past_month: 'Past month',
+  past_3_months: 'Past 3 months',
+  past_6_months: 'Past 6 months',
+  past_year: 'Past year',
+  date_range: 'Date Range',
+}
+
+function formatRange(startDate: string, endDate: string): string {
+  if (startDate === endDate) return startDate
+  return `${startDate} - ${endDate}`
+}
+
 export default function PageViewsDashboardClient({ initialData }: Props) {
   const [data, setData] = useState(initialData)
   const [urlFilter, setUrlFilter] = useState<string>('__all__')
+  const [preset, setPreset] = useState<DatePreset>(initialData.selectedPreset)
+  const [range, setRange] = useState<DateRange | undefined>({
+    from: new Date(`${initialData.startDate}T00:00:00.000Z`),
+    to: new Date(`${initialData.endDate}T00:00:00.000Z`),
+  })
+  const [urlFilterOpen, setUrlFilterOpen] = useState(false)
+  const [dateRangeOpen, setDateRangeOpen] = useState(false)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const activeUrl = urlFilter === '__all__' ? undefined : urlFilter
+  const selectedRangeLabel = `${DATE_PRESET_LABELS[preset]} (${formatRange(data.startDate, data.endDate)})`
+  const selectedPageLabel = useMemo(
+    () => (urlFilter === '__all__' ? 'All pages' : urlFilter),
+    [urlFilter],
+  )
+
+  function fetchWithFilters(next: {
+    nextUrl?: string
+    nextPreset?: DatePreset
+    nextStartDate?: string
+    nextEndDate?: string
+    nextLogsPage?: number
+  }) {
+    const nextUrl = next.nextUrl ?? activeUrl
+    const nextPreset = next.nextPreset ?? preset
+    const nextStartDate = next.nextStartDate ?? data.startDate
+    const nextEndDate = next.nextEndDate ?? data.endDate
+    const nextLogsPage = next.nextLogsPage ?? 1
+    startTransition(async () => {
+      const result = await fetchAnalyticsData({
+        urlFilter: nextUrl,
+        preset: nextPreset,
+        startDate: nextStartDate,
+        endDate: nextEndDate,
+        logsPage: nextLogsPage,
+      })
+      setData(result)
+      setExpandedRow(null)
+    })
+  }
+
   function handleUrlChange(value: string) {
     setUrlFilter(value)
-    startTransition(async () => {
-      const result = await fetchAnalyticsData(value === '__all__' ? undefined : value)
-      setData(result)
+    setUrlFilterOpen(false)
+    fetchWithFilters({ nextUrl: value === '__all__' ? undefined : value, nextLogsPage: 1 })
+  }
+
+  function handlePresetChange(value: DatePreset) {
+    setPreset(value)
+    if (value !== 'date_range') {
+      fetchWithFilters({ nextPreset: value, nextLogsPage: 1 })
+    }
+  }
+
+  function applyDateRange() {
+    if (!range?.from) return
+    const from = range.from.toISOString().slice(0, 10)
+    const to = (range.to ?? range.from).toISOString().slice(0, 10)
+    setDateRangeOpen(false)
+    fetchWithFilters({
+      nextPreset: 'date_range',
+      nextStartDate: from,
+      nextEndDate: to,
+      nextLogsPage: 1,
     })
   }
 
   function handleRefresh() {
-    startTransition(async () => {
-      const result = await fetchAnalyticsData(urlFilter === '__all__' ? undefined : urlFilter)
-      setData(result)
-    })
+    fetchWithFilters({ nextLogsPage: data.recentLogsPage })
+  }
+
+  function handleLogsPageChange(nextPage: number) {
+    if (nextPage < 1 || nextPage > data.recentLogsTotalPages) return
+    fetchWithFilters({ nextLogsPage: nextPage })
   }
 
   return (
@@ -98,7 +183,7 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Site Analytics</h1>
-          <p className="text-muted-foreground">Page view tracking &amp; visitor insights — last 30 days</p>
+          <p className="text-muted-foreground">Page view tracking &amp; visitor insights</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/google-analytics">
@@ -118,6 +203,54 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
         </div>
       </div>
 
+      {/* Global Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Global Filters</CardTitle>
+          <CardDescription>{selectedRangeLabel}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="w-full md:w-[220px]">
+            <Select value={preset} onValueChange={(value) => handlePresetChange(value as DatePreset)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="past_month">Past month</SelectItem>
+                <SelectItem value="past_3_months">Past 3 months</SelectItem>
+                <SelectItem value="past_6_months">Past 6 months</SelectItem>
+                <SelectItem value="past_year">Past year</SelectItem>
+                <SelectItem value="date_range">Date Range</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full md:w-auto">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formatRange(data.startDate, data.endDate)}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="start">
+              <Calendar
+                mode="range"
+                numberOfMonths={2}
+                selected={range}
+                onSelect={setRange}
+                defaultMonth={range?.from}
+              />
+              <div className="mt-3 flex justify-end">
+                <Button size="sm" onClick={applyDateRange} disabled={!range?.from}>
+                  Apply Range
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </CardContent>
+      </Card>
+
       {/* Stat Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -129,7 +262,7 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
             <div className="text-2xl font-bold tabular-nums">
               {data.totalViews.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatRange(data.startDate, data.endDate)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -159,19 +292,41 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
             <CardTitle className="text-sm font-medium">URL Filter</CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={urlFilter} onValueChange={handleUrlChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All pages" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All pages</SelectItem>
-                {data.distinctUrls.map((url) => (
-                  <SelectItem key={url} value={url}>
-                    <span className="font-mono text-xs truncate">{url}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={urlFilterOpen} onOpenChange={setUrlFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between">
+                  <span className="truncate font-mono text-xs">{selectedPageLabel}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[420px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search page URL..." />
+                  <CommandEmpty>No page found.</CommandEmpty>
+                  <CommandList>
+                    <CommandGroup>
+                      <CommandItem value="__all__" onSelect={() => handleUrlChange('__all__')}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            urlFilter === '__all__' ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        All pages
+                      </CommandItem>
+                      {data.distinctUrls.map((url) => (
+                        <CommandItem key={url} value={url} onSelect={() => handleUrlChange(url)}>
+                          <Check
+                            className={cn('mr-2 h-4 w-4', urlFilter === url ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <span className="truncate font-mono text-xs">{url}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </CardContent>
         </Card>
       </div>
@@ -180,7 +335,7 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
       <Card>
         <CardHeader>
           <CardTitle>Visitor Trend</CardTitle>
-          <CardDescription>Daily page views over the last 30 days</CardDescription>
+          <CardDescription>Daily page views from selected date range</CardDescription>
         </CardHeader>
         <CardContent>
           {data.dailyTrend.every((d) => d.views === 0) ? (
@@ -244,12 +399,47 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
             )}
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Most Viewed Pages</CardTitle>
+            <CardDescription>Top pages by views in selected range</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data.topPages.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
+            ) : (
+              <div className="max-h-[300px] overflow-y-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Page</TableHead>
+                      <TableHead className="text-right">Views</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.topPages.map((row) => (
+                      <TableRow key={row.url}>
+                        <TableCell>
+                          <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{row.url}</code>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{row.views.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Logs */}
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>20 most recent page views</CardDescription>
+            <CardDescription>
+              {data.recentLogsTotalDocs.toLocaleString()} total · page {data.recentLogsPage} of{' '}
+              {Math.max(1, data.recentLogsTotalPages)}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {data.recentLogs.length === 0 ? (
@@ -349,6 +539,34 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+            {data.recentLogsTotalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">20 per page</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLogsPageChange(data.recentLogsPage - 1)}
+                    disabled={isPending || data.recentLogsPage <= 1}
+                  >
+                    <ArrowLeft className="mr-1 h-4 w-4" />
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {data.recentLogsPage}/{Math.max(1, data.recentLogsTotalPages)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLogsPageChange(data.recentLogsPage + 1)}
+                    disabled={isPending || data.recentLogsPage >= data.recentLogsTotalPages}
+                  >
+                    Next
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
