@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
-import PageViewsDashboard from '@/components/dashboard/PageViewsDashboard'
 import { getDashboardUser } from '@/lib/dashboard-session'
+import { fetchAnalyticsData } from '@/app/actions/analytics-actions'
+import PageViewsDashboardClient from '@/components/dashboard/PageViewsDashboardClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,5 +14,8 @@ export default async function DashboardPage() {
   if (user.role === 'author') {
     redirect('/dashboard/blog')
   }
-  return <PageViewsDashboard />
+
+  const initialData = await fetchAnalyticsData()
+
+  return <PageViewsDashboardClient initialData={initialData} />
 }

@@ -505,6 +505,8 @@ export interface PageView {
   url: string;
   username?: string | null;
   ipAddress: string;
+  city?: string | null;
+  country?: string | null;
   userAgent?: string | null;
   referrer?: string | null;
   timestamp: string;
@@ -816,6 +818,8 @@ export interface PageViewsSelect<T extends boolean = true> {
   url?: T;
   username?: T;
   ipAddress?: T;
+  city?: T;
+  country?: T;
   userAgent?: T;
   referrer?: T;
   timestamp?: T;
