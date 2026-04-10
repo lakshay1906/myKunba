@@ -12,9 +12,18 @@ export type DatePreset =
   | 'past_year'
   | 'date_range'
 
+/** User-type filter options */
+export type UserTypeFilter =
+  | '__all__'
+  | 'admin_author'        // Admin & Author only
+  | 'except_admin_author' // Except admin & author
+  | 'logged_in_except'    // Logged-in users except admins and authors
+  | 'anonymous'           // Anonymous Users only
+
 export type DailyTrend = { date: string; fullDate: string; views: number }
 export type CountryBreakdown = { country: string; views: number }
 export type TopPage = { url: string; views: number }
+export type HourlyAnalytics = { hour: number; label: string; views: number }
 export type RecentLog = {
   id: number
   url: string
@@ -25,6 +34,7 @@ export type RecentLog = {
   userAgent: string | null
   referrer: string | null
   username: string | null
+  userRole: string | null
 }
 
 export type AnalyticsDashboardPayload = {
@@ -34,6 +44,7 @@ export type AnalyticsDashboardPayload = {
   dailyTrend: DailyTrend[]
   countryBreakdown: CountryBreakdown[]
   topPages: TopPage[]
+  hourlyAnalytics: HourlyAnalytics[]
   recentLogs: RecentLog[]
   recentLogsPage: number
   recentLogsTotalPages: number
@@ -42,6 +53,9 @@ export type AnalyticsDashboardPayload = {
   uniquePages: number
   uniqueCountries: number
   distinctUrls: string[]
+  distinctCountries: string[]
+  selectedUserType: UserTypeFilter
+  selectedCountry: string
 }
 
 type FetchAnalyticsInput = {
@@ -50,6 +64,8 @@ type FetchAnalyticsInput = {
   startDate?: string
   endDate?: string
   logsPage?: number
+  userTypeFilter?: UserTypeFilter
+  countryFilter?: string
 }
 
 function startOfDay(d: Date): Date {
@@ -122,12 +138,63 @@ function resolveDateRange(preset: DatePreset, startDate?: string, endDate?: stri
 function buildDateWhere(
   range: { start: Date; end: Date },
   urlFilter?: string,
+  userTypeFilter?: UserTypeFilter,
+  countryFilter?: string,
 ): Where {
   const conditions: Where[] = [
     { timestamp: { greater_than_equal: range.start.toISOString() } },
     { timestamp: { less_than_equal: range.end.toISOString() } },
   ]
   if (urlFilter) conditions.push({ url: { equals: urlFilter } })
+
+  // User type filter
+  if (userTypeFilter && userTypeFilter !== '__all__') {
+    switch (userTypeFilter) {
+      case 'admin_author':
+        conditions.push({
+          or: [
+            { userRole: { equals: 'admin' } },
+            { userRole: { equals: 'author' } },
+          ],
+        })
+        break
+      case 'except_admin_author':
+        conditions.push({
+          and: [
+            { userRole: { not_equals: 'admin' } },
+            { userRole: { not_equals: 'author' } },
+          ],
+        })
+        break
+      case 'logged_in_except':
+        // Logged-in users whose role is 'user' (not admin/author/anonymous)
+        conditions.push({ userRole: { equals: 'user' } })
+        break
+      case 'anonymous':
+        conditions.push({
+          or: [
+            { userRole: { equals: 'anonymous' } },
+            { userRole: { exists: false } },
+          ],
+        })
+        break
+    }
+  }
+
+  // Country filter
+  if (countryFilter && countryFilter !== '__all__') {
+    if (countryFilter === 'Unknown') {
+      conditions.push({
+        or: [
+          { country: { exists: false } },
+          { country: { equals: '' } },
+        ],
+      })
+    } else {
+      conditions.push({ country: { equals: countryFilter } })
+    }
+  }
+
   return { and: conditions }
 }
 
@@ -190,6 +257,31 @@ function aggregateTopPages(docs: { url: string }[]): TopPage[] {
     .map(([url, views]) => ({ url, views }))
 }
 
+function aggregateHourlyAnalytics(docs: { timestamp: string }[]): HourlyAnalytics[] {
+  const counts = new Map<number, number>()
+  // Initialize all 24 hours
+  for (let h = 0; h < 24; h++) {
+    counts.set(h, 0)
+  }
+  for (const doc of docs) {
+    const d = new Date(doc.timestamp)
+    const hour = d.getUTCHours()
+    counts.set(hour, (counts.get(hour) ?? 0) + 1)
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([hour, views]) => {
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+      return {
+        hour,
+        label: `${h12}${ampm}`,
+        views,
+      }
+    })
+}
+
 async function fetchAllDistinctUrls(): Promise<string[]> {
   const payload = await getPayloadClient()
   const urls = new Set<string>()
@@ -212,16 +304,49 @@ async function fetchAllDistinctUrls(): Promise<string[]> {
   return Array.from(urls).sort()
 }
 
+async function fetchAllDistinctCountries(): Promise<string[]> {
+  const payload = await getPayloadClient()
+  const countries = new Set<string>()
+  let hasUnknown = false
+  let page = 1
+  const limit = 1000
+  for (let i = 0; i < 500; i++) {
+    const res = await payload.find({
+      collection: 'page_views',
+      limit,
+      page,
+      sort: 'country',
+      depth: 0,
+      select: { country: true },
+    })
+    const docs = res.docs as unknown as { country?: string | null }[]
+    for (const doc of docs) {
+      if (doc.country && doc.country.trim()) {
+        countries.add(doc.country)
+      } else {
+        hasUnknown = true
+      }
+    }
+    if (!res.hasNextPage) break
+    page += 1
+  }
+  const sorted = Array.from(countries).sort()
+  if (hasUnknown) sorted.push('Unknown')
+  return sorted
+}
+
 export async function fetchAnalyticsData(
   input?: FetchAnalyticsInput,
 ): Promise<AnalyticsDashboardPayload> {
   const payload = await getPayloadClient()
   const selectedPreset = input?.preset ?? 'past_month'
+  const userTypeFilter = input?.userTypeFilter ?? '__all__'
+  const countryFilter = input?.countryFilter ?? '__all__'
   const range = resolveDateRange(selectedPreset, input?.startDate, input?.endDate)
-  const where = buildDateWhere(range, input?.urlFilter)
+  const where = buildDateWhere(range, input?.urlFilter, userTypeFilter, countryFilter)
   const logsPage = Math.max(1, input?.logsPage ?? 1)
 
-  const [summaryResult, logsResult, distinctUrls] = await Promise.all([
+  const [summaryResult, logsResult, distinctUrls, distinctCountries] = await Promise.all([
     payload.find({
       collection: 'page_views',
       where,
@@ -239,6 +364,7 @@ export async function fetchAnalyticsData(
       depth: 0,
     }),
     fetchAllDistinctUrls(),
+    fetchAllDistinctCountries(),
   ])
 
   const summaryDocs = summaryResult.docs as unknown as {
@@ -252,6 +378,7 @@ export async function fetchAnalyticsData(
   const dailyTrend = aggregateDailyTrend(summaryDocs, range)
   const countryBreakdown = aggregateCountryBreakdown(summaryDocs)
   const topPages = aggregateTopPages(summaryDocs)
+  const hourlyAnalytics = aggregateHourlyAnalytics(summaryDocs)
 
   const urlSet = new Set<string>()
   const countrySet = new Set<string>()
@@ -267,6 +394,7 @@ export async function fetchAnalyticsData(
     dailyTrend,
     countryBreakdown,
     topPages,
+    hourlyAnalytics,
     recentLogs: logDocs,
     recentLogsPage: logsResult.page ?? logsPage,
     recentLogsTotalPages: logsResult.totalPages ?? 1,
@@ -275,5 +403,8 @@ export async function fetchAnalyticsData(
     uniquePages: urlSet.size,
     uniqueCountries: countrySet.size,
     distinctUrls,
+    distinctCountries,
+    selectedUserType: userTypeFilter,
+    selectedCountry: countryFilter,
   }
 }

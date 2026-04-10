@@ -24,6 +24,9 @@ import {
   ChevronsUpDown,
   ArrowLeft,
   ArrowRight,
+  Users,
+  Clock,
+  MapPin,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,7 +52,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart'
-import type { AnalyticsDashboardPayload, DatePreset } from '@/app/actions/analytics-actions'
+import type { AnalyticsDashboardPayload, DatePreset, UserTypeFilter } from '@/app/actions/analytics-actions'
 import { fetchAnalyticsData } from '@/app/actions/analytics-actions'
 import type { DateRange } from 'react-day-picker'
 
@@ -78,6 +81,22 @@ const COUNTRY_COLORS = [
   'hsl(var(--primary) / 0.2)',
 ]
 
+const HOUR_COLORS = [
+  'hsl(210 80% 60%)',  // cool blue for late night
+  'hsl(30 85% 55%)',   // warm orange for morning
+  'hsl(45 90% 50%)',   // golden for peak hours
+  'hsl(260 70% 55%)',  // purple for evening
+]
+
+function getHourColor(hour: number, maxViews: number, views: number): string {
+  if (views === 0) return 'hsl(var(--muted))'
+  const intensity = Math.max(0.3, views / maxViews)
+  if (hour >= 0 && hour < 6) return `hsl(210 80% ${60 + (1 - intensity) * 30}%)`
+  if (hour >= 6 && hour < 12) return `hsl(30 85% ${55 + (1 - intensity) * 30}%)`
+  if (hour >= 12 && hour < 18) return `hsl(45 90% ${50 + (1 - intensity) * 30}%)`
+  return `hsl(260 70% ${55 + (1 - intensity) * 30}%)`
+}
+
 type Props = {
   initialData: AnalyticsDashboardPayload
 }
@@ -92,6 +111,14 @@ const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   date_range: 'Date Range',
 }
 
+const USER_TYPE_LABELS: Record<UserTypeFilter, string> = {
+  __all__: 'All Users',
+  admin_author: 'Admin & Author only',
+  except_admin_author: 'Except admin & author',
+  logged_in_except: 'Logged-in (except admins & authors)',
+  anonymous: 'Anonymous Users only',
+}
+
 function formatRange(startDate: string, endDate: string): string {
   if (startDate === endDate) return startDate
   return `${startDate} - ${endDate}`
@@ -101,11 +128,14 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
   const [data, setData] = useState(initialData)
   const [urlFilter, setUrlFilter] = useState<string>('__all__')
   const [preset, setPreset] = useState<DatePreset>(initialData.selectedPreset)
+  const [userTypeFilter, setUserTypeFilter] = useState<UserTypeFilter>(initialData.selectedUserType)
+  const [countryFilter, setCountryFilter] = useState<string>(initialData.selectedCountry)
   const [range, setRange] = useState<DateRange | undefined>({
     from: new Date(`${initialData.startDate}T00:00:00.000Z`),
     to: new Date(`${initialData.endDate}T00:00:00.000Z`),
   })
   const [urlFilterOpen, setUrlFilterOpen] = useState(false)
+  const [countryFilterOpen, setCountryFilterOpen] = useState(false)
   const [dateRangeOpen, setDateRangeOpen] = useState(false)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -116,6 +146,10 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
     () => (urlFilter === '__all__' ? 'All pages' : urlFilter),
     [urlFilter],
   )
+  const selectedCountryLabel = useMemo(
+    () => (countryFilter === '__all__' ? 'All countries' : countryFilter),
+    [countryFilter],
+  )
 
   function fetchWithFilters(next: {
     nextUrl?: string
@@ -123,12 +157,16 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
     nextStartDate?: string
     nextEndDate?: string
     nextLogsPage?: number
+    nextUserType?: UserTypeFilter
+    nextCountry?: string
   }) {
     const nextUrl = next.nextUrl ?? activeUrl
     const nextPreset = next.nextPreset ?? preset
     const nextStartDate = next.nextStartDate ?? data.startDate
     const nextEndDate = next.nextEndDate ?? data.endDate
     const nextLogsPage = next.nextLogsPage ?? 1
+    const nextUserType = next.nextUserType ?? userTypeFilter
+    const nextCountry = next.nextCountry ?? countryFilter
     startTransition(async () => {
       const result = await fetchAnalyticsData({
         urlFilter: nextUrl,
@@ -136,6 +174,8 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
         startDate: nextStartDate,
         endDate: nextEndDate,
         logsPage: nextLogsPage,
+        userTypeFilter: nextUserType,
+        countryFilter: nextCountry === '__all__' ? undefined : nextCountry,
       })
       setData(result)
       setExpandedRow(null)
@@ -153,6 +193,17 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
     if (value !== 'date_range') {
       fetchWithFilters({ nextPreset: value, nextLogsPage: 1 })
     }
+  }
+
+  function handleUserTypeChange(value: UserTypeFilter) {
+    setUserTypeFilter(value)
+    fetchWithFilters({ nextUserType: value, nextLogsPage: 1 })
+  }
+
+  function handleCountryChange(value: string) {
+    setCountryFilter(value)
+    setCountryFilterOpen(false)
+    fetchWithFilters({ nextCountry: value, nextLogsPage: 1 })
   }
 
   function applyDateRange() {
@@ -176,6 +227,17 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
     if (nextPage < 1 || nextPage > data.recentLogsTotalPages) return
     fetchWithFilters({ nextLogsPage: nextPage })
   }
+
+  // Hourly analytics derived data
+  const peakHour = useMemo(() => {
+    if (!data.hourlyAnalytics || data.hourlyAnalytics.length === 0) return null
+    return data.hourlyAnalytics.reduce((max, h) => (h.views > max.views ? h : max), data.hourlyAnalytics[0])
+  }, [data.hourlyAnalytics])
+
+  const maxHourlyViews = useMemo(() => {
+    if (!data.hourlyAnalytics) return 0
+    return Math.max(...data.hourlyAnalytics.map((h) => h.views), 1)
+  }, [data.hourlyAnalytics])
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
@@ -209,8 +271,9 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
           <CardTitle className="text-base">Global Filters</CardTitle>
           <CardDescription>{selectedRangeLabel}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="w-full md:w-[220px]">
+        <CardContent className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+          {/* Date preset */}
+          <div className="w-full md:w-[200px]">
             <Select value={preset} onValueChange={(value) => handlePresetChange(value as DatePreset)}>
               <SelectTrigger>
                 <SelectValue />
@@ -226,6 +289,8 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Date range picker */}
           <Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full md:w-auto">
@@ -248,6 +313,67 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* User type filter */}
+          <div className="w-full md:w-[260px]">
+            <Select value={userTypeFilter} onValueChange={(value) => handleUserTypeChange(value as UserTypeFilter)}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Users</SelectItem>
+                <SelectItem value="admin_author">Admin &amp; Author only</SelectItem>
+                <SelectItem value="except_admin_author">Except admin &amp; author</SelectItem>
+                <SelectItem value="logged_in_except">Logged-in (except admins &amp; authors)</SelectItem>
+                <SelectItem value="anonymous">Anonymous Users only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Country filter */}
+          <div className="w-full md:w-[220px]">
+            <Popover open={countryFilterOpen} onOpenChange={setCountryFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between">
+                  <div className="flex items-center gap-2 truncate">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="truncate text-sm">{selectedCountryLabel}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search country..." />
+                  <CommandEmpty>No country found.</CommandEmpty>
+                  <CommandList>
+                    <CommandGroup>
+                      <CommandItem value="__all__" onSelect={() => handleCountryChange('__all__')}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            countryFilter === '__all__' ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        All countries
+                      </CommandItem>
+                      {data.distinctCountries.map((country) => (
+                        <CommandItem key={country} value={country} onSelect={() => handleCountryChange(country)}>
+                          <Check
+                            className={cn('mr-2 h-4 w-4', countryFilter === country ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <span className="text-sm">{country}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </CardContent>
       </Card>
 
@@ -344,6 +470,122 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
             </p>
           ) : (
             <AnalyticsChart data={data.dailyTrend} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Time Analytics Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Time Analytics
+              </CardTitle>
+              <CardDescription>
+                Visitor distribution by hour of day (UTC)
+                {peakHour && peakHour.views > 0 && (
+                  <span className="ml-1">
+                    · Peak: <strong className="text-foreground">{peakHour.label}</strong> ({peakHour.views.toLocaleString()} views)
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {data.hourlyAnalytics.every((h) => h.views === 0) ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No page views in this period
+            </p>
+          ) : (
+            <>
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mb-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(210 80% 60%)' }} />
+                  Night (12–6 AM)
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(30 85% 55%)' }} />
+                  Morning (6–12 PM)
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(45 90% 50%)' }} />
+                  Afternoon (12–6 PM)
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(260 70% 55%)' }} />
+                  Evening (6–12 AM)
+                </div>
+              </div>
+              <div className="h-[260px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={data.hourlyAnalytics}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11 }}
+                      className="text-muted-foreground"
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={50}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                      tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v))}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) =>
+                        active && payload?.[0] ? (
+                          <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
+                            <p className="font-medium">{String(payload[0].payload.label)}</p>
+                            <p className="text-muted-foreground tabular-nums">
+                              {Number(payload[0].value).toLocaleString()} views
+                            </p>
+                          </div>
+                        ) : null
+                      }
+                    />
+                    <Bar dataKey="views" radius={[4, 4, 0, 0]}>
+                      {data.hourlyAnalytics.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={getHourColor(entry.hour, maxHourlyViews, entry.views)}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Summary stats */}
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Night (12–6 AM)', range: [0, 5] },
+                  { label: 'Morning (6 AM–12 PM)', range: [6, 11] },
+                  { label: 'Afternoon (12–6 PM)', range: [12, 17] },
+                  { label: 'Evening (6 PM–12 AM)', range: [18, 23] },
+                ].map(({ label, range: [from, to] }) => {
+                  const total = data.hourlyAnalytics
+                    .filter((h) => h.hour >= from && h.hour <= to)
+                    .reduce((sum, h) => sum + h.views, 0)
+                  const percentage = data.totalViews > 0 ? ((total / data.totalViews) * 100).toFixed(1) : '0'
+                  return (
+                    <div key={label} className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-lg font-bold tabular-nums mt-1">{total.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{percentage}% of total</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -510,6 +752,10 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
                                   {log.username || (
                                     <span className="italic text-muted-foreground">Anonymous</span>
                                   )}
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Role:</span>{' '}
+                                  <span className="capitalize">{log.userRole || 'anonymous'}</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">City:</span>{' '}

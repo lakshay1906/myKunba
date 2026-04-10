@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
   const referrer = typeof body.referrer === 'string' ? body.referrer.trim() || null : null
   const username =
     typeof body.username === 'string' && body.username.trim() ? body.username.trim() : null
+  const validRoles = ['admin', 'author', 'user', 'anonymous'] as const
+  const rawRole = typeof body.userRole === 'string' ? body.userRole.trim().toLowerCase() : 'anonymous'
+  const userRole = validRoles.includes(rawRole as any) ? rawRole : (username ? 'user' : 'anonymous')
 
   const forwarded = req.headers.get('x-forwarded-for')
   const ipAddress =
@@ -47,6 +50,7 @@ export async function POST(req: NextRequest) {
       data: {
         url,
         username: username ?? undefined,
+        userRole: userRole as any,
         ipAddress,
         userAgent: userAgent ?? undefined,
         referrer: referrer ?? undefined,

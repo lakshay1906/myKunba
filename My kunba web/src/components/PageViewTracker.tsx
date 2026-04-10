@@ -28,6 +28,7 @@ export default function PageViewTracker() {
     }
     if (loginDetail?.email) {
       body.username = loginDetail.name || loginDetail.email
+      body.userRole = loginDetail.role || 'user'
     }
 
     fetch('/api/analytics/collect', {

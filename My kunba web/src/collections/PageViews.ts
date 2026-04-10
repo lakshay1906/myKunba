@@ -20,6 +20,13 @@ export const PageViews: CollectionConfig = {
       index: true,
     },
     {
+      name: 'userRole',
+      type: 'select',
+      defaultValue: 'anonymous',
+      options: ['admin', 'author', 'user', 'anonymous'],
+      index: true,
+    },
+    {
       name: 'ipAddress',
       type: 'text',
       required: true,
