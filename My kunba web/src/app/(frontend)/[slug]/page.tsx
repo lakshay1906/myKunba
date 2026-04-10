@@ -40,7 +40,7 @@ export async function generateMetadata({
   const focusKeywordRaw = post.focusKeyword || ''
   const focusKeywords = focusKeywordRaw
     .split(',')
-    .map((k) => k.trim())
+    .map((k: string) => k.trim())
     .filter(Boolean)
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = getPublicUrl()
@@ -126,20 +126,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     }
     // Resolve category and tag names/slugs from translation tables for this locale
     const catIds =
-      blog.categories?.map((c) =>
+      blog.categories?.map((c: any) =>
         typeof c === 'object' && c !== null && 'id' in c ? (c as { id: number }).id : (c as number),
       ) ?? []
     const tagIds =
-      blog.tags?.map((t) =>
+      blog.tags?.map((t: any) =>
         typeof t === 'object' && t !== null && 'id' in t ? (t as { id: number }).id : (t as number),
       ) ?? []
     const [localizedCats, localizedTags] = await Promise.all([
-      Promise.all(catIds.map((id) => getCategoryTranslation(id, locale))),
-      Promise.all(tagIds.map((id) => getTagTranslation(id, locale))),
+      Promise.all(catIds.map((id: number) => getCategoryTranslation(id, locale))),
+      Promise.all(tagIds.map((id: number) => getTagTranslation(id, locale))),
     ])
     if (localizedCats.some(Boolean)) {
       const mappedCats =
-        blog.categories?.map((c, i) => {
+        blog.categories?.map((c: any, i: number) => {
           const cat = c as { id: number; name: string; slug: string }
           const tr = localizedCats[i]
           return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
@@ -148,7 +148,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     }
     if (localizedTags.some(Boolean) && blog) {
       const mappedTags =
-        blog.tags?.map((t, i) => {
+        blog.tags?.map((t: any, i: number) => {
           const tag = t as { id: number; name: string; slug: string }
           const tr = localizedTags[i]
           return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
@@ -160,13 +160,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!blog) notFound()
 
   const categoryIds =
-    blog.categories?.map((cat) =>
+    blog.categories?.map((cat: any) =>
       typeof cat === 'object' && cat !== null && 'id' in cat
         ? (cat as { id: number }).id
         : (cat as number),
     ) ?? []
   const tagIds =
-    blog.tags?.map((tag) =>
+    blog.tags?.map((tag: any) =>
       typeof tag === 'object' && tag !== null && 'id' in tag
         ? (tag as { id: number }).id
         : (tag as number),

@@ -16,7 +16,9 @@ export interface AdBannerProps {
   /** Optional class for the wrapper */
   className?: string
   /** Use "fluid" for in-article; omit for fixed dimensions (e.g. sidebar 300x250) */
-  dataAdFormat?: 'fluid' | 'auto'
+  dataAdFormat?: 'fluid' | 'auto' | 'autorelaxed'
+  /** Multiplex sub-format (e.g. "mcrspv" for vertical multiplex) */
+  dataAutoFormat?: string
   /** Reserved min height to prevent CLS (default: 250 for fixed, 90 for fluid) */
   minHeight?: number
   /** Show a "Sponsored" label above the ad */
@@ -28,6 +30,7 @@ export function AdBanner({
   style,
   className = '',
   dataAdFormat,
+  dataAutoFormat,
   minHeight,
   showSponsoredLabel = false,
 }: AdBannerProps) {
@@ -97,6 +100,7 @@ export function AdBanner({
         data-ad-client={ADSENSE_CLIENT_ID}
         data-ad-slot={dataAdSlot}
         {...(dataAdFormat && { 'data-ad-format': dataAdFormat })}
+        {...(dataAutoFormat && { 'data-auto-format': dataAutoFormat })}
         data-full-width-responsive="false"
         style={{ display: 'block', minHeight: reservedHeight }}
       />
