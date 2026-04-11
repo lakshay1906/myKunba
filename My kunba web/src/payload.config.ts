@@ -1,6 +1,6 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
+
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig, SharpDependency } from 'payload'
@@ -60,9 +60,10 @@ export default buildConfig({
       ssl: {
         rejectUnauthorized: false,
       },
-      max: 20, // Maximum number of clients in the pool
-      idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
+      max: 10, // Tuned for single EC2 instance — avoids holding too many idle connections
+      min: 2, // Keep a warm floor to avoid cold-start latency
+      idleTimeoutMillis: 20000, // Close idle clients after 20 seconds
+      connectionTimeoutMillis: 5000, // Fail fast on connection issues
     },
     push: false,
     /** Registered with Payload so `pnpm run payload migrate` / `pnpm migrate` applies schema. */
@@ -70,7 +71,6 @@ export default buildConfig({
   }),
   sharp: sharp as unknown as SharpDependency,
   plugins: [
-    payloadCloudPlugin(),
     // storage-adapter-placeholder
   ],
 })

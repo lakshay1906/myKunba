@@ -91,6 +91,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '15mb',
     },
+    staleTimes: {
+      static: 180, // seconds before re-fetching static pages on client navigation
+    },
   },
 }
 

@@ -17,6 +17,25 @@ import { AdBanner } from '@/components/AdBanner'
 
 // SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
+// import { payload } from '@/payload-client'
+
+// export async function generateStaticParams() {
+//   const posts = await payload.find({
+//     collection: 'posts',
+//     limit: 100, // Pre-render the 100 most recent/popular posts
+//     where: {
+//       status: { equals: 'published' },
+//     },
+//     select: { slug: true },
+//   })
+
+//   return posts.docs
+//     .filter((post) => typeof post.slug === 'string')
+//     .map((post) => ({
+//       slug: post.slug as string,
+//     }))
+// }
+
 export async function generateMetadata({
   params,
 }: {
@@ -183,21 +202,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const faqJsonLd =
     faqItems.length > 0
       ? {
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          mainEntity: faqItems
-            .filter(
-              (item: { question?: string; answer?: string }) => item?.question && item?.answer,
-            )
-            .map((item: { question: string; answer: string }) => ({
-              '@type': 'Question',
-              name: item.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer,
-              },
-            })),
-        }
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems
+          .filter(
+            (item: { question?: string; answer?: string }) => item?.question && item?.answer,
+          )
+          .map((item: { question: string; answer: string }) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+      }
       : null
 
   return (
@@ -217,22 +236,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           author:
             typeof blog.author === 'object' && blog.author !== null && 'displayName' in blog.author
               ? {
-                  id: blog.author.id,
-                  username: (blog.author as any).username,
-                  displayName: blog.author.displayName ?? undefined,
-                  profileImage: undefined,
-                  bio: blog.author.bio ?? undefined,
-                  role: blog.author.role ?? undefined,
-                }
+                id: blog.author.id,
+                username: (blog.author as any).username,
+                displayName: blog.author.displayName ?? undefined,
+                profileImage: undefined,
+                bio: blog.author.bio ?? undefined,
+                role: blog.author.role ?? undefined,
+              }
               : undefined,
           categories: Array.isArray(blog.categories)
             ? blog.categories
-                .filter((c) => typeof c === 'object' && c !== null)
-                .map((c) => {
-                  const o = c as unknown as { id?: number; name?: string; slug?: string }
-                  return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
-                })
-                .filter((cat) => cat.id && cat.name)
+              .filter((c) => typeof c === 'object' && c !== null)
+              .map((c) => {
+                const o = c as unknown as { id?: number; name?: string; slug?: string }
+                return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
+              })
+              .filter((cat) => cat.id && cat.name)
             : undefined,
         }}
         siteUrl={siteUrl}
