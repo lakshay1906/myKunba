@@ -64,7 +64,7 @@ export async function generateMetadata({
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = getPublicUrl()
   const canonicalBaseUrl = 'https://mykunba.org'
-  const postUrl = `${canonicalBaseUrl}/posts/${post.slug}`
+  const postUrl = `${canonicalBaseUrl}/${post.slug}`
 
   const keywords: string[] = [...focusKeywords]
   if (post.categories && Array.isArray(post.categories)) {

@@ -51,6 +51,7 @@ export async function fetchBlogPostBySlugInternal(
       },
       depth: 2,
       limit: 1,
+      overrideAccess: true,
     })
     const doc = result.docs[0] ?? null
     if (!doc) return null
@@ -125,6 +126,7 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
       depth: 1, // Only populate author relationship
       sort: '-publishDate', // Latest first
       limit: 10, // Limit to 10 featured blogs
+      overrideAccess: true,
     })
 
     const now = Date.now()
@@ -245,6 +247,7 @@ export async function fetchRelatedArticles(
         depth: 1,
         sort: '-publishDate',
         limit,
+        overrideAccess: true,
       })
       docs = withTagResult.docs
       docs.forEach((d) => seenIds.add(d.id))
@@ -278,6 +281,7 @@ export async function fetchRelatedArticles(
         depth: 1,
         sort: '-publishDate',
         limit: limit - docs.length,
+        overrideAccess: true,
       })
       docs = [...docs, ...categoryOnlyResult.docs]
     }

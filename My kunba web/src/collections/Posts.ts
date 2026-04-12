@@ -7,6 +7,9 @@ export const Posts: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
   },
+  access: {
+    read: () => true,
+  },
   timestamps: true,
   fields: [
     {
