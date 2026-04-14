@@ -504,7 +504,10 @@ export interface PageView {
   id: number;
   url: string;
   username?: string | null;
+  userRole?: ('admin' | 'author' | 'user' | 'anonymous') | null;
   ipAddress: string;
+  city?: string | null;
+  country?: string | null;
   userAgent?: string | null;
   referrer?: string | null;
   timestamp: string;
@@ -815,7 +818,10 @@ export interface SubscriptionsSelect<T extends boolean = true> {
 export interface PageViewsSelect<T extends boolean = true> {
   url?: T;
   username?: T;
+  userRole?: T;
   ipAddress?: T;
+  city?: T;
+  country?: T;
   userAgent?: T;
   referrer?: T;
   timestamp?: T;

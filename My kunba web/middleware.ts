@@ -184,14 +184,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on frontend pages (locale, blog redirect, dashboard) and API
+  // Run on pages and API routes only — skip static assets, images, and Next.js internals
   matcher: [
-    '/',
-    '/:path*',
-    '/dashboard',
-    '/dashboard/:path*',
-    '/blog',
-    '/blog/:path*',
-    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$).*)',
   ],
 }

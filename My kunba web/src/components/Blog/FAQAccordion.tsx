@@ -9,6 +9,7 @@ import {
 import { AdBanner } from '@/components/AdBanner'
 
 const FAQ_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_4 ?? ''
+const MULTIPLEX_AD_SLOT = process.env.NEXT_PUBLIC_ADS_MULTIPLEX_SLOT ?? ''
 
 export type FAQItem = {
   question: string
@@ -63,6 +64,18 @@ export default function FAQAccordion({
             dataAdFormat="fluid"
             className="w-full rounded-lg h-auto!"
             minHeight={250}
+          />
+        </div>
+      ) : null}
+      {/* Vertical Multiplex ad */}
+      {MULTIPLEX_AD_SLOT ? (
+        <div className="mt-4 w-full">
+          <AdBanner
+            dataAdSlot={MULTIPLEX_AD_SLOT}
+            dataAdFormat="autorelaxed"
+            dataAutoFormat="mcrspv"
+            className="w-full rounded-lg"
+            minHeight={320}
           />
         </div>
       ) : null}

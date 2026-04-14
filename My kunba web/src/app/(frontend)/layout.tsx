@@ -68,17 +68,15 @@ export default async function FrontendLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        {/* Optimized AdSense Loading */}
-        <Script
-          id="adsense-init"
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
-          crossOrigin="anonymous"
-          strategy="lazyOnload"
-        />
+        {/* Preconnect to critical third-party origins */}
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
-        {/* Self-Healing Chunk Error Script */}
-        <script
+        {/* Self-Healing Chunk Error Script — deferred to not block rendering */}
+        <Script
+          id="chunk-error-recovery"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.addEventListener('error', function(e) {

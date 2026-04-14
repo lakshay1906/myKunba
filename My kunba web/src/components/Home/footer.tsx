@@ -8,6 +8,9 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { useLocale } from '@/lib/i18n/locale-context'
 import LanguageSelect from './LanguageSelect'
+import { AdBanner } from '@/components/AdBanner'
+
+const MULTIPLEX_AD_SLOT_HORIZONTAL = process.env.NEXT_PUBLIC_ADS_MULTIPLEX_SLOT_HORIZONTAL ?? ''
 
 const sectionKeys = [
   {
@@ -82,6 +85,17 @@ export default function Footer() {
 
   return (
     <footer className="container mx-auto mt-12">
+      {MULTIPLEX_AD_SLOT_HORIZONTAL ? (
+        <div className="w-full mb-8 px-6">
+          <AdBanner
+            dataAdSlot={MULTIPLEX_AD_SLOT_HORIZONTAL}
+            dataAdFormat="autorelaxed"
+            dataAutoFormat="mcrspv"
+            className="w-full rounded-lg"
+            minHeight={320}
+          />
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-8 lg:grid-cols-6 px-6">
         <div className="col-span-2 mb-8 lg:mb-0">
           <div className="flex flex-col justify-start gap-3">

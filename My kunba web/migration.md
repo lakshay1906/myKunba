@@ -23,9 +23,35 @@ pnpm migrate:sql
 
 ---
 
+## Payload Migrations (schema changes via Drizzle)
+
+Payload migrations live in `src/migrations/` and are registered in `src/migrations/index.ts` via `prodMigrations` in `payload.config.ts`. Payload **auto-applies** pending migrations on app startup — no manual step needed for production.
+
+To create a new Payload migration locally:
+
+```bash
+pnpm payload migrate:create
+pnpm payload migrate
+```
+
+### Current Payload Migrations
+
+| Migration | Description |
+|-----------|-------------|
+| `20260328_142031` | Initial schema |
+| `20260407_180000_add_city_country_to_page_views` | Adds `city` and `country` columns to `page_views` (with index on `country`) |
+
+---
+
 ## Production (EC2 + Docker)
 
-After deploying an image that includes `scripts/migrations/009_payload_locked_documents_rels_page_views_id.sql`, apply migrations **against the same database** the app uses:
+### Payload migrations (auto)
+
+Payload migrations are applied automatically when the app starts (via `prodMigrations`). Just deploy the new image — Payload handles the rest.
+
+### SQL migrations (manual or entrypoint)
+
+Custom SQL migrations in `scripts/migrations/` are run by the Docker entrypoint on startup. To run manually:
 
 ```bash
 docker exec mykunba node scripts/run-migration.js

@@ -17,6 +17,25 @@ import { AdBanner } from '@/components/AdBanner'
 
 // SSG: cached until revalidateTag('posts') (e.g. from dashboard after create/edit/delete)
 
+// import { payload } from '@/payload-client'
+
+// export async function generateStaticParams() {
+//   const posts = await payload.find({
+//     collection: 'posts',
+//     limit: 100, // Pre-render the 100 most recent/popular posts
+//     where: {
+//       status: { equals: 'published' },
+//     },
+//     select: { slug: true },
+//   })
+
+//   return posts.docs
+//     .filter((post) => typeof post.slug === 'string')
+//     .map((post) => ({
+//       slug: post.slug as string,
+//     }))
+// }
+
 export async function generateMetadata({
   params,
 }: {
@@ -40,12 +59,12 @@ export async function generateMetadata({
   const focusKeywordRaw = post.focusKeyword || ''
   const focusKeywords = focusKeywordRaw
     .split(',')
-    .map((k) => k.trim())
+    .map((k: string) => k.trim())
     .filter(Boolean)
   const authorName = typeof post.author === 'object' ? post.author.displayName : 'Author'
   const siteUrl = getPublicUrl()
   const canonicalBaseUrl = 'https://mykunba.org'
-  const postUrl = `${canonicalBaseUrl}/posts/${post.slug}`
+  const postUrl = `${canonicalBaseUrl}/${post.slug}`
 
   const keywords: string[] = [...focusKeywords]
   if (post.categories && Array.isArray(post.categories)) {
@@ -126,20 +145,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     }
     // Resolve category and tag names/slugs from translation tables for this locale
     const catIds =
-      blog.categories?.map((c) =>
+      blog.categories?.map((c: any) =>
         typeof c === 'object' && c !== null && 'id' in c ? (c as { id: number }).id : (c as number),
       ) ?? []
     const tagIds =
-      blog.tags?.map((t) =>
+      blog.tags?.map((t: any) =>
         typeof t === 'object' && t !== null && 'id' in t ? (t as { id: number }).id : (t as number),
       ) ?? []
     const [localizedCats, localizedTags] = await Promise.all([
-      Promise.all(catIds.map((id) => getCategoryTranslation(id, locale))),
-      Promise.all(tagIds.map((id) => getTagTranslation(id, locale))),
+      Promise.all(catIds.map((id: number) => getCategoryTranslation(id, locale))),
+      Promise.all(tagIds.map((id: number) => getTagTranslation(id, locale))),
     ])
     if (localizedCats.some(Boolean)) {
       const mappedCats =
-        blog.categories?.map((c, i) => {
+        blog.categories?.map((c: any, i: number) => {
           const cat = c as { id: number; name: string; slug: string }
           const tr = localizedCats[i]
           return tr ? { id: cat.id, name: tr.name, slug: tr.slug } : cat
@@ -148,7 +167,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     }
     if (localizedTags.some(Boolean) && blog) {
       const mappedTags =
-        blog.tags?.map((t, i) => {
+        blog.tags?.map((t: any, i: number) => {
           const tag = t as { id: number; name: string; slug: string }
           const tr = localizedTags[i]
           return tr ? { id: tag.id, name: tr.name, slug: tr.slug } : tag
@@ -160,13 +179,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!blog) notFound()
 
   const categoryIds =
-    blog.categories?.map((cat) =>
+    blog.categories?.map((cat: any) =>
       typeof cat === 'object' && cat !== null && 'id' in cat
         ? (cat as { id: number }).id
         : (cat as number),
     ) ?? []
   const tagIds =
-    blog.tags?.map((tag) =>
+    blog.tags?.map((tag: any) =>
       typeof tag === 'object' && tag !== null && 'id' in tag
         ? (tag as { id: number }).id
         : (tag as number),
@@ -183,21 +202,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const faqJsonLd =
     faqItems.length > 0
       ? {
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          mainEntity: faqItems
-            .filter(
-              (item: { question?: string; answer?: string }) => item?.question && item?.answer,
-            )
-            .map((item: { question: string; answer: string }) => ({
-              '@type': 'Question',
-              name: item.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer,
-              },
-            })),
-        }
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems
+          .filter(
+            (item: { question?: string; answer?: string }) => item?.question && item?.answer,
+          )
+          .map((item: { question: string; answer: string }) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+      }
       : null
 
   return (
@@ -217,22 +236,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           author:
             typeof blog.author === 'object' && blog.author !== null && 'displayName' in blog.author
               ? {
-                  id: blog.author.id,
-                  username: (blog.author as any).username,
-                  displayName: blog.author.displayName ?? undefined,
-                  profileImage: undefined,
-                  bio: blog.author.bio ?? undefined,
-                  role: blog.author.role ?? undefined,
-                }
+                id: blog.author.id,
+                username: (blog.author as any).username,
+                displayName: blog.author.displayName ?? undefined,
+                profileImage: undefined,
+                bio: blog.author.bio ?? undefined,
+                role: blog.author.role ?? undefined,
+              }
               : undefined,
           categories: Array.isArray(blog.categories)
             ? blog.categories
-                .filter((c) => typeof c === 'object' && c !== null)
-                .map((c) => {
-                  const o = c as unknown as { id?: number; name?: string; slug?: string }
-                  return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
-                })
-                .filter((cat) => cat.id && cat.name)
+              .filter((c) => typeof c === 'object' && c !== null)
+              .map((c) => {
+                const o = c as unknown as { id?: number; name?: string; slug?: string }
+                return { id: o.id ?? 0, name: o.name ?? '', slug: o.slug ?? '' }
+              })
+              .filter((cat) => cat.id && cat.name)
             : undefined,
         }}
         siteUrl={siteUrl}

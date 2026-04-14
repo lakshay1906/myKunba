@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { FiShare2, FiMail, FiLink } from 'react-icons/fi'
 import { FaFacebook, FaWhatsapp, FaTelegram } from 'react-icons/fa'
 import { LuLinkedin } from 'react-icons/lu'
 import { FaXTwitter, FaThreads } from 'react-icons/fa6'
 import { toast } from 'sonner'
-
-const STAGGER_DURATION = 0.05
 
 type ShareOptionBase = {
   id: string
@@ -88,8 +85,17 @@ const shareOptions: ShareOptionBase[] = [
   },
 ]
 
+/** Stagger delay per item in ms */
+const STAGGER_MS = 50
+
 export default function FloatingShare() {
   const [isOpen, setIsOpen] = useState(false)
+  // Track mount state so the first render doesn't play the exit animation
+  const hasMounted = useRef(false)
+
+  useEffect(() => {
+    hasMounted.current = true
+  }, [])
 
   const getShareUrl = useCallback(() => {
     if (typeof window === 'undefined') return ''
@@ -128,45 +134,61 @@ export default function FloatingShare() {
     'cursor-pointer flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-lg transition-colors'
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center" aria-label="Share">
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            className="flex flex-col-reverse items-center mb-3 overflow-y-auto max-h-[min(28rem,calc(100vh-8rem))] gap-3 [&::-webkit-scrollbar]:hidden"
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={{
-              open: {
-                transition: { staggerChildren: STAGGER_DURATION, delayChildren: 0.02 },
-              },
-              closed: {
-                transition: {
-                  staggerChildren: STAGGER_DURATION,
-                  staggerDirection: -1,
-                },
-              },
-            }}
-          >
-            {shareOptions.map((option, index) => (
-              <motion.div
+    <>
+      {/* CSS keyframes for the staggered slide-up animation */}
+      <style jsx>{`
+        @keyframes share-item-in {
+          from {
+            opacity: 0;
+            transform: translateY(28px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes share-item-out {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(28px);
+          }
+        }
+      `}</style>
+
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center" aria-label="Share">
+        {/* Share options container — always mounted, visibility toggled via CSS */}
+        <div
+          className="flex flex-col-reverse items-center mb-3 overflow-y-auto max-h-[min(28rem,calc(100vh-8rem))] gap-3 [&::-webkit-scrollbar]:hidden"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            // When closed, hide the container but allow exit animations to play
+            ...((!isOpen && !hasMounted.current) ? { display: 'none' } : {}),
+          }}
+        >
+          {shareOptions.map((option, index) => {
+            // Reverse stagger: bottom items appear first (since flex-col-reverse)
+            const enterDelay = index * STAGGER_MS
+            // Exit: top items disappear first
+            const exitDelay = (shareOptions.length - 1 - index) * STAGGER_MS
+
+            return (
+              <div
                 key={option.id}
-                custom={index}
-                variants={{
-                  open: {
-                    opacity: 1,
-                    y: 0,
-                    transition: { duration: 0.25, ease: 'easeOut' },
-                  },
-                  closed: {
-                    opacity: 0,
-                    y: 28,
-                    transition: { duration: 0.2, ease: 'easeIn' },
-                  },
+                style={{
+                  animation: isOpen
+                    ? `share-item-in 0.25s ease-out ${enterDelay}ms both`
+                    : `share-item-out 0.2s ease-in ${exitDelay}ms both`,
+                  // Start hidden before enter animation
+                  ...(isOpen ? {} : {}),
+                }}
+                onAnimationEnd={(e) => {
+                  // After exit animation finishes on the last item, nothing extra needed
+                  // The container stays visible but items are opacity:0 / translated
                 }}
               >
                 {option.isCopy ? (
@@ -199,22 +221,22 @@ export default function FloatingShare() {
                     <option.Icon className="size-6" />
                   </a>
                 )}
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
+            )
+          })}
+        </div>
 
-      <motion.button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="cursor-pointer flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        title={isOpen ? 'Close share menu' : 'Share'}
-        aria-label={isOpen ? 'Close share menu' : 'Share'}
-        aria-expanded={isOpen}
-      >
-        <FiShare2 className="size-6" />
-      </motion.button>
-    </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="cursor-pointer flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          title={isOpen ? 'Close share menu' : 'Share'}
+          aria-label={isOpen ? 'Close share menu' : 'Share'}
+          aria-expanded={isOpen}
+        >
+          <FiShare2 className="size-6" />
+        </button>
+      </div>
+    </>
   )
 }
