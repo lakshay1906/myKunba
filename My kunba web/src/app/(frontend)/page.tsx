@@ -7,6 +7,7 @@ import { BlogCarousel } from '@/components/Blog/FeaturedBlogs'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { headers } from 'next/headers'
 import type { Metadata, Viewport } from 'next'
+import { AdBanner } from '@/components/AdBanner'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -86,6 +87,7 @@ export default async function Home({
       "logo": "https://mykunba.org/full_logo.svg"
     }
   }
+  const horizontalAdSlot = process.env.NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL ?? ''
 
   return (
     <>
@@ -93,11 +95,33 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteAndOrgSchema) }}
       />
+      {/* One ad here */}
+      {horizontalAdSlot ? (
+        <div className="container mx-auto px-4 mb-6">
+          <AdBanner
+            dataAdSlot={horizontalAdSlot}
+            dataAdFormat="fluid"
+            className="w-full"
+            minHeight={120}
+          />
+        </div>
+      ) : null}
       {featuredBlogs.length > 0 && (
         <div className="mb-8">
           <BlogCarousel blogs={featuredBlogs} />
         </div>
       )}
+      {/* One ad here */}
+      {horizontalAdSlot ? (
+        <div className="container mx-auto px-4 mb-6">
+          <AdBanner
+            dataAdSlot={horizontalAdSlot}
+            dataAdFormat="fluid"
+            className="w-full"
+            minHeight={120}
+          />
+        </div>
+      ) : null}
       <Blog
         posts={posts}
         initialCategories={categories}
