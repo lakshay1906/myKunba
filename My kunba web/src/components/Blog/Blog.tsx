@@ -6,12 +6,13 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import BlogCard from './BlogCard'
+import BlogListCard from './BlogListCard'
 import EmptyBlogState from './EmptyBlogState'
 import { AdBanner } from '@/components/AdBanner'
 import { useAppStoreOptional } from '@/lib/context/store'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
-import { Search } from 'lucide-react'
+import { Search, LayoutGrid, List } from 'lucide-react'
 
 const MultiSelect = dynamic(
   () => import('./multi-select').then((m) => ({ default: m.MultiSelect })),
@@ -35,6 +36,8 @@ const LIMIT = 24
 const SEARCH_DEBOUNCE_MS = 800
 /** In-feed AdSense slot; shown after every 4 cards on the homepage grid */
 const FEED_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_IN_FEED ?? ''
+const GRID_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_2 ?? ''
+const BLOG_VIEW_MODE_KEY = 'mykunba_home_blog_view_mode'
 
 type BlogProps = {
   posts: Record<string, unknown>
@@ -231,6 +234,7 @@ export default function Blog({
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [offset, setOffset] = useState(initialLimit)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
 
   const limit = initialLimit
   const originalDataPersisted = useRef(false)
@@ -496,6 +500,21 @@ export default function Blog({
       value: (a.email as string) || '',
     }))
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem(BLOG_VIEW_MODE_KEY)
+    if (saved === 'grid' || saved === 'list') {
+      setViewMode(saved)
+    }
+  }, [])
+
+  const switchViewMode = (mode: 'list' | 'grid') => {
+    setViewMode(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(BLOG_VIEW_MODE_KEY, mode)
+    }
+  }
+
   return (
     <div id="blog" className="container mx-auto! px-4!">
       <div className="mt-2 md:mt-4 lg:mt-6">
@@ -505,7 +524,7 @@ export default function Blog({
         </p>
       </div>
       <div className="flex flex-col gap-4 mt-0 sm:mt-2 md:mt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <div className="space-y-2">
             <Label htmlFor="blog-search">Search</Label>
             <div className="relative">
@@ -562,6 +581,31 @@ export default function Blog({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <div className="space-y-2">
+            <Label>View</Label>
+            <div className="flex items-center gap-1 border rounded-md p-1 w-fit h-10">
+              <Button
+                type="button"
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => switchViewMode('list')}
+                aria-label="List view"
+                className="h-8 w-8"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => switchViewMode('grid')}
+                aria-label="Grid view"
+                className="h-8 w-8"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -573,24 +617,27 @@ export default function Blog({
         <>
           {data.length > 0 ? (
             <>
-              <div className="mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6">
+              <div className={viewMode === 'grid'
+                ? 'mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6'
+                : 'mt-2 sm:mt-4 md:mt-6 grid grid-cols-1 items-start gap-4'}>
                 {data.flatMap((ele, index) => {
+                  const activeAdSlot = viewMode === 'list' ? FEED_AD_SLOT : GRID_AD_SLOT
                   const nodes = [
                     <div key={ele.id} className="size-full">
-                      <BlogCard post={ele} />
+                      {viewMode === 'grid' ? <BlogCard post={ele} /> : <BlogListCard post={ele} />}
                     </div>,
                   ]
-                  if (FEED_AD_SLOT && (index + 1) % 4 === 0) {
+                  if (activeAdSlot && (index + 1) % 4 === 0) {
                     nodes.push(
                       <div
                         key={`feed-ad-${String(ele.id)}`}
-                        className="col-span-full"
+                        className={viewMode === 'grid' ? 'col-span-full' : ''}
                       >
                         <div className="size-full flex w-full justify-center py-1 sm:py-2">
                           <AdBanner
-                            dataAdSlot={FEED_AD_SLOT}
+                            dataAdSlot={activeAdSlot}
                             dataAdFormat="fluid"
-                            className="w-full max-w-4xl"
+                            className={viewMode === 'grid' ? 'w-full max-w-4xl' : 'w-full'}
                             minHeight={120}
                           />
                         </div>

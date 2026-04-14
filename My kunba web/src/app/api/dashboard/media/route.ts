@@ -16,8 +16,30 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const pageRaw = Number(req.nextUrl.searchParams.get('page') || '1')
+    const limitRaw = Number(req.nextUrl.searchParams.get('limit') || '24')
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(100, Math.floor(limitRaw)) : 24
+
     const list = await getMediaList()
-    return NextResponse.json(list)
+    const sorted = [...list].sort((a, b) => {
+      const ta = a.lastModified ? new Date(a.lastModified).getTime() : 0
+      const tb = b.lastModified ? new Date(b.lastModified).getTime() : 0
+      return tb - ta
+    })
+    const total = sorted.length
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+    const safePage = Math.min(page, totalPages)
+    const offset = (safePage - 1) * limit
+    const items = sorted.slice(offset, offset + limit)
+
+    return NextResponse.json({
+      items,
+      total,
+      page: safePage,
+      limit,
+      totalPages,
+    })
   } catch (e) {
     return NextResponse.json(
       { message: e instanceof Error ? e.message : 'Failed to list media' },

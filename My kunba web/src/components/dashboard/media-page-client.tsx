@@ -67,23 +67,30 @@ export function MediaPageClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const limit = 24
   const [detailKey, setDetailKey] = useState<string | null>(null)
   const [details, setDetails] = useState<MediaDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [deletingKey, setDeletingKey] = useState<string | null>(null)
 
-  const fetchList = useCallback(async () => {
+  const fetchList = useCallback(async (pageNumber = page) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/dashboard/media')
+      const res = await fetch(`/api/dashboard/media?page=${pageNumber}&limit=${limit}`)
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.message || 'Failed to load media')
       }
       const data = await res.json()
+      setPage(data.page ?? pageNumber)
+      setTotalPages(data.totalPages ?? 1)
+      setTotal(data.total ?? 0)
       setItems(
-        data.map((x: MediaItem) => ({
+        (data.items ?? []).map((x: MediaItem) => ({
           ...x,
           lastModified: x.lastModified ?? undefined,
         })),
@@ -94,7 +101,7 @@ export function MediaPageClient() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [limit, page])
 
   useEffect(() => {
     fetchList()
@@ -186,7 +193,7 @@ export function MediaPageClient() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Media</h1>
+        <h1 className="text-2xl font-semibold">Media ({total})</h1>
         <div className="flex items-center gap-2">
           <Button
             variant={view === 'grid' ? 'secondary' : 'ghost'}
@@ -238,6 +245,30 @@ export function MediaPageClient() {
               />
             ))}
           </ul>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1 || loading}
+            onClick={() => fetchList(page - 1)}
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages || loading}
+            onClick={() => fetchList(page + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
 
