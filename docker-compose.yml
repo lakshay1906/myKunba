@@ -1,0 +1,58 @@
+# PRODUCTION COMPOSE FILE (EC2)
+# Source of truth for EC2 deployment and ad-hoc automation runs.
+# Web update: docker compose -f /home/ec2-user/mykunba/docker-compose.yml up -d my-kunba-web
+# Automation run: docker compose -f /home/ec2-user/mykunba/docker-compose.yml run --rm mykunba-automation python main.py
+version: "3.9"
+
+services:
+  my-kunba-web:
+    image: mykunba-web:latest
+    build:
+      context: ./My kunba web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_NEXT_URL: ${NEXT_PUBLIC_NEXT_URL}
+        NEXT_PUBLIC_PUBLIC_URL: ${NEXT_PUBLIC_PUBLIC_URL}
+        NEXT_PUBLIC_ADSENSE_ID: ${NEXT_PUBLIC_ADSENSE_ID}
+        NEXT_PUBLIC_ADS_SLOT_1: ${NEXT_PUBLIC_ADS_SLOT_1}
+        NEXT_PUBLIC_ADS_SLOT_2: ${NEXT_PUBLIC_ADS_SLOT_2}
+        NEXT_PUBLIC_ADS_SLOT_3: ${NEXT_PUBLIC_ADS_SLOT_3}
+        NEXT_PUBLIC_ADS_SLOT_4: ${NEXT_PUBLIC_ADS_SLOT_4}
+        NEXT_PUBLIC_ADS_SLOT_IN_FEED: ${NEXT_PUBLIC_ADS_SLOT_IN_FEED}
+        NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE: ${NEXT_PUBLIC_ADS_SLOT_BELOW_TITLE}
+        NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE: ${NEXT_PUBLIC_ADS_SLOT_IN_ARTICLE}
+        NEXT_PUBLIC_ADS_SLOT_LEFT_SIDEBAR: ${NEXT_PUBLIC_ADS_SLOT_LEFT_SIDEBAR}
+        NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL: ${NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL}
+        NEXT_PUBLIC_ADS_MULTIPLEX_SLOT: ${NEXT_PUBLIC_ADS_MULTIPLEX_SLOT}
+        NEXT_PUBLIC_ADS_MULTIPLEX_SLOT_HORIZONTAL: ${NEXT_PUBLIC_ADS_MULTIPLEX_SLOT_HORIZONTAL}
+        NEXT_PUBLIC_GA_PROPERTY_ID: ${NEXT_PUBLIC_GA_PROPERTY_ID}
+        CLOUDFLARE_HOSTNAME: ${CLOUDFLARE_HOSTNAME}
+    restart: unless-stopped
+    env_file:
+      - ${KUNBA_ENV_FILE:-./My kunba web/.env}
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/service-account.json
+    volumes:
+      - ${GOOGLE_CREDS_PATH:-/home/ec2-user/mykunba/secrets/service-account.json}:/app/service-account.json:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - kunba-network
+
+  mykunba-automation:
+    image: mykunba-automation:latest
+    build:
+      context: ./mykunba-automation
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      MY_KUNBA_WEB_URL: http://my-kunba-web:3000
+      GOOGLE_APPLICATION_CREDENTIALS: /app/service-account.json
+    volumes:
+      - ${GOOGLE_CREDS_PATH:-/home/ec2-user/mykunba/secrets/service-account.json}:/app/service-account.json:ro
+    networks:
+      - kunba-network
+
+networks:
+  kunba-network:
+    driver: bridge

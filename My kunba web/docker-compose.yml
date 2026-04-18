@@ -1,3 +1,6 @@
+# DEV-ONLY COMPOSE FILE
+# This file is for local development in `My kunba web` only.
+# Production deployment on EC2 uses the root-level `docker-compose.yml`.
 version: '3'
 
 services:
