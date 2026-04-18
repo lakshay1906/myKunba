@@ -104,6 +104,7 @@ type Props = {
 const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   today: 'Today',
   yesterday: 'Yesterday',
+  past_week: 'Past week',
   past_month: 'Past month',
   past_3_months: 'Past 3 months',
   past_6_months: 'Past 6 months',
@@ -281,6 +282,7 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
               <SelectContent>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="past_week">Past week</SelectItem>
                 <SelectItem value="past_month">Past month</SelectItem>
                 <SelectItem value="past_3_months">Past 3 months</SelectItem>
                 <SelectItem value="past_6_months">Past 6 months</SelectItem>
@@ -520,32 +522,37 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
                   Evening (6–12 AM)
                 </div>
               </div>
-              <div className="h-[260px] w-full">
+              <div className="h-[260px] w-full text-muted-foreground">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={data.hourlyAnalytics}
                     margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 11 }}
-                      className="text-muted-foreground"
+                      tick={{ fontSize: 11, fill: 'currentColor' }}
+                      stroke="hsl(var(--border))"
                       interval={0}
                       angle={-45}
                       textAnchor="end"
                       height={50}
                     />
                     <YAxis
-                      tick={{ fontSize: 12 }}
-                      className="text-muted-foreground"
+                      tick={{ fontSize: 12, fill: 'currentColor' }}
+                      stroke="hsl(var(--border))"
                       tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v))}
                     />
                     <Tooltip
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                       content={({ active, payload }) =>
                         active && payload?.[0] ? (
                           <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
-                            <p className="font-medium">{String(payload[0].payload.label)}</p>
+                            <p className="font-medium text-foreground">{String(payload[0].payload.label)}</p>
                             <p className="text-muted-foreground tabular-nums">
                               {Number(payload[0].value).toLocaleString()} views
                             </p>
@@ -591,7 +598,7 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
       </Card>
 
       {/* Two-column: Country Breakdown + Recent Logs */}
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-2">
         {/* Country Breakdown */}
         <Card>
           <CardHeader>
@@ -602,27 +609,36 @@ export default function PageViewsDashboardClient({ initialData }: Props) {
             {data.countryBreakdown.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
             ) : (
-              <div className="h-[300px] w-full">
+              <div className="h-[300px] w-full text-muted-foreground">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={data.countryBreakdown}
                     layout="vertical"
                     margin={{ top: 0, right: 8, left: 0, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      horizontal={false}
+                    />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 12, fill: 'currentColor' }}
+                      stroke="hsl(var(--border))"
+                    />
                     <YAxis
                       type="category"
                       dataKey="country"
-                      tick={{ fontSize: 12 }}
-                      className="text-muted-foreground"
+                      tick={{ fontSize: 12, fill: 'currentColor' }}
+                      stroke="hsl(var(--border))"
                       width={50}
                     />
                     <Tooltip
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                       content={({ active, payload }) =>
                         active && payload?.[0] ? (
                           <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
-                            <p className="font-medium">{String(payload[0].payload.country)}</p>
+                            <p className="font-medium text-foreground">{String(payload[0].payload.country)}</p>
                             <p className="text-muted-foreground tabular-nums">
                               {Number(payload[0].value).toLocaleString()} views
                             </p>

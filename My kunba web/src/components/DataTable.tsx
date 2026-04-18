@@ -43,6 +43,7 @@ export default function DataTable({
   fetchDataFunction,
   loading,
   cardStyle,
+  onLimitChange,
 }: {
   tableTitle?: string
   tableSubTitle?: string
@@ -61,6 +62,7 @@ export default function DataTable({
   fetchDataFunction: DataTableFetchFn
   loading: boolean
   cardStyle?: string
+  onLimitChange?: (newLimit: number) => void | Promise<void>
 }) {
   const [searchText, setSearchText] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -387,6 +389,7 @@ export default function DataTable({
                       })
                     }
                     totalPages={totalPages}
+                    onLimitChange={onLimitChange}
                   />
                 </div>
               </>

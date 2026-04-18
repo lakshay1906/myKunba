@@ -23,7 +23,7 @@ import CurrentPageComponent from '@/components/CurrentPageComponent'
 
 type TabType = 'blogs' | 'categories' | 'tags' | 'users'
 
-const LIMIT = 10
+const DEFAULT_LIMIT = 10
 
 export default function RecycleBinPage() {
   const { loginDetail } = useAppStore()
@@ -36,6 +36,12 @@ export default function RecycleBinPage() {
   const [total, setTotal] = useState({ blogs: 0, categories: 0, tags: 0, users: 0 })
   const [totalPages, setTotalPages] = useState({ blogs: 1, categories: 1, tags: 1, users: 1 })
   const [currentPage, setCurrentPage] = useState({ blogs: 1, categories: 1, tags: 1, users: 1 })
+  const [limitByType, setLimitByType] = useState<Record<TabType, number>>({
+    blogs: DEFAULT_LIMIT,
+    categories: DEFAULT_LIMIT,
+    tags: DEFAULT_LIMIT,
+    users: DEFAULT_LIMIT,
+  })
   const [loading, setLoading] = useState(false)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
@@ -43,14 +49,14 @@ export default function RecycleBinPage() {
   const [selectedUsers, setSelectedUsers] = useState<Record<string, any>[]>([])
 
   const fetchRecycle = useCallback(
-    async (type: TabType, page: number, search?: string) => {
+    async (type: TabType, page: number, search?: string, overrideLimit?: number) => {
       if (!loginDetail?.token) return
       setLoading(true)
       try {
         const params = new URLSearchParams({
           type,
           page: String(page),
-          limit: String(LIMIT),
+          limit: String(overrideLimit ?? limitByType[type]),
         })
         const q = search?.trim()
         if (q) params.set('search', q)
@@ -89,8 +95,76 @@ export default function RecycleBinPage() {
         setLoading(false)
       }
     },
-    [loginDetail?.token],
+    [loginDetail?.token, limitByType],
   )
+
+  function currentItems(type: TabType): Record<string, any>[] {
+    if (type === 'blogs') return blogs
+    if (type === 'categories') return categories
+    if (type === 'tags') return tags
+    return users
+  }
+
+  function setItems(type: TabType, next: Record<string, any>[]) {
+    if (type === 'blogs') setBlogs(next)
+    else if (type === 'categories') setCategories(next)
+    else if (type === 'tags') setTags(next)
+    else setUsers(next)
+  }
+
+  async function handleLimitChange(type: TabType, newLimit: number) {
+    const oldLimit = limitByType[type]
+    if (!Number.isFinite(newLimit) || newLimit <= 0 || newLimit === oldLimit) return
+    const items = currentItems(type)
+    const page = currentPage[type]
+    const t = total[type]
+
+    if (newLimit > oldLimit && page === 1 && items.length === oldLimit && loginDetail?.token) {
+      setLoading(true)
+      try {
+        const delta = newLimit - oldLimit
+        const params = new URLSearchParams({
+          type,
+          page: '1',
+          limit: String(newLimit),
+        })
+        const res = await fetch(`/api/dashboard/recycle-bin?${params}`, {
+          headers: { Authorization: `Bearer ${loginDetail.token}` },
+        })
+        const json = await res.json()
+        if (res.ok) {
+          const fetched: Record<string, any>[] = json.data || []
+          const existingIds = new Set(items.map((i) => i.id))
+          const toAppend = fetched.filter((x) => !existingIds.has(x.id)).slice(0, delta)
+          setItems(type, [...items, ...toAppend])
+          setTotal((prev) => ({ ...prev, [type]: json.total ?? t }))
+          setTotalPages((prev) => ({
+            ...prev,
+            [type]: Math.ceil((json.total ?? t) / newLimit) || 1,
+          }))
+          setLimitByType((prev) => ({ ...prev, [type]: newLimit }))
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (newLimit < oldLimit && page === 1) {
+      setItems(type, items.slice(0, newLimit))
+      setLimitByType((prev) => ({ ...prev, [type]: newLimit }))
+      setTotalPages((prev) => ({
+        ...prev,
+        [type]: t > 0 ? Math.ceil(t / newLimit) : 1,
+      }))
+      return
+    }
+
+    setLimitByType((prev) => ({ ...prev, [type]: newLimit }))
+    await fetchRecycle(type, 1, undefined, newLimit)
+  }
 
   const fetchCurrent = useCallback(
     async (
@@ -365,12 +439,13 @@ export default function RecycleBinPage() {
             selectedProductsState={{ selectedProducts: selectedBlogs, setSelectedProducts: setSelectedBlogs }}
             total={total.blogs}
             currentPage={currentPage.blogs}
-            limit={LIMIT}
+            limit={limitByType.blogs}
             totalPages={totalPages.blogs}
             data={blogData}
             isCheckBoxRequired={true}
             isEllipsisRequired={true}
             fetchDataFunction={fetchCurrent}
+            onLimitChange={(n) => handleLimitChange('blogs', n)}
             EllipsisComponent={({ value }: { value: Record<string, any> }) => (
               <Popover>
                 <PopoverTrigger onClick={(e) => e.stopPropagation()}>
@@ -470,12 +545,13 @@ export default function RecycleBinPage() {
             selectedProductsState={{ selectedProducts: selectedCategories, setSelectedProducts: setSelectedCategories }}
             total={total.categories}
             currentPage={currentPage.categories}
-            limit={LIMIT}
+            limit={limitByType.categories}
             totalPages={totalPages.categories}
             data={categoryData}
             isCheckBoxRequired={true}
             isEllipsisRequired={true}
             fetchDataFunction={fetchCurrent}
+            onLimitChange={(n) => handleLimitChange('categories', n)}
             EllipsisComponent={({ value }: { value: Record<string, any> }) => (
               <Popover>
                 <PopoverTrigger onClick={(e) => e.stopPropagation()}>
@@ -575,12 +651,13 @@ export default function RecycleBinPage() {
             selectedProductsState={{ selectedProducts: selectedTags, setSelectedProducts: setSelectedTags }}
             total={total.tags}
             currentPage={currentPage.tags}
-            limit={LIMIT}
+            limit={limitByType.tags}
             totalPages={totalPages.tags}
             data={tagData}
             isCheckBoxRequired={true}
             isEllipsisRequired={true}
             fetchDataFunction={fetchCurrent}
+            onLimitChange={(n) => handleLimitChange('tags', n)}
             EllipsisComponent={({ value }: { value: Record<string, any> }) => (
               <Popover>
                 <PopoverTrigger onClick={(e) => e.stopPropagation()}>
@@ -680,12 +757,13 @@ export default function RecycleBinPage() {
             selectedProductsState={{ selectedProducts: selectedUsers, setSelectedProducts: setSelectedUsers }}
             total={total.users}
             currentPage={currentPage.users}
-            limit={LIMIT}
+            limit={limitByType.users}
             totalPages={totalPages.users}
             data={userData}
             isCheckBoxRequired={true}
             isEllipsisRequired={true}
             fetchDataFunction={fetchCurrent}
+            onLimitChange={(n) => handleLimitChange('users', n)}
             EllipsisComponent={({ value }: { value: Record<string, any> }) => (
               <Popover>
                 <PopoverTrigger onClick={(e) => e.stopPropagation()}>

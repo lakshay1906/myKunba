@@ -22,7 +22,7 @@ function findPayloadUIScssPaths() {
           if (existsSync(scssPath)) paths.push(scssPath)
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return paths.length > 0 ? paths : [path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')]
 }
@@ -42,6 +42,7 @@ const nextConfig = {
         source: '/_next/static/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      // If again an error related to javascript chunk not found issue occurs, stop using the below code
       {
         // Global Page Cache - Optimized for 100/100 PageSpeed
         // Rely on Purge API for freshness during deployments
@@ -53,6 +54,19 @@ const nextConfig = {
           },
         ],
       },
+      // Use this instead
+      // {
+      //   // Global Page Cache - Balanced for Performance and Safety
+      //   source: '/((?!api|admin|dashboard).*)',
+      //   headers: [
+      //     {
+      //       key: 'Cache-Control',
+      //       // s-maxage=60: Cloudflare checks for updates every 60 seconds
+      //       // stale-while-revalidate: Serve old version while fetching the new one
+      //       value: 'public, s-maxage=60, stale-while-revalidate=31536000',
+      //     },
+      //   ],
+      // },
     ]
   },
   sassOptions: {

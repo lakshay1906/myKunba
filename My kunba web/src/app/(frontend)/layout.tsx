@@ -103,6 +103,17 @@ export default async function FrontendLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased p-0! m-0!`}
         suppressHydrationWarning
       >
+        <Script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', (e) => {
+                if (e.message.includes('Loading chunk') || e.message.includes('CSS chunk')) {
+                  window.location.reload();
+                }
+              }, true);
+            `,
+          }}
+        />
         <GlobalScripts />
         <AppProvider token={null}>
           <ThemeProvider

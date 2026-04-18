@@ -16,7 +16,7 @@ export default function AnalyticsChart({ data }: { data: ChartDataPoint[] }) {
   if (data.length === 0) return null
 
   return (
-    <div className="h-[280px] w-full">
+    <div className="h-[280px] w-full text-muted-foreground">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
@@ -25,18 +25,23 @@ export default function AnalyticsChart({ data }: { data: ChartDataPoint[] }) {
               <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 12, fill: 'currentColor' }}
+            stroke="hsl(var(--border))"
+          />
           <YAxis
-            tick={{ fontSize: 12 }}
-            className="text-muted-foreground"
+            tick={{ fontSize: 12, fill: 'currentColor' }}
+            stroke="hsl(var(--border))"
             tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v))}
           />
           <Tooltip
+            cursor={{ stroke: 'hsl(var(--border))' }}
             content={({ active, payload }) =>
               active && payload?.[0] ? (
                 <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
-                  <p className="font-medium">{payload[0].payload.fullDate}</p>
+                  <p className="font-medium text-foreground">{payload[0].payload.fullDate}</p>
                   <p className="text-muted-foreground tabular-nums">
                     {Number(payload[0].value).toLocaleString()} views
                   </p>

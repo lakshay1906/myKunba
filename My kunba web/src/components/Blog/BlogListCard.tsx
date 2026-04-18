@@ -44,41 +44,43 @@ export default function BlogListCard({ post }: { post: BlogPost }) {
       onClick={handleClick}
       aria-label={`Read more about ${post.title}`}
     >
-      <Card className="w-full h-fit overflow-hidden transition-all duration-300 hover:shadow-lg">
-        <div className="flex">
-          <div className="w-full aspect-video">
+      <Card className="w-full h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
+        <div className="flex h-full flex-col sm:flex-row">
+          {/* Fixed-size image panel keeps every card aligned regardless of title/excerpt length */}
+          <div className="relative w-full sm:w-56 md:w-60 lg:w-64 shrink-0 aspect-16/10 sm:aspect-auto sm:h-auto sm:self-stretch bg-muted">
             {post.media && (
               <Image
                 src={post.media}
                 alt={post.title}
-                // fill
-                className="object-cover transition-transform duration-300 group-hover:scale-[102%] size-full"
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-[102%]"
                 loading="lazy"
-                width={400}
-                height={200}
-                // sizes="(max-width: 768px) 100vw, 40vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 240px, 256px"
               />
             )}
           </div>
-          <CardContent className="flex flex-col justify-between p-0">
+          <CardContent className="flex flex-1 min-w-0 flex-col justify-between p-0">
             <div className="p-4 md:p-5">
-              <h3 className="text-xl font-bold leading-tight transition-colors group-hover:text-primary mb-2">
-                {post.title.length > 80 ? `${post.title.substring(0, 80)}...` : post.title}
+              {/* Clamp title to 2 lines so card heights match across varying lengths */}
+              <h3 className="text-lg md:text-xl font-bold leading-snug transition-colors group-hover:text-primary mb-2 line-clamp-2">
+                {post.title}
               </h3>
-              <p className="text-muted-foreground line-clamp-3">
-                {post.excerpt.length > 120 ? `${post.excerpt.substring(0, 120)}...` : post.excerpt}
+              <p className="text-sm text-muted-foreground line-clamp-3">
+                {post.excerpt}
               </p>
-              <div className="flex flex-wrap items-start gap-2 mt-3">
-                {post.categories?.map((category) => (
-                  <Badge key={category.id} variant="secondary" className="font-medium">
-                    {category.name}
-                  </Badge>
-                ))}
-              </div>
+              {post.categories && post.categories.length > 0 && (
+                <div className="flex flex-wrap items-start gap-2 mt-3">
+                  {post.categories.slice(0, 3).map((category) => (
+                    <Badge key={category.id} variant="secondary" className="font-medium">
+                      {category.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between border-t p-2 md:p-3">
               <div className="flex items-center gap-2 min-w-0">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage
                     src={
                       post.author.profileImage && typeof post.author.profileImage === 'string'

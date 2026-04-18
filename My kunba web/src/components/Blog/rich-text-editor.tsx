@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
@@ -12,7 +13,6 @@ import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 import Image from '@tiptap/extension-image'
-import ImageUploadDialog from '@/components/image-uploader/image-upload-dialog'
 import { ImageUploadData } from '@/lib/types'
 import Link from '@tiptap/extension-link'
 import Subscript from '@tiptap/extension-subscript'
@@ -21,9 +21,16 @@ import FontFamily from '@tiptap/extension-font-family'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Bold,
   Italic,
@@ -47,10 +54,10 @@ import {
   SubscriptIcon,
   SuperscriptIcon,
   Megaphone,
+  Film,
 } from 'lucide-react'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { UploadResponse } from '@/lib/types'
 import UnifiedImageUpload from '@/components/image-uploader/unified-image-upload'
 import {
   DropdownMenu,
@@ -59,6 +66,40 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
+
+/** Minimal Tiptap node that preserves <iframe> embeds (YouTube, Vimeo, etc.) across save/load. */
+const IframeEmbed = Node.create({
+  name: 'iframe',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      width: { default: '100%' },
+      height: { default: '400' },
+      frameborder: { default: '0' },
+      allow: {
+        default:
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+      },
+      allowfullscreen: { default: 'true' },
+      referrerpolicy: { default: 'strict-origin-when-cross-origin' },
+      title: { default: 'Embedded content' },
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'iframe' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'div',
+      { class: 'rte-iframe-wrapper' },
+      ['iframe', mergeAttributes(HTMLAttributes)],
+    ]
+  },
+})
 
 export type ContentImageOption = { src: string; alt?: string }
 
@@ -111,6 +152,25 @@ function computeRemaining(
   })
 }
 
+/** Toolbar Button with shadcn Tooltip; relies on the parent TooltipProvider. */
+function ToolbarButton({
+  label,
+  children,
+  tooltipSide = 'bottom',
+  ...props
+}: React.ComponentProps<typeof Button> & { label: string; tooltipSide?: 'top' | 'bottom' | 'left' | 'right' }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button type="button" size="sm" {...props}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side={tooltipSide}>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 interface RichTextEditorProps {
   value?: string
   onChange?: (content: string) => void
@@ -138,6 +198,13 @@ export default function RichTextEditor({
   const [currentFontFamily, setCurrentFontFamily] = useState('unset')
   const [showImageDialog, setShowImageDialog] = useState(false)
   const [showTableDialog, setShowTableDialog] = useState(false)
+  const [showLinkDialog, setShowLinkDialog] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkText, setLinkText] = useState('')
+  const [hasSelection, setHasSelection] = useState(false)
+  const [isEditingExistingLink, setIsEditingExistingLink] = useState(false)
+  const [showIframeDialog, setShowIframeDialog] = useState(false)
+  const [iframeInput, setIframeInput] = useState('')
   const [tableRows, setTableRows] = useState(3)
   const [tableCols, setTableCols] = useState(3)
   const [imageUploadData, setImageUploadData] = useState<ImageUploadData>({
@@ -202,10 +269,18 @@ export default function RichTextEditor({
       }),
       Link.configure({
         openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          rel: 'noopener noreferrer nofollow',
+          target: '_blank',
+          class: 'rte-link',
+        },
       }),
       Subscript,
       Superscript,
       FontFamily,
+      IframeEmbed,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -303,12 +378,147 @@ export default function RichTextEditor({
     '#3d1466',
   ]
 
+  /**
+   * Open the shadcn link dialog, pre-filling URL/text if cursor is inside an existing
+   * link or has a selection. Fixes the prior prompt-based flow where applying a link
+   * without any selected text left no anchored content, so the link disappeared on reload.
+   */
   const addLink = useCallback(() => {
-    const url = window.prompt('Enter URL:')
-    if (url && editor) {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    if (!editor) return
+    const { from, to, empty } = editor.state.selection
+    const existingHref = editor.getAttributes('link').href as string | undefined
+
+    if (existingHref) {
+      // Extend to full link range so we can read/replace entirely
+      editor.chain().focus().extendMarkRange('link').run()
+      const { from: f2, to: t2 } = editor.state.selection
+      const selectedText = editor.state.doc.textBetween(f2, t2, ' ')
+      setLinkUrl(existingHref)
+      setLinkText(selectedText)
+      setHasSelection(true)
+      setIsEditingExistingLink(true)
+    } else {
+      const selectedText = empty ? '' : editor.state.doc.textBetween(from, to, ' ')
+      setLinkUrl('')
+      setLinkText(selectedText)
+      setHasSelection(!empty)
+      setIsEditingExistingLink(false)
     }
+    setShowLinkDialog(true)
   }, [editor])
+
+  const applyLink = useCallback(() => {
+    if (!editor) return
+    const rawUrl = linkUrl.trim()
+    // Empty URL while editing existing link = remove link mark
+    if (!rawUrl) {
+      if (isEditingExistingLink) {
+        editor.chain().focus().extendMarkRange('link').unsetLink().run()
+      }
+      setShowLinkDialog(false)
+      return
+    }
+
+    // Normalize URL: prepend https:// if it looks like a bare domain (not mailto/tel/anchor)
+    let href = rawUrl
+    const isSchemed = /^(https?:|mailto:|tel:|#|\/)/i.test(rawUrl)
+    if (!isSchemed) href = `https://${rawUrl}`
+
+    const trimmedText = linkText.trim()
+
+    if (isEditingExistingLink) {
+      // Replace text within the full link range, then re-apply the mark
+      editor.chain().focus().extendMarkRange('link').run()
+      if (trimmedText) {
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: 'text',
+            text: trimmedText,
+            marks: [{ type: 'link', attrs: { href } }],
+          })
+          .run()
+      } else {
+        editor.chain().focus().setLink({ href }).run()
+      }
+    } else if (hasSelection) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href }).run()
+    } else {
+      // No selection: insert the text (or the URL as its own text) with the link mark
+      const displayText = trimmedText || rawUrl
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'text',
+          text: displayText,
+          marks: [{ type: 'link', attrs: { href } }],
+        })
+        .run()
+    }
+
+    setShowLinkDialog(false)
+    setLinkUrl('')
+    setLinkText('')
+    setIsEditingExistingLink(false)
+  }, [editor, linkUrl, linkText, hasSelection, isEditingExistingLink])
+
+  const addIframe = useCallback(() => {
+    setIframeInput('')
+    setShowIframeDialog(true)
+  }, [])
+
+  const applyIframe = useCallback(() => {
+    if (!editor) return
+    const raw = iframeInput.trim()
+    if (!raw) {
+      toast.error('Paste an iframe embed code or a URL')
+      return
+    }
+
+    // If the user pasted full iframe HTML, extract src + dimensions; otherwise treat as URL
+    const srcMatch = raw.match(/\ssrc=["']([^"']+)["']/i)
+    const widthMatch = raw.match(/\swidth=["']?([\w%]+)["']?/i)
+    const heightMatch = raw.match(/\sheight=["']?(\d+)["']?/i)
+    const titleMatch = raw.match(/\stitle=["']([^"']+)["']/i)
+
+    const src = srcMatch ? srcMatch[1] : /^https?:\/\//i.test(raw) ? raw : ''
+    if (!src) {
+      toast.error('Could not read iframe src. Paste the full <iframe ...> code or a URL.')
+      return
+    }
+
+    try {
+      // Enforce only http(s) to avoid script: or data: URLs
+      const u = new URL(src)
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        toast.error('Only http/https iframe URLs are allowed')
+        return
+      }
+    } catch {
+      toast.error('Invalid iframe URL')
+      return
+    }
+
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'iframe',
+        attrs: {
+          src,
+          width: widthMatch?.[1] || '100%',
+          height: heightMatch?.[1] || '400',
+          title: titleMatch?.[1] || 'Embedded content',
+        },
+      })
+      .run()
+
+    setShowIframeDialog(false)
+    setIframeInput('')
+    toast.success('Embed inserted')
+  }, [editor, iframeInput])
 
   // Clear image upload data
   const clearImageUpload = useCallback(() => {
@@ -436,107 +646,111 @@ export default function RichTextEditor({
 
   return (
     <Card className="w-full">
+      <TooltipProvider delayDuration={200}>
       {/* Fixed Toolbar */}
       <div className="sticky top-[7.4rem] sm:top-[4.3rem] z-50 border-b p-2 flex sm:flex-wrap gap-1 bg-white dark:bg-background shadow-sm overflow-x-auto sm:overflow-x-visible [&::-webkit-scrollbar]:hidden overflow-y-hidden">
         {/* Undo/Redo */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Undo"
           variant="ghost"
-          size="sm"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
         >
           <Undo className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Redo"
           variant="ghost"
-          size="sm"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
         >
           <Redo className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Headers */}
-        <select
-          className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
-          value={currentHeading}
-          onChange={(e) => handleHeadingChange(e.target.value)}
-        >
-          <option value="0">Paragraph</option>
-          <option value="1">Heading 1</option>
-          <option value="2">Heading 2</option>
-          <option value="3">Heading 3</option>
-          <option value="4">Heading 4</option>
-          <option value="5">Heading 5</option>
-          <option value="6">Heading 6</option>
-        </select>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <select
+              className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
+              value={currentHeading}
+              onChange={(e) => handleHeadingChange(e.target.value)}
+            >
+              <option value="0">Paragraph</option>
+              <option value="1">Heading 1</option>
+              <option value="2">Heading 2</option>
+              <option value="3">Heading 3</option>
+              <option value="4">Heading 4</option>
+              <option value="5">Heading 5</option>
+              <option value="6">Heading 6</option>
+            </select>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Heading</TooltipContent>
+        </Tooltip>
 
         {/* Font Family */}
-        <select
-          className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
-          value={currentFontFamily}
-          onChange={(e) => handleFontFamilyChange(e.target.value)}
-        >
-          <option value="unset">Default</option>
-          <option value="Inter">Inter</option>
-          <option value="Comic Sans MS, Comic Sans">Comic Sans</option>
-          <option value="serif">Serif</option>
-          <option value="monospace">Monospace</option>
-          <option value="cursive">Cursive</option>
-        </select>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <select
+              className="px-2 py-1 border rounded text-sm bg-white dark:bg-background dark:border-gray-600 dark:text-white"
+              value={currentFontFamily}
+              onChange={(e) => handleFontFamilyChange(e.target.value)}
+            >
+              <option value="unset">Default</option>
+              <option value="Inter">Inter</option>
+              <option value="Comic Sans MS, Comic Sans">Comic Sans</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+              <option value="cursive">Cursive</option>
+            </select>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Font family</TooltipContent>
+        </Tooltip>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Text Formatting */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Bold"
           variant={editor.isActive('bold') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Italic"
           variant={editor.isActive('italic') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Underline"
           variant={editor.isActive('underline') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <UnderlineIcon className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Strikethrough"
           variant={editor.isActive('strike') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Colors */}
         <div className="relative">
-          <Button
-            type="button"
+          <ToolbarButton
+            label="Text color"
             variant="ghost"
-            size="sm"
             onClick={() => setShowColorPicker(!showColorPicker)}
           >
             <Type className="size-4" />
-          </Button>
+          </ToolbarButton>
           {showColorPicker && (
             <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
               <div className="grid grid-cols-7 gap-1 mb-2">
@@ -569,14 +783,13 @@ export default function RichTextEditor({
         </div>
 
         <div className="relative">
-          <Button
-            type="button"
+          <ToolbarButton
+            label="Highlight"
             variant="ghost"
-            size="sm"
             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
           >
             <Palette className="size-4" />
-          </Button>
+          </ToolbarButton>
           {showHighlightPicker && (
             <div className="absolute top-10 left-0 z-10 bg-white dark:bg-background border rounded-lg p-2 shadow-lg">
               <div className="grid grid-cols-7 gap-1 mb-2">
@@ -611,108 +824,103 @@ export default function RichTextEditor({
         <Separator orientation="vertical" className="h-8" />
 
         {/* Alignment */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Align left"
           variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
         >
           <AlignLeft className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Align center"
           variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
         >
           <AlignCenter className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Align right"
           variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
         >
           <AlignRight className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Justify"
           variant={editor.isActive({ textAlign: 'justify' }) ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
         >
           <AlignJustify className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Lists */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Bullet list"
           variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
           <List className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Numbered list"
           variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
           <ListOrdered className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Quote and Code */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Blockquote"
           variant={editor.isActive('blockquote') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
           <Quote className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Code block"
           variant={editor.isActive('codeBlock') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
           <Code className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Subscript/Superscript */}
-        <Button
-          type="button"
+        <ToolbarButton
+          label="Subscript"
           variant={editor.isActive('subscript') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleSubscript().run()}
         >
           <SubscriptIcon className="size-4" />
-        </Button>
-        <Button
-          type="button"
+        </ToolbarButton>
+        <ToolbarButton
+          label="Superscript"
           variant={editor.isActive('superscript') ? 'default' : 'ghost'}
-          size="sm"
           onClick={() => editor.chain().focus().toggleSuperscript().run()}
         >
           <SuperscriptIcon className="size-4" />
-        </Button>
+        </ToolbarButton>
 
         <Separator orientation="vertical" className="h-8" />
 
         {/* Media, Table and Ad Blocks */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" title="Insert Ad Block">
-              <Megaphone className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="sm">
+                  <Megaphone className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Ad block</TooltipContent>
+          </Tooltip>
           <DropdownMenuContent align="center">
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               Insert Ad Block
@@ -726,16 +934,32 @@ export default function RichTextEditor({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button type="button" variant="ghost" size="sm" onClick={addLink}>
+        <ToolbarButton
+          label={editor.isActive('link') ? 'Edit link' : 'Insert link'}
+          variant={editor.isActive('link') ? 'default' : 'ghost'}
+          onClick={addLink}
+        >
           <LinkIcon className="size-4" />
-        </Button>
+        </ToolbarButton>
+        <ToolbarButton
+          label="Embed (iframe)"
+          variant="ghost"
+          onClick={addIframe}
+        >
+          <Film className="size-4" />
+        </ToolbarButton>
         {translationMode ? (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm">
-                <ImageIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="sm">
+                    <ImageIcon className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Insert image</TooltipContent>
+            </Tooltip>
             <DropdownMenuContent
               align="start"
               className="max-h-[280px] overflow-y-auto min-w-[200px]"
@@ -766,14 +990,15 @@ export default function RichTextEditor({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button type="button" variant="ghost" size="sm" onClick={addImage}>
+          <ToolbarButton label="Insert image" variant="ghost" onClick={addImage}>
             <ImageIcon className="size-4" />
-          </Button>
+          </ToolbarButton>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={openTableDialog}>
+        <ToolbarButton label="Insert table" variant="ghost" onClick={openTableDialog}>
           <TableIcon className="size-4" />
-        </Button>
+        </ToolbarButton>
       </div>
+      </TooltipProvider>
 
       {/* Editor */}
       <div className="relative bg-white dark:bg-background">
@@ -824,6 +1049,112 @@ export default function RichTextEditor({
             </Button>
             <Button type="button" onClick={insertTable}>
               Insert Table
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Dialog */}
+      <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+        <DialogContent
+          className="sm:max-w-[460px]"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              applyLink()
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{isEditingExistingLink ? 'Edit link' : 'Insert link'}</DialogTitle>
+            <DialogDescription>
+              {isEditingExistingLink
+                ? 'Update the URL or the linked text. Clear the URL to remove the link.'
+                : 'Enter a URL. The scheme (https://) is added automatically when missing.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="link-url">URL</Label>
+              <Input
+                id="link-url"
+                type="url"
+                placeholder="https://example.com"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="link-text">Text to display</Label>
+              <Input
+                id="link-text"
+                type="text"
+                placeholder={hasSelection ? 'Using selected text' : 'Optional — defaults to URL'}
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {hasSelection
+                  ? 'Override the selected text, or leave as-is to keep it.'
+                  : 'Leave empty to use the URL as the visible text.'}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            {isEditingExistingLink && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mr-auto text-destructive"
+                onClick={() => {
+                  editor?.chain().focus().extendMarkRange('link').unsetLink().run()
+                  setShowLinkDialog(false)
+                }}
+              >
+                Remove link
+              </Button>
+            )}
+            <Button type="button" variant="outline" onClick={() => setShowLinkDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={applyLink}>
+              {isEditingExistingLink ? 'Update' : 'Insert'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Iframe Embed Dialog */}
+      <Dialog open={showIframeDialog} onOpenChange={setShowIframeDialog}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Insert embed</DialogTitle>
+            <DialogDescription>
+              Paste the full <code>&lt;iframe&gt;</code> embed code (e.g. from YouTube&apos;s Share → Embed)
+              or a direct embed URL.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="iframe-input">Embed code or URL</Label>
+            <Textarea
+              id="iframe-input"
+              placeholder={'<iframe src="https://www.youtube.com/embed/..." ...></iframe>'}
+              value={iframeInput}
+              onChange={(e) => setIframeInput(e.target.value)}
+              className="min-h-[140px] font-mono text-xs"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Only http/https URLs are allowed. Width and height from the pasted code will be preserved.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowIframeDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={applyIframe}>
+              Insert embed
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1029,6 +1360,31 @@ export default function RichTextEditor({
         .dark .ProseMirror mark {
           background-color: #92400e;
           color: #fef3c7;
+        }
+
+        .ProseMirror .rte-iframe-wrapper {
+          position: relative;
+          width: 100%;
+          margin: 1em 0;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #000;
+          aspect-ratio: 16 / 9;
+        }
+
+        .ProseMirror .rte-iframe-wrapper iframe {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+          display: block;
+        }
+
+        .ProseMirror .ProseMirror-selectednode > .rte-iframe-wrapper,
+        .ProseMirror .rte-iframe-wrapper.ProseMirror-selectednode {
+          outline: 2px solid hsl(var(--primary));
+          outline-offset: 2px;
         }
       `}</style>
     </Card>

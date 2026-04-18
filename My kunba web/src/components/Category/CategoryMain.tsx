@@ -42,7 +42,7 @@ export default function CategoryMain({
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(initialTotal)
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
-  const [limit] = useState(initialLimit)
+  const [limit, setLimit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedCategories, setSelectedCategories] = useState<Record<string, any>[]>([])
   const { loginDetail } = useAppStore()
@@ -127,6 +127,49 @@ export default function CategoryMain({
     } finally {
       setLoading(false)
     }
+  }
+
+  // Smart limit change: append delta when increasing on page 1 with full list; slice when decreasing.
+  async function handleLimitChange(newLimit: number) {
+    if (!Number.isFinite(newLimit) || newLimit <= 0 || newLimit === limit) return
+
+    if (newLimit > limit && currentPage === 1 && categories.length === limit && !loading) {
+      setLoading(true)
+      try {
+        const delta = newLimit - limit
+        const params = new URLSearchParams({ page: '1', limit: String(newLimit) })
+        const rawRes = await fetch(`/api/dashboard/category?${params}`, {
+          headers: loginDetail?.token
+            ? { Authorization: `bearer ${loginDetail.token}` }
+            : undefined,
+        })
+        if (rawRes.ok) {
+          const data = await rawRes.json()
+          const fetched: CategoryRow[] = (data.docs ?? []) as CategoryRow[]
+          const existingIds = new Set(categories.map((c) => c.id))
+          const toAppend = fetched.filter((c) => !existingIds.has(c.id)).slice(0, delta)
+          setCategories([...categories, ...toAppend])
+          setTotal(data.totalDocs || total)
+          setTotalPages(Math.ceil((data.totalDocs || total) / newLimit) || 1)
+          setLimit(newLimit)
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (newLimit < limit && currentPage === 1) {
+      setCategories((prev) => prev.slice(0, newLimit))
+      setLimit(newLimit)
+      setTotalPages(total > 0 ? Math.ceil(total / newLimit) : 1)
+      return
+    }
+
+    setLimit(newLimit)
+    await fetchCategories(newLimit, 0, false, 1)
   }
 
   useEffect(() => {
@@ -241,6 +284,7 @@ export default function CategoryMain({
       isEllipsisRequired={true}
       fetchDataFunction={fetchCategories}
       loading={loading}
+      onLimitChange={handleLimitChange}
     />
   )
 }

@@ -84,7 +84,7 @@ export default function BlogMain({
   const [blogs, setBlogs] = useState<Record<string, any>[]>(initialBlogs)
   const [total, setTotal] = useState(initialTotal)
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
-  const [limit] = useState(initialLimit)
+  const [limit, setLimit] = useState(initialLimit)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [selectedBlogs, setSelectedBlogs] = useState<Record<string, any>[]>([])
   const [authors, setAuthors] = useState<{ id: number; displayName: string; email?: string }[]>([])
@@ -243,6 +243,58 @@ export default function BlogMain({
     }
   }, [selectedAuthorId])
 
+  // Smart limit change:
+  //  - Increasing on page 1 with a full list → fetch only the delta and append.
+  //  - Decreasing on page 1 → slice locally, no fetch.
+  //  - Otherwise → refetch the current page with the new limit.
+  async function handleLimitChange(newLimit: number) {
+    if (!Number.isFinite(newLimit) || newLimit <= 0 || newLimit === limit) return
+
+    if (newLimit > limit && currentPage === 1 && blogs.length === limit && !loading) {
+      if (!loginDetail) return
+      setLoading(true)
+      try {
+        const delta = newLimit - limit
+        const url = new URL('/api/dashboard/blog', window.location.origin)
+        url.searchParams.set('page', '1')
+        url.searchParams.set('limit', String(newLimit))
+        if (isAdmin && selectedAuthorId != null && selectedAuthorId !== 'all') {
+          url.searchParams.set('authorId', String(selectedAuthorId))
+        }
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { Authorization: `bearer ${loginDetail.token}` },
+        })
+        const res = await response.json()
+        if (response.ok) {
+          const fetched: Record<string, any>[] = res.data || []
+          const existingIds = new Set(blogs.map((b) => b.id))
+          const toAppend = fetched.filter((b) => !existingIds.has(b.id)).slice(0, delta)
+          setBlogs([...blogs, ...toAppend])
+          setTotal(res.total ?? total)
+          setTotalPages(Math.ceil((res.total ?? total) / newLimit) || 1)
+          setLimit(newLimit)
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (newLimit < limit && currentPage === 1) {
+      setBlogs((prev) => prev.slice(0, newLimit))
+      setLimit(newLimit)
+      setTotalPages(total > 0 ? Math.ceil(total / newLimit) : 1)
+      return
+    }
+
+    // Fallback: refetch current page using the new limit (safest for mid-pagination)
+    setLimit(newLimit)
+    await fetchBlogs(newLimit, 0, false, 1)
+  }
+
   async function handleBulkDelete() {
     if (!loginDetail?.token || selectedBlogs.length === 0) return
     const count = selectedBlogs.length
@@ -387,6 +439,7 @@ export default function BlogMain({
       isCheckBoxRequired={true}
       isEllipsisRequired={true}
       loading={loading}
+      onLimitChange={handleLimitChange}
     />
   )
 }

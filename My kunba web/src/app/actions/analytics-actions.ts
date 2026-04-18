@@ -6,6 +6,7 @@ import type { Where } from 'payload'
 export type DatePreset =
   | 'today'
   | 'yesterday'
+  | 'past_week'
   | 'past_month'
   | 'past_3_months'
   | 'past_6_months'
@@ -102,6 +103,12 @@ function resolveDateRange(preset: DatePreset, startDate?: string, endDate?: stri
     const y = new Date(today)
     y.setDate(y.getDate() - 1)
     return { start: startOfDay(y), end: endOfDay(y) }
+  }
+
+  if (preset === 'past_week') {
+    const start = new Date(today)
+    start.setDate(start.getDate() - 6)
+    return { start: startOfDay(start), end: endOfDay(now) }
   }
 
   if (preset === 'past_month') {
