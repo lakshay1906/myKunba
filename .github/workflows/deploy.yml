@@ -35,6 +35,7 @@ jobs:
             --build-arg CLOUDFLARE_HOSTNAME=${{ secrets.CLOUDFLARE_HOSTNAME }} \
             --build-arg CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }} \
             --build-arg CLOUDFLARE_ZONE_ID=${{ secrets.CLOUDFLARE_ZONE_ID }} \
+            --build-arg PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }} \
             -t mykunba-web:latest "./My kunba web"
 
       # 3️⃣ Build automation Docker image
@@ -59,17 +60,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: mykunba-web.tar,mykunba-automation.tar,docker-compose.yml
-          target: /home/ec2-user
-
-      # 6b Copy Google credentials
-      - name: Copy Google credentials to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: google_creds.json
+          source: "mykunba-web.tar,mykunba-automation.tar,docker-compose.yml,google_creds.json"
           target: /home/ec2-user
 
       # 7️⃣ Deploy (using root /home/ec2-user/mykunba/docker-compose.yml)
@@ -104,11 +95,11 @@ jobs:
             echo "Updating web service with docker compose..."
             KUNBA_ENV_FILE=/home/ec2-user/.env \
             GOOGLE_CREDS_PATH=/home/ec2-user/mykunba/secrets/service-account.json \
-            docker compose -f /home/ec2-user/mykunba/docker-compose.yml up -d --no-build my-kunba-web
+            docker compose -f /home/ec2-user/mykunba/docker-compose.yml up -d --force-recreate --remove-orphans my-kunba-web
 
             sleep 15
 
-            echo "Running SQL migrations (do not use || true here — failures must be visible)..."
+            echo "Running SQL migrations..."
             docker compose -f /home/ec2-user/mykunba/docker-compose.yml exec -T my-kunba-web node scripts/run-migration.js
             docker compose -f /home/ec2-user/mykunba/docker-compose.yml exec -T my-kunba-web node scripts/submit-blog-urls-to-google.js || true
 
@@ -122,4 +113,4 @@ jobs:
           curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
           -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
           -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}'      
+          --data '{"purge_everything":true}'
