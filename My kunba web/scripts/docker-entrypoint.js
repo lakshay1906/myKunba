@@ -57,6 +57,14 @@ async function main() {
     stdio: 'inherit',
     cwd: process.cwd(),
   })
+
+  const shutdown = () => {
+    if (server.exitCode !== null || server.signalCode !== null) return
+    server.kill('SIGTERM')
+  }
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
+
   server.on('error', () => {
     process.exit(1)
   })
