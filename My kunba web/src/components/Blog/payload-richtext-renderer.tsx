@@ -161,24 +161,41 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         })
       }
 
-      let textElement = <span>{baseContent}</span>
-
-      // Handle text formatting based on format number
-      if (textNode.format && textNode.format > 0) {
-        // Format is a bitmask: 1 = bold, 2 = italic, 4 = underline, etc.
-        const isBold = (textNode.format & 1) !== 0
-        const isItalic = (textNode.format & 2) !== 0
-        const isUnderline = (textNode.format & 4) !== 0
-
-        let className = ''
-        if (isBold) className += ' font-semibold '
-        if (isItalic) className += ' italic'
-        if (isUnderline) className += ' underline'
-
-        textElement = <span className={className.trim()}>{baseContent}</span>
+      // Text format bitmask — MUST stay in sync with
+      // `src/utils/html-parser-to-lexical.ts` and `src/utils/lexical-to-html.ts`:
+      //   1 = bold, 2 = italic, 4 = underline, 8 = strikethrough,
+      //   16 = inline code, 32 = subscript, 64 = superscript, 128 = highlight.
+      const format = textNode.format ?? 0
+      if (format === 0) {
+        return <span>{baseContent}</span>
       }
 
-      return textElement
+      const isBold = (format & 1) !== 0
+      const isItalic = (format & 2) !== 0
+      const isUnderline = (format & 4) !== 0
+      const isStrike = (format & 8) !== 0
+      const isCode = (format & 16) !== 0
+      const isSubscript = (format & 32) !== 0
+      const isSuperscript = (format & 64) !== 0
+      const isHighlight = (format & 128) !== 0
+
+      const classes: string[] = []
+      if (isBold) classes.push('font-semibold')
+      if (isItalic) classes.push('italic')
+      if (isUnderline) classes.push('underline')
+      if (isStrike) classes.push('line-through')
+      if (isHighlight) classes.push('bg-yellow-200', 'dark:bg-yellow-900/40', 'rounded-sm', 'px-0.5')
+      if (isCode) classes.push('bg-gray-100', 'dark:bg-gray-800', 'px-1', 'py-0.5', 'rounded', 'font-mono', 'text-[0.9em]')
+
+      // Wrap with sub/sup/code semantic tags where applicable so screen readers and
+      // copy-paste preserve intent, then layer className-driven visual formatting.
+      let content: React.ReactNode = baseContent
+      if (isCode) content = <code>{content}</code>
+      if (isSubscript) content = <sub>{content}</sub>
+      if (isSuperscript) content = <sup>{content}</sup>
+
+      const className = classes.join(' ').trim()
+      return className ? <span className={className}>{content}</span> : <span>{content}</span>
     }
 
     case 'list':
@@ -295,9 +312,10 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
       )
 
     case 'codeblock':
+    case 'code-block': {
       const codeBlockNode = node as PayloadElementNode
       return (
-        <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
+        <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto mb-4 text-sm font-mono">
           <code>
             {codeBlockNode.children?.map((child, index) => (
               <RenderNode key={index} node={child} />
@@ -305,6 +323,7 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
           </code>
         </pre>
       )
+    }
 
     case 'upload':
     case 'image':
@@ -329,6 +348,51 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         )
       }
       return null
+
+    case 'iframe': {
+      // Video / embed node produced by the Tiptap IframeEmbed extension (YouTube, Vimeo, …).
+      // Server-side safety: only render http(s) srcs to block `javascript:` / `data:` URIs
+      // even if they somehow slipped through the parser.
+      const iframeNode = node as PayloadElementNode & {
+        src?: string
+        width?: string | number
+        height?: string | number
+        title?: string
+        allow?: string
+        referrerPolicy?: string
+      }
+      const src = iframeNode.src
+      if (!src) return null
+      try {
+        const u = new URL(src)
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
+      } catch {
+        return null
+      }
+
+      return (
+        <div className="my-6 relative w-full aspect-video rounded-lg overflow-hidden bg-black not-prose">
+          <iframe
+            src={src}
+            title={iframeNode.title || 'Embedded content'}
+            className="absolute inset-0 w-full h-full border-0"
+            loading="lazy"
+            allow={
+              iframeNode.allow ||
+              'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+            }
+            allowFullScreen
+            referrerPolicy={
+              (iframeNode.referrerPolicy as React.HTMLAttributeReferrerPolicy | undefined) ||
+              'strict-origin-when-cross-origin'
+            }
+          />
+        </div>
+      )
+    }
+
+    case 'linebreak':
+      return <br />
 
     default:
       // Fallback: try to render children if they exist
