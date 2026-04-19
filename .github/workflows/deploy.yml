@@ -54,17 +54,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: mykunba.tar
-          target: /home/ec2-user
-
-      # 5b Copy Google credentials
-      - name: Copy Google credentials to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: google_creds.json
+          source: "mykunba.tar,google_creds.json"
           target: /home/ec2-user
 
       # 7️⃣ Zero-Downtime Deployment
@@ -107,11 +97,16 @@ jobs:
             docker stop $TARGET_NAME || true
             docker rm $TARGET_NAME || true
 
+            # EXTRA STEP: Get the base local URL from .env (e.g. http://127.0.0.1)
+            # This ensures the container knows exactly where to find itself locally
+            BASE_LOCAL_URL=$(grep NEXT_PUBLIC_NEXT_URL /home/ec2-user/.env | cut -d '=' -f2)
+
             echo "Starting new container $TARGET_NAME on port $TARGET_PORT..."
             docker run -d \
               --name $TARGET_NAME \
               --restart unless-stopped \
               --env-file /home/ec2-user/.env \
+              -e NEXT_PUBLIC_NEXT_URL="${BASE_LOCAL_URL}:${TARGET_PORT}" \
               -v /home/ec2-user/mykunba/secrets/service-account.json:/app/service-account.json:ro \
               -p $TARGET_PORT:3000 \
               mykunba:latest
@@ -140,7 +135,7 @@ jobs:
             sudo sed -i "s/server 127.0.0.1:.*/server 127.0.0.1:$TARGET_PORT;/" /etc/nginx/conf.d/mykunba.org.conf
             sudo nginx -s reload
 
-            # 6. Remove old container and tar file
+            # 6. Remove old container and cleanup
             echo "Cleaning up old version..."
             docker stop $OLD_NAME || true
             docker rm $OLD_NAME || true
