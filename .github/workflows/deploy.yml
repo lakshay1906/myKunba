@@ -64,6 +64,7 @@ jobs:
           target: /home/ec2-user
 
       # 7️⃣ Deploy (using root /home/ec2-user/mykunba/docker-compose.yml)
+      # 7️⃣ Deploy (with explicit cleanup to free port 3000)
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -88,6 +89,11 @@ jobs:
             echo "Loading Docker images..."
             docker load < /home/ec2-user/mykunba-web.tar
             docker load < /home/ec2-user/mykunba-automation.tar
+
+            echo "Force-stopping existing containers on port 3000..."
+            # This stops and removes ANY container using port 3000 to prevent 'port already allocated' errors
+            docker ps -q --filter "publish=3000" | xargs -r docker stop
+            docker ps -aq --filter "publish=3000" | xargs -r docker rm
 
             echo "Cleaning unused images..."
             docker image prune -f
