@@ -13,8 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Build web Docker image (WITH BUILD ARGS)
-      - name: Build web Docker image
+      # 2️⃣ Build Docker image (WITH BUILD ARGS)
+      - name: Build Docker image
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_NEXT_URL=${{ secrets.NEXT_PUBLIC_NEXT_URL }} \
@@ -36,34 +36,28 @@ jobs:
             --build-arg CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }} \
             --build-arg CLOUDFLARE_ZONE_ID=${{ secrets.CLOUDFLARE_ZONE_ID }} \
             --build-arg PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }} \
-            -t mykunba-web:latest "./My kunba web"
+            -t mykunba:latest "./My kunba web"
 
-      # 3️⃣ Build automation Docker image
-      - name: Build automation Docker image
-        run: docker build -t mykunba-automation:latest "./mykunba-automation"
+      # 3️⃣ Save Docker image
+      - name: Save Docker image
+        run: docker save mykunba:latest > mykunba.tar
 
-      # 4️⃣ Save Docker images
-      - name: Save Docker images
-        run: |
-          docker save mykunba-web:latest > mykunba-web.tar
-          docker save mykunba-automation:latest > mykunba-automation.tar
-
-      # 5️⃣ Create Google credentials file
+      # 4️⃣ Create Google credentials file
       - name: Create Google credentials file
         run: |
           echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google_creds.json
 
-      # 6️⃣ Copy images + root production compose to EC2
-      - name: Copy images and compose file to EC2
+      # 5️⃣ Copy image to EC2
+      - name: Copy image to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "mykunba-web.tar,mykunba-automation.tar,docker-compose.yml,google_creds.json"
+          source: "mykunba.tar,google_creds.json"
           target: /home/ec2-user
 
-      # 7️⃣ Deploy (using root /home/ec2-user/mykunba/docker-compose.yml)
+      # 7️⃣ Zero-Downtime Deployment
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -73,44 +67,79 @@ jobs:
           script: |
             set -e
 
-            mkdir -p /home/ec2-user/mykunba/secrets
-            mkdir -p /home/ec2-user/mykunba
-
-            if [ -f /home/ec2-user/docker-compose.yml ]; then
-              mv /home/ec2-user/docker-compose.yml /home/ec2-user/mykunba/docker-compose.yml
+            # 1. Check current active port in Nginx config
+            if grep -q "127.0.0.1:3000" /etc/nginx/conf.d/mykunba.org.conf; then
+              ACTIVE_PORT=3000
+              TARGET_PORT=3001
+              TARGET_NAME="mykunba-green"
+              OLD_NAME="mykunba-blue"
+            else
+              ACTIVE_PORT=3001
+              TARGET_PORT=3000
+              TARGET_NAME="mykunba-blue"
+              OLD_NAME="mykunba-green"
             fi
 
+            echo "Current active port is $ACTIVE_PORT. Deploying new version to $TARGET_PORT..."
+
+            # 2. Setup secrets
+            mkdir -p /home/ec2-user/mykunba/secrets
             if [ -f /home/ec2-user/google_creds.json ]; then
               mv /home/ec2-user/google_creds.json /home/ec2-user/mykunba/secrets/service-account.json
               chmod 600 /home/ec2-user/mykunba/secrets/service-account.json
             fi
 
-            echo "Loading Docker images..."
-            docker load < /home/ec2-user/mykunba-web.tar
-            docker load < /home/ec2-user/mykunba-automation.tar
+            # 3. Load and Start NEW container
+            echo "Loading new image..."
+            docker load < /home/ec2-user/mykunba.tar
+            
+            echo "Stopping any existing container named $TARGET_NAME..."
+            docker stop $TARGET_NAME || true
+            docker rm $TARGET_NAME || true
 
-            echo "Cleaning unused images..."
+            # EXTRA STEP: Get the base local URL from .env (e.g. http://127.0.0.1)
+            # This ensures the container knows exactly where to find itself locally
+            BASE_LOCAL_URL=$(grep NEXT_PUBLIC_NEXT_URL /home/ec2-user/.env | cut -d '=' -f2)
+
+            echo "Starting new container $TARGET_NAME on port $TARGET_PORT..."
+            docker run -d \
+              --name $TARGET_NAME \
+              --restart unless-stopped \
+              --env-file /home/ec2-user/.env \
+              -e NEXT_PUBLIC_NEXT_URL="${BASE_LOCAL_URL}:${TARGET_PORT}" \
+              -v /home/ec2-user/mykunba/secrets/service-account.json:/app/service-account.json:ro \
+              -p $TARGET_PORT:3000 \
+              mykunba:latest
+
+            # 4. Wait for Next.js to boot (Health Check)
+            echo "Checking health of new container..."
+            HEALTHY=false
+            for i in {1..12}; do
+              if curl -s http://localhost:$TARGET_PORT > /dev/null; then
+                echo "Health check passed!"
+                HEALTHY=true
+                break
+              fi
+              echo "Waiting for app to start... (Attempt $i)"
+              sleep 5
+            done
+
+            if [ "$HEALTHY" = false ]; then
+              echo "Deployment failed: New container did not start in time."
+              docker logs $TARGET_NAME | tail -n 20
+              exit 1
+            fi
+
+            # 5. Swap Nginx Traffic
+            echo "Swapping Nginx to port $TARGET_PORT..."
+            sudo sed -i "s/server 127.0.0.1:.*/server 127.0.0.1:$TARGET_PORT;/" /etc/nginx/conf.d/mykunba.org.conf
+            sudo nginx -s reload
+
+            # 6. Remove old container and cleanup
+            echo "Cleaning up old version..."
+            docker stop $OLD_NAME || true
+            docker rm $OLD_NAME || true
+            rm -f /home/ec2-user/mykunba.tar
             docker image prune -f
 
-            echo "Updating web service with docker compose..."
-            KUNBA_ENV_FILE=/home/ec2-user/.env \
-            GOOGLE_CREDS_PATH=/home/ec2-user/mykunba/secrets/service-account.json \
-            docker compose -f /home/ec2-user/mykunba/docker-compose.yml up -d --force-recreate --remove-orphans my-kunba-web
-
-            sleep 15
-
-            echo "Running SQL migrations..."
-            docker compose -f /home/ec2-user/mykunba/docker-compose.yml exec -T my-kunba-web node scripts/run-migration.js
-            docker compose -f /home/ec2-user/mykunba/docker-compose.yml exec -T my-kunba-web node scripts/submit-blog-urls-to-google.js || true
-
-            rm -f /home/ec2-user/mykunba-web.tar /home/ec2-user/mykunba-automation.tar
-
-            echo "Deployment completed successfully."
-
-      # 8️⃣ Purge Cloudflare Cache
-      - name: Purge Cloudflare Cache
-        run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}'
+            echo "ZERO-DOWNTIME DEPLOYMENT SUCCESSFUL."

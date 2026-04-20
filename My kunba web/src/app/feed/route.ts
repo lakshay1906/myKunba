@@ -29,7 +29,8 @@ function toRfc2822(date: Date | string | null | undefined): string {
   return d.toUTCString()
 }
 
-// ISR: revalidate every hour (same as sitemap)
+/** Do not prerender at build — Payload needs DATABASE_URI / PAYLOAD_SECRET at runtime only. */
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 export async function GET() {

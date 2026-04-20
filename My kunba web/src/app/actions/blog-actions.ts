@@ -69,7 +69,8 @@ export async function fetchBlogPostBySlugInternal(
       faq: FAQItem[]
     })
   } catch (error) {
-    return null
+    console.error('[fetchBlogPostBySlugInternal]', slug, error)
+    throw error
   }
 }
 

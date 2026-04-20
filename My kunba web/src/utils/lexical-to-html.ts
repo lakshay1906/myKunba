@@ -48,31 +48,33 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
   const root = lexicalContent.root
   let html = ''
 
+  /** Escape attribute values to prevent breaking the surrounding HTML or enabling XSS. */
+  function escapeAttr(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+  }
+
   function processNode(node: LexicalTextNode | LexicalElementNode): string {
     if (node.type === 'text') {
       const textNode = node as LexicalTextNode
       let text = textNode.text || ''
 
-      // Apply formatting
+      // Format bitmask — MUST stay in sync with `src/utils/html-parser-to-lexical.ts`
+      // and `src/components/Blog/payload-richtext-renderer.tsx`:
+      //   1=bold, 2=italic, 4=underline, 8=strike, 16=code, 32=sub, 64=sup, 128=highlight.
       if (textNode.format) {
-        if (textNode.format & 1) {
-          // Bold
-          text = `<strong>${text}</strong>`
-        }
-        if (textNode.format & 2) {
-          // Italic
-          text = text.includes('<strong>')
-            ? text.replace('<strong>', '<strong><em>').replace('</strong>', '</em></strong>')
-            : `<em>${text}</em>`
-        }
-        if (textNode.format & 4) {
-          // Underline
-          text = `<u>${text}</u>`
-        }
-        if (textNode.format & 8) {
-          // Strikethrough
-          text = `<s>${text}</s>`
-        }
+        // Wrap innermost → outermost so nested marks survive round-trip.
+        if (textNode.format & 16) text = `<code>${text}</code>`
+        if (textNode.format & 32) text = `<sub>${text}</sub>`
+        if (textNode.format & 64) text = `<sup>${text}</sup>`
+        if (textNode.format & 128) text = `<mark>${text}</mark>`
+        if (textNode.format & 8) text = `<s>${text}</s>`
+        if (textNode.format & 4) text = `<u>${text}</u>`
+        if (textNode.format & 2) text = `<em>${text}</em>`
+        if (textNode.format & 1) text = `<strong>${text}</strong>`
       }
 
       return text
@@ -106,7 +108,11 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
       case 'horizontalrule':
         return '<hr />'
 
+      case 'linebreak':
+        return '<br />'
+
       case 'quote':
+      case 'blockquote':
         return `<blockquote>${content}</blockquote>`
 
       case 'code':
@@ -126,6 +132,38 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
         return `<a href="${href}"${target}${rel}>${content}</a>`
       }
 
+      case 'codeblock':
+      case 'code-block':
+        return `<pre><code>${content}</code></pre>`
+
+      case 'iframe': {
+        // Re-emit the same wrapper the Tiptap `IframeEmbed` node produces so the editor
+        // can parseHTML it back into a single atomic iframe block on edit.
+        const iframeEl = elementNode as LexicalElementNode & {
+          src?: string
+          width?: string | number
+          height?: string | number
+          title?: string
+          allow?: string
+          referrerPolicy?: string
+        }
+        if (!iframeEl.src) return ''
+        const attrs = [
+          `src="${escapeAttr(iframeEl.src)}"`,
+          `width="${escapeAttr(String(iframeEl.width ?? '100%'))}"`,
+          `height="${escapeAttr(String(iframeEl.height ?? '400'))}"`,
+          `title="${escapeAttr(iframeEl.title || 'Embedded content')}"`,
+          `frameborder="0"`,
+          `allow="${escapeAttr(
+            iframeEl.allow ||
+              'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+          )}"`,
+          `allowfullscreen="true"`,
+          `referrerpolicy="${escapeAttr(iframeEl.referrerPolicy || 'strict-origin-when-cross-origin')}"`,
+        ]
+        return `<div class="rte-iframe-wrapper"><iframe ${attrs.join(' ')}></iframe></div>`
+      }
+
       case 'table':
         return `<table><tbody>${content}</tbody></table>`
 
@@ -138,20 +176,26 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
       case 'tableCell':
         return `<td>${content}</td>`
 
-      case 'image':
-        const imageUrl = (elementNode as any).url || ''
-        const imageAlt = (elementNode as any).alt || ''
-        const imageWidth = (elementNode as any).width
-        const imageHeight = (elementNode as any).height
+      case 'upload':
+      case 'image': {
+        const imageEl = elementNode as LexicalElementNode & {
+          url?: string
+          alt?: string
+          width?: number
+          height?: number
+        }
+        const imageUrl = imageEl.url || ''
+        const imageAlt = imageEl.alt || ''
 
         if (imageUrl) {
-          let imgTag = `<img src="${imageUrl}" alt="${imageAlt.replace(/"/g, '&quot;')}"`
-          if (imageWidth) imgTag += ` width="${imageWidth}"`
-          if (imageHeight) imgTag += ` height="${imageHeight}"`
+          let imgTag = `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(imageAlt)}"`
+          if (imageEl.width) imgTag += ` width="${escapeAttr(String(imageEl.width))}"`
+          if (imageEl.height) imgTag += ` height="${escapeAttr(String(imageEl.height))}"`
           imgTag += ' />'
           return imgTag
         }
         return ''
+      }
 
       default:
         // For unknown types, try to use the tag if available

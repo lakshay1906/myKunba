@@ -42,15 +42,15 @@ const nextConfig = {
         source: '/_next/static/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
-      // If again an error related to javascript chunk not found issue occurs, stop using the below code
+      // HTML/document caching: avoid s-maxage=31536000 on all pages — CDNs can cache 404s and
+      // post-deploy "stale HTML + new _next/static" ChunkLoadErrors. Short CDN TTL + long SWR
+      // keeps PageSpeed strong while new HTML is picked up quickly after purge or naturally.
       {
-        // Global Page Cache - Optimized for 100/100 PageSpeed
-        // Rely on Purge API for freshness during deployments
         source: '/((?!api|admin|dashboard).*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, s-maxage=31536000, stale-while-revalidate=59',
+            value: 'public, s-maxage=60, stale-while-revalidate=86400',
           },
         ],
       },
