@@ -145,10 +145,10 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
           }
 
           // Add text paragraph if there's text content (include non-text children like links, not only trimmed text)
-          if (pTextChildren.length > 0 || (!pImages.length && element.text.trim())) {
+          if (pInline.length > 0 || (!pBlocks.length && element.text.trim())) {
             const finalChildren =
-              pTextChildren.length > 0 ? pTextChildren : [createTextNode(element.text.trim())]
-            const hasRenderable = finalChildren.some((child) => {
+              pInline.length > 0 ? pInline : [createTextNode(element.text.trim(), inheritedFormat)]
+            const hasRenderable = finalChildren.some((child: LexicalTextNode | LexicalElementNode) => {
               if (child.type === 'text') return Boolean((child as LexicalTextNode).text?.trim())
               return true
             })
@@ -156,7 +156,7 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
               result.push({
                 type: 'paragraph',
                 version: 1,
-                children: pInline,
+                children: finalChildren,
                 direction: 'ltr',
                 format: '',
                 indent: 0,
