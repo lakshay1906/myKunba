@@ -98,8 +98,8 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
       if (carouselElement) {
         carouselElement.removeEventListener('pointerdown', handlePointerDown)
         carouselElement.removeEventListener('pointerup', handlePointerUp)
-        carouselElement.removeEventListener('mouseenter', () => { })
-        carouselElement.removeEventListener('mouseleave', () => { })
+        carouselElement.removeEventListener('mouseenter', () => {})
+        carouselElement.removeEventListener('mouseleave', () => {})
       }
     }
   }, [api, isPlaying, blogs.length])
@@ -146,9 +146,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                   }
                 }}
               >
-                <div
-                  className="relative h-96 md:h-[500px] w-full overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.02] cursor-pointer bg-[#1a1a1a]"
-                >
+                <div className="relative h-96 md:h-[500px] w-full overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.02] cursor-pointer bg-[#1a1a1a]">
                   {blog.media && (
                     <Image
                       src={blog.media}
@@ -157,7 +155,9 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                       className="object-cover"
                       priority={index === 0}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
-                      {...(index === 0 ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
+                      {...(index === 0
+                        ? { fetchPriority: 'high' as const }
+                        : { loading: 'lazy' as const })}
                     />
                   )}
                   <div
@@ -179,14 +179,14 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                     </div>
 
                     {/* Main Content */}
-                    <div className="space-y-4">
+                    <div className="space-y-2 sm:space-y-4">
                       {/* Title */}
-                      <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight text-balance">
+                      <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white leading-tight text-balance">
                         {blog.title}
                       </h2>
 
                       {/* Excerpt */}
-                      <p className="text-base md:text-lg text-white/90 line-clamp-2">
+                      <p className="text-[15px] sm:text-base md:text-lg text-white/90 line-clamp-2">
                         {blog.excerpt}
                       </p>
 
@@ -215,10 +215,10 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                         <span className="text-white/40">•</span>
 
                         {/* Reading Time */}
-                        <div className="flex items-center gap-1 text-sm text-white/80">
+                        {/* <div className="flex items-center gap-1 text-sm text-white/80">
                           <Clock size={16} />
                           <span>{getReadingTime(blog.excerpt)} min read</span>
-                        </div>
+                        </div> */}
 
                         {/* Divider */}
                         <span className="text-white/40">•</span>

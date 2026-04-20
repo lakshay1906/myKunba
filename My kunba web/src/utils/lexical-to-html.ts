@@ -112,9 +112,19 @@ export function convertLexicalToHtml(lexicalContent: PayloadLexicalContent | str
       case 'code':
         return `<code>${content}</code>`
 
-      case 'link':
-        const url = (elementNode as any).url || '#'
-        return `<a href="${url}">${content}</a>`
+      case 'link': {
+        const en = elementNode as LexicalElementNode & {
+          url?: string
+          newTab?: boolean
+          fields?: { url?: string; newTab?: boolean }
+        }
+        const rawUrl = (en.url ?? en.fields?.url ?? '#').trim() || '#'
+        const href = rawUrl.replace(/"/g, '&quot;').replace(/</g, '')
+        const newTab = Boolean(en.newTab ?? en.fields?.newTab)
+        const rel = newTab ? ' rel="noopener noreferrer"' : ''
+        const target = newTab ? ' target="_blank"' : ''
+        return `<a href="${href}"${target}${rel}>${content}</a>`
+      }
 
       case 'table':
         return `<table><tbody>${content}</tbody></table>`

@@ -95,10 +95,14 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
             }
           }
           
-          // Add text paragraph if there's text content
+          // Add text paragraph if there's text content (include non-text children like links, not only trimmed text)
           if (pTextChildren.length > 0 || (!pImages.length && element.text.trim())) {
             const finalChildren = pTextChildren.length > 0 ? pTextChildren : [createTextNode(element.text.trim())]
-            if (finalChildren.some((child) => (child as LexicalTextNode).text?.trim())) {
+            const hasRenderable = finalChildren.some((child) => {
+              if (child.type === 'text') return Boolean((child as LexicalTextNode).text?.trim())
+              return true
+            })
+            if (hasRenderable) {
               result.push({
                 type: 'paragraph',
                 version: 1,
@@ -275,6 +279,39 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
             } as LexicalElementNode & { url: string; alt?: string; width?: number; height?: number })
           }
           break
+
+        case 'a': {
+          // Preserve hyperlinks (Tiptap / HTML) as Lexical "link" nodes for PayloadRichTextRenderer
+          const href = (element.getAttribute('href') || '').trim()
+          const targetAttr = (element.getAttribute('target') || '').toLowerCase()
+          const relAttr = (element.getAttribute('rel') || '').toLowerCase()
+          const newTab = targetAttr === '_blank' || relAttr.includes('noopener') || relAttr.includes('noreferrer')
+
+          let linkChildren = elementChildren
+          if (linkChildren.length === 0) {
+            const t = element.text?.trim() ?? ''
+            linkChildren = t ? [createTextNode(t)] : href ? [createTextNode(href)] : []
+          }
+
+          const url = href || '#'
+          result.push({
+            type: 'link',
+            version: 1,
+            children: linkChildren.length > 0 ? linkChildren : [createTextNode(url)],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            url,
+            newTab,
+            // Payload Lexical often stores link target in `fields` — mirror for admin / consistency
+            fields: {
+              linkType: 'custom',
+              url,
+              newTab,
+            },
+          } as LexicalElementNode)
+          break
+        }
 
         case 'div':
         case 'figure':

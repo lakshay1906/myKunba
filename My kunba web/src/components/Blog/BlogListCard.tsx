@@ -47,7 +47,7 @@ export default function BlogListCard({ post }: { post: BlogPost }) {
       <Card className="w-full h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
         <div className="flex h-full flex-col sm:flex-row">
           {/* Fixed-size image panel keeps every card aligned regardless of title/excerpt length */}
-          <div className="relative w-full sm:w-56 md:w-60 lg:w-64 shrink-0 aspect-16/10 sm:aspect-auto sm:h-auto sm:self-stretch bg-muted">
+          <div className="relative w-full sm:w-72 md:w-80 lg:w-96 shrink-0 aspect-16/10 sm:aspect-video sm:h-auto sm:self-stretch bg-muted">
             {post.media && (
               <Image
                 src={post.media}
@@ -65,9 +65,7 @@ export default function BlogListCard({ post }: { post: BlogPost }) {
               <h3 className="text-lg md:text-xl font-bold leading-snug transition-colors group-hover:text-primary mb-2 line-clamp-2">
                 {post.title}
               </h3>
-              <p className="text-sm text-muted-foreground line-clamp-3">
-                {post.excerpt}
-              </p>
+              <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>
               {post.categories && post.categories.length > 0 && (
                 <div className="flex flex-wrap items-start gap-2 mt-3">
                   {post.categories.slice(0, 3).map((category) => (
@@ -78,7 +76,7 @@ export default function BlogListCard({ post }: { post: BlogPost }) {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between border-t p-2 md:p-3">
+            <div className="flex items-center justify-between border-t py-2 px-4 md:py-3 md:px-5">
               <div className="flex items-center gap-2 min-w-0">
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage

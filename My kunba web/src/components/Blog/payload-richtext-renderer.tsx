@@ -268,21 +268,33 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         </div>
       )
 
-    case 'link':
-      const linkNode = node as PayloadElementNode & { url?: string; newTab?: boolean }
-      const isExternal = linkNode.url?.startsWith('http://') || linkNode.url?.startsWith('https://')
+    case 'link': {
+      const linkNode = node as PayloadElementNode & {
+        url?: string
+        newTab?: boolean
+        fields?: { url?: string; newTab?: boolean; linkType?: string }
+      }
+      const href = (linkNode.url ?? linkNode.fields?.url ?? '').trim()
+      const safeHref =
+        href && !/^javascript:/i.test(href) && !/^data:/i.test(href) && !/^vbscript:/i.test(href)
+          ? href
+          : undefined
+      const newTab = Boolean(linkNode.newTab ?? linkNode.fields?.newTab)
+      const isExternal = href.startsWith('http://') || href.startsWith('https://')
+      const openInNewTab = newTab || isExternal
       return (
         <a
-          href={linkNode.url}
-          className="text-blue-600 hover:text-blue-800 underline"
-          target={linkNode.newTab || isExternal ? '_blank' : undefined}
-          rel={linkNode.newTab || isExternal ? 'noopener noreferrer' : undefined}
+          href={safeHref ?? '#'}
+          className="underline underline-offset-2 dark:text-[#8ab4f8] text-[#1558d6]"
+          target={openInNewTab ? '_blank' : undefined}
+          rel={openInNewTab ? 'noopener noreferrer' : undefined}
         >
           {linkNode.children?.map((child, index) => (
             <RenderNode key={index} node={child} />
           ))}
         </a>
       )
+    }
 
     case 'code':
       const codeNode = node as PayloadElementNode

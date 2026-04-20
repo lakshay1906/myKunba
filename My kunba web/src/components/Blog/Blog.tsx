@@ -24,12 +24,7 @@ const Spinner = dynamic(() => import('../Loading'), {
   loading: () => <div className="size-11 animate-pulse rounded-full bg-muted" />,
 })
 import { Button } from '../ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 
 const AUTHORS_CACHE_KEY = 'blog_authors_cache'
 const LIMIT = 24
@@ -128,14 +123,22 @@ function PaginationLinks({
               </Link>
             )
           ) : (
-            <span aria-disabled="true" className="text-sm text-foreground/50 flex items-center gap-1 mr-2">&lt; Previous</span>
+            <span
+              aria-disabled="true"
+              className="text-sm text-foreground/50 flex items-center gap-1 mr-2"
+            >
+              &lt; Previous
+            </span>
           )}
         </li>
 
         {pages.map((p, i) => (
           <li key={p === 'ellipsis' ? `e-${i}` : p}>
             {p === 'ellipsis' ? (
-              <span aria-hidden="true" className="px-2 text-muted-foreground w-8 text-center flex justify-center">
+              <span
+                aria-hidden="true"
+                className="px-2 text-muted-foreground w-8 text-center flex justify-center"
+              >
                 ...
               </span>
             ) : p === currentPage ? (
@@ -187,7 +190,12 @@ function PaginationLinks({
               </Link>
             )
           ) : (
-            <span aria-disabled="true" className="text-sm text-foreground/50 flex items-center gap-1 ml-2">Next &gt;</span>
+            <span
+              aria-disabled="true"
+              className="text-sm text-foreground/50 flex items-center gap-1 ml-2"
+            >
+              Next &gt;
+            </span>
           )}
         </li>
       </ul>
@@ -219,7 +227,7 @@ export default function Blog({
   const setBlogCategorySlugs = store?.setBlogCategorySlugs ?? setLocalCategorySlugs
   const blogAuthorEmails = store?.blogAuthorEmails ?? localAuthorEmails
   const setBlogAuthorEmails = store?.setBlogAuthorEmails ?? setLocalAuthorEmails
-  const setOriginalBlogData = store?.setOriginalBlogData ?? (() => { })
+  const setOriginalBlogData = store?.setOriginalBlogData ?? (() => {})
 
   const [data, setData] = useState<any[]>(Array.isArray(posts?.docs) ? posts.docs : [])
   const [loading, setLoading] = useState(false)
@@ -234,7 +242,8 @@ export default function Blog({
   const [currentPage, setCurrentPage] = useState(initialCurrentPage)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [offset, setOffset] = useState(initialLimit)
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [filtersExpandedMobile, setFiltersExpandedMobile] = useState(false)
 
   const limit = initialLimit
   const originalDataPersisted = useRef(false)
@@ -260,9 +269,21 @@ export default function Blog({
     setData(docs)
     setTotal(initialTotal ?? (typeof posts.totalDocs === 'number' ? posts.totalDocs : 0))
     setCurrentPage(initialCurrentPage)
-    setTotalPages(initialTotalPages || Math.ceil((initialTotal ?? posts.totalDocs ?? 0) / initialLimit) || 1)
+    setTotalPages(
+      initialTotalPages || Math.ceil((initialTotal ?? posts.totalDocs ?? 0) / initialLimit) || 1,
+    )
     setOffset(initialLimit)
-  }, [posts?.docs, posts?.totalDocs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length, initialTotal, initialCurrentPage, initialTotalPages, initialLimit])
+  }, [
+    posts?.docs,
+    posts?.totalDocs,
+    searchResults,
+    blogCategorySlugs.length,
+    blogAuthorEmails.length,
+    initialTotal,
+    initialCurrentPage,
+    initialTotalPages,
+    initialLimit,
+  ])
 
   // Fetch with current filters + optional search (single API) - must be defined before useEffects that use it
   const fetchBlogs = useCallback(
@@ -301,14 +322,7 @@ export default function Blog({
         setLoading(false)
       }
     },
-    [
-      blogCategorySlugs,
-      blogAuthorEmails,
-      limit,
-      offset,
-      setSearchResults,
-      setSearchQuery,
-    ],
+    [blogCategorySlugs, blogAuthorEmails, limit, offset, setSearchResults, setSearchQuery],
   )
 
   // When returning to home with category/author filters, fetch filtered blogs (run once on mount)
@@ -322,13 +336,22 @@ export default function Blog({
 
   // Sync from server when URL/page changes (no filters)
   useEffect(() => {
-    if (searchResults !== null || blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0) return
+    if (searchResults !== null || blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0)
+      return
     if (!posts?.docs) return
     setData(Array.isArray(posts.docs) ? posts.docs : [])
     setTotal(initialTotal ?? 0)
     setCurrentPage(initialCurrentPage)
     setTotalPages(initialTotalPages || 1)
-  }, [initialCurrentPage, initialTotal, initialTotalPages, posts?.docs, searchResults, blogCategorySlugs.length, blogAuthorEmails.length])
+  }, [
+    initialCurrentPage,
+    initialTotal,
+    initialTotalPages,
+    posts?.docs,
+    searchResults,
+    blogCategorySlugs.length,
+    blogAuthorEmails.length,
+  ])
 
   // When in search mode, show search results
   useEffect(() => {
@@ -373,23 +396,29 @@ export default function Blog({
       try {
         setAuthors(JSON.parse(cached))
         return
-      } catch (_) { }
+      } catch (_) {}
     }
     fetch('/api/user/authors', { cache: 'no-store' })
       .then((res) => res.json())
       .then((result) => {
         if (!result?.docs) return
         const sorted = result.docs.sort(
-          (a: { role?: string; displayName?: string }, b: { role?: string; displayName?: string }) => {
+          (
+            a: { role?: string; displayName?: string },
+            b: { role?: string; displayName?: string },
+          ) => {
             if (a.role === 'admin' && b.role !== 'admin') return -1
             if (a.role !== 'admin' && b.role === 'admin') return 1
-            return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase())
+            return (a.displayName || '')
+              .toLowerCase()
+              .localeCompare((b.displayName || '').toLowerCase())
           },
         )
         setAuthors(sorted)
-        if (typeof window !== 'undefined') sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(sorted))
+        if (typeof window !== 'undefined')
+          sessionStorage.setItem(AUTHORS_CACHE_KEY, JSON.stringify(sorted))
       })
-      .catch(() => { })
+      .catch(() => {})
   }, [initialAuthors])
 
   const handleCategoryChange = (selected: string[]) => {
@@ -422,7 +451,7 @@ export default function Blog({
         setCurrentPage(1)
         setOffset(limit)
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -449,7 +478,7 @@ export default function Blog({
         setCurrentPage(1)
         setOffset(limit)
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -483,7 +512,7 @@ export default function Blog({
         setCurrentPage(1)
         setOffset(limit)
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -518,13 +547,31 @@ export default function Blog({
   return (
     <div id="blog" className="container mx-auto! px-4!">
       <div className="mt-2 md:mt-4 lg:mt-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Smart Insights on Health, Tech & Finance</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          Smart Insights on Health, Tech & Finance
+        </h1>
         <p className="text-sm text-muted-foreground mb-6 mt-1">
           Discover stories, insights, and updates from our community.
         </p>
       </div>
       <div className="flex flex-col gap-4 mt-0 sm:mt-2 md:mt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+        <div className="sm:hidden flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setFiltersExpandedMobile((prev) => !prev)}
+            className="w-full"
+            aria-expanded={filtersExpandedMobile}
+            aria-controls="blog-filters-panel"
+          >
+            {filtersExpandedMobile ? 'Collapse filters' : 'Expand filters'}
+          </Button>
+        </div>
+        <div
+          id="blog-filters-panel"
+          className={`${filtersExpandedMobile ? 'grid' : 'hidden'} grid-cols-1 sm:grid lg:grid-cols-5 gap-4 items-end sm:grid-cols-2`}
+        >
           <div className="space-y-2">
             <Label htmlFor="blog-search">Search</Label>
             <div className="relative">
@@ -573,7 +620,23 @@ export default function Blog({
                   aria-label="Reset all filters"
                   className="size-10 cursor-pointer shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-brush-cleaning-icon lucide-brush-cleaning size-4"><path d="m16 22-1-4" /><path d="M19 14a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1" /><path d="M19 14H5l-1.973 6.767A1 1 0 0 0 4 22h16a1 1 0 0 0 .973-1.233z" /><path d="m8 22 1-4" /></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-brush-cleaning-icon lucide-brush-cleaning size-4"
+                  >
+                    <path d="m16 22-1-4" />
+                    <path d="M19 14a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1" />
+                    <path d="M19 14H5l-1.973 6.767A1 1 0 0 0 4 22h16a1 1 0 0 0 .973-1.233z" />
+                    <path d="m8 22 1-4" />
+                  </svg>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -606,7 +669,6 @@ export default function Blog({
               </Button>
             </div>
           </div>
-
         </div>
       </div>
       {loading ? (
@@ -617,9 +679,13 @@ export default function Blog({
         <>
           {data.length > 0 ? (
             <>
-              <div className={viewMode === 'grid'
-                ? 'mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6'
-                : 'mt-2 sm:mt-4 md:mt-6 grid grid-cols-1 items-start gap-4'}>
+              <div
+                className={
+                  viewMode === 'grid'
+                    ? 'mt-2 sm:mt-4 md:mt-6 grid sm:grid-cols-2 lg:grid-cols-3 items-start gap-6'
+                    : 'mt-2 sm:mt-4 md:mt-6 grid grid-cols-1 items-start gap-4'
+                }
+              >
                 {data.flatMap((ele, index) => {
                   const activeAdSlot = viewMode === 'list' ? FEED_AD_SLOT : GRID_AD_SLOT
                   const nodes = [
@@ -627,7 +693,7 @@ export default function Blog({
                       {viewMode === 'grid' ? <BlogCard post={ele} /> : <BlogListCard post={ele} />}
                     </div>,
                   ]
-                  if (activeAdSlot && (index + 1) % 4 === 0) {
+                  if (activeAdSlot && (index + 1) % 2 === 0) {
                     nodes.push(
                       <div
                         key={`feed-ad-${String(ele.id)}`}
@@ -677,7 +743,11 @@ export default function Blog({
                         })
                         .finally(() => setLoading(false))
                     }}
-                    hasFilters={blogCategorySlugs.length > 0 || blogAuthorEmails.length > 0 || (searchResults !== null)}
+                    hasFilters={
+                      blogCategorySlugs.length > 0 ||
+                      blogAuthorEmails.length > 0 ||
+                      searchResults !== null
+                    }
                   />
                 </nav>
               )}

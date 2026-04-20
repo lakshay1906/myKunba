@@ -108,6 +108,8 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   }))
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null)
   const [profileImageSaving, setProfileImageSaving] = useState(false)
@@ -178,8 +180,18 @@ export default function Profile({ user }: { user: Record<string, any> }) {
   }
 
   const handleSignOut = async () => {
-    await logout()
-    window.location.assign('/')
+    try {
+      setIsSigningOut(true)
+      await logout()
+      setSignOutDialogOpen(false)
+      toast.success('Please come back soon!')
+      // small delay so the success toast is visible before navigation
+      window.setTimeout(() => {
+        window.location.assign('/')
+      }, 500)
+    } finally {
+      setIsSigningOut(false)
+    }
   }
 
   const getDeleteWarningMessage = () => {
@@ -477,7 +489,7 @@ export default function Profile({ user }: { user: Record<string, any> }) {
                 className="text-red-600"
                 onSelect={(e) => {
                   e.preventDefault()
-                  void handleSignOut()
+                  setSignOutDialogOpen(true)
                 }}
               >
                 <LogOut className="mr-2 size-4" />
@@ -954,6 +966,25 @@ export default function Profile({ user }: { user: Record<string, any> }) {
             </DialogClose>
             <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting}>
               {isDeleting ? 'Deleting…' : 'Delete my account'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={signOutDialogOpen} onOpenChange={setSignOutDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Sign out?</DialogTitle>
+            <DialogDescription>Are you sure, you want to sign-out?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isSigningOut}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={() => void handleSignOut()} disabled={isSigningOut}>
+              {isSigningOut ? 'Signing out…' : 'Proceed'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -271,9 +271,21 @@ export default function RichTextEditor({
         openOnClick: false,
         autolink: true,
         linkOnPaste: true,
+        // Allow same-origin paths and hashes; block obvious unsafe schemes
+        protocols: ['http', 'https', 'mailto', 'tel'],
+        isAllowedUri: (uri) => {
+          const u = uri.trim()
+          if (!u) return false
+          if (u.startsWith('/') || u.startsWith('#') || u.startsWith('mailto:') || u.startsWith('tel:'))
+            return true
+          try {
+            const parsed = new URL(u)
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+          } catch {
+            return false
+          }
+        },
         HTMLAttributes: {
-          rel: 'noopener noreferrer nofollow',
-          target: '_blank',
           class: 'rte-link',
         },
       }),
