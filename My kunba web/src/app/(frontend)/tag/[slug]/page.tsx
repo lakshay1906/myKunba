@@ -157,6 +157,7 @@ export default async function TagPage({
             initialCategories={categories}
             total={posts.totalDocs || 0}
             limit={limit}
+            titleRequired={false}
           />
         </div>
       </>

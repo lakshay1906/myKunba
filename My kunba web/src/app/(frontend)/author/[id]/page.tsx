@@ -308,6 +308,7 @@ export default async function AuthorPage({
             initialCategories={categories}
             total={authorPosts.totalDocs || 0}
             limit={limit}
+            titleRequired={false}
           />
         </div>
       </>

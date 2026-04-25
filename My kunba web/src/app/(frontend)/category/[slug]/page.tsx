@@ -185,6 +185,7 @@ export default async function CategoryPage({
             initialSelectedCategory={categoryId}
             total={posts.totalDocs || 0}
             limit={limit}
+            titleRequired={false}
           />
         </div>
       </>

@@ -43,6 +43,7 @@ type BlogProps = {
   currentPage?: number
   totalPages?: number
   initialSelectedCategory?: number
+  titleRequired?: boolean
 }
 
 function buildBlogQueryParams(opts: {
@@ -211,6 +212,7 @@ export default function Blog({
   limit: initialLimit = LIMIT,
   currentPage: initialCurrentPage = 1,
   totalPages: initialTotalPages = 1,
+  titleRequired = true,
 }: BlogProps) {
   const searchParams = useSearchParams()
   const store = useAppStoreOptional()
@@ -545,15 +547,18 @@ export default function Blog({
   }
 
   return (
-    <div id="blog" className="container mx-auto! px-4!">
-      <div className="mt-2 md:mt-4 lg:mt-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          Smart Insights on Health, Tech & Finance
-        </h1>
-        <p className="text-sm text-muted-foreground mb-6 mt-1">
-          Discover stories, insights, and updates from our community.
-        </p>
-      </div>
+    <div id="blog" className={`container mx-auto! ${titleRequired ? 'px-4!' : 'px-0!'}`}>
+      {titleRequired && (
+        <div className="mt-2 md:mt-4 lg:mt-6">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            Smart Insights on Health, Tech & Finance
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6 mt-1">
+            Discover stories, insights, and updates from our community.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 mt-0 sm:mt-2 md:mt-4">
         <div className="sm:hidden flex justify-end">
           <Button
