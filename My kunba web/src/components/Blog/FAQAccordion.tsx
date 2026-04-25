@@ -11,7 +11,7 @@ import { AdBanner } from '@/components/AdBanner'
 
 const FAQ_AD_SLOT = process.env.NEXT_PUBLIC_ADS_SLOT_4 ?? ''
 const MULTIPLEX_AD_SLOT = process.env.NEXT_PUBLIC_ADS_MULTIPLEX_SLOT ?? ''
-const STICKY_TOP_OFFSET = 200
+const STICKY_TOP_OFFSET = 130
 const STICKY_BOTTOM_OFFSET = 32
 
 export type FAQItem = {
@@ -96,10 +96,11 @@ function useSmartStickySidebar() {
   const containerRef = useRef<HTMLElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const topRef = useRef(0)
+  const sidebarHeightRef = useRef(0)
+  const isDesktopRef = useRef(false)
   const lastScrollYRef = useRef(0)
   const lastDirectionRef = useRef<'up' | 'down'>('down')
   const lockModeRef = useRef<'top' | 'bottom' | 'free'>('free')
-  const [sidebarTop, setSidebarTop] = useState(0)
   const [sidebarHeight, setSidebarHeight] = useState<number | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
 
@@ -114,13 +115,19 @@ function useSmartStickySidebar() {
       frameId = null
 
       const desktop = window.innerWidth >= 1024
-      setIsDesktop(desktop)
+      if (isDesktopRef.current !== desktop) {
+        isDesktopRef.current = desktop
+        setIsDesktop(desktop)
+      }
 
       if (!desktop) {
         topRef.current = 0
         lockModeRef.current = 'free'
-        setSidebarTop(0)
-        setSidebarHeight(null)
+        sidebar.removeAttribute('style')
+        if (sidebarHeightRef.current !== 0) {
+          sidebarHeightRef.current = 0
+          setSidebarHeight(null)
+        }
         return
       }
 
@@ -135,47 +142,122 @@ function useSmartStickySidebar() {
       const direction =
         scrollY > previousScrollY ? 'down' : scrollY < previousScrollY ? 'up' : lastDirectionRef.current
 
-      if (direction === 'down' && lockModeRef.current === 'top') {
-        lockModeRef.current = 'free'
+      const setAbsolute = (top: number) => {
+        sidebar.style.position = 'absolute'
+        sidebar.style.top = '0'
+        sidebar.style.bottom = ''
+        sidebar.style.left = '0'
+        sidebar.style.right = '0'
+        sidebar.style.width = ''
+        sidebar.style.willChange = 'transform'
+        sidebar.style.transform = `translate3d(0, ${top}px, 0)`
       }
 
-      if (direction === 'up' && lockModeRef.current === 'bottom') {
-        lockModeRef.current = 'free'
+      const setFixedTop = () => {
+        sidebar.style.position = 'fixed'
+        sidebar.style.top = `${STICKY_TOP_OFFSET}px`
+        sidebar.style.bottom = ''
+        sidebar.style.left = `${containerRect.left}px`
+        sidebar.style.right = ''
+        sidebar.style.width = `${containerRect.width}px`
+        sidebar.style.transform = ''
+        sidebar.style.willChange = 'auto'
       }
 
-      let nextTop = topRef.current
+      const setFixedBottom = () => {
+        sidebar.style.position = 'fixed'
+        sidebar.style.top = ''
+        sidebar.style.bottom = `${STICKY_BOTTOM_OFFSET}px`
+        sidebar.style.left = `${containerRect.left}px`
+        sidebar.style.right = ''
+        sidebar.style.width = `${containerRect.width}px`
+        sidebar.style.transform = ''
+        sidebar.style.willChange = 'auto'
+      }
+
+      const topLockedTop = scrollY + STICKY_TOP_OFFSET - containerTop
+      const bottomLockedTop =
+        scrollY + viewportHeight - STICKY_BOTTOM_OFFSET - measuredSidebarHeight - containerTop
+      const clampTop = (top: number) => Math.min(Math.max(top, 0), maxTop)
+      const lockTopWithinContainer = topLockedTop > 0 && topLockedTop < maxTop
+      const lockBottomWithinContainer = bottomLockedTop > 0 && bottomLockedTop < maxTop
 
       if (measuredSidebarHeight + STICKY_TOP_OFFSET + STICKY_BOTTOM_OFFSET <= viewportHeight) {
-        nextTop = scrollY + STICKY_TOP_OFFSET - containerTop
-        lockModeRef.current = 'top'
-      } else if (lockModeRef.current === 'bottom') {
-        nextTop = scrollY + viewportHeight - STICKY_BOTTOM_OFFSET - measuredSidebarHeight - containerTop
-      } else if (lockModeRef.current === 'top') {
-        nextTop = scrollY + STICKY_TOP_OFFSET - containerTop
-      } else if (direction === 'down') {
-        const bottomLockedTop =
-          scrollY + viewportHeight - STICKY_BOTTOM_OFFSET - measuredSidebarHeight - containerTop
+        const nextTop = clampTop(topLockedTop)
 
-        if (bottomLockedTop > nextTop) {
-          nextTop = bottomLockedTop
+        topRef.current = nextTop
+        lockModeRef.current = lockTopWithinContainer ? 'top' : 'free'
+
+        if (lockTopWithinContainer) {
+          setFixedTop()
+        } else {
+          setAbsolute(nextTop)
+        }
+      } else if (lockModeRef.current === 'bottom') {
+        if (direction === 'up') {
+          lockModeRef.current = 'free'
+          setAbsolute(topRef.current)
+        } else {
+          const nextTop = clampTop(bottomLockedTop)
+
+          topRef.current = nextTop
+
+          if (lockBottomWithinContainer) {
+            setFixedBottom()
+          } else {
+            lockModeRef.current = 'free'
+            setAbsolute(nextTop)
+          }
+        }
+      } else if (lockModeRef.current === 'top') {
+        if (direction === 'down') {
+          lockModeRef.current = 'free'
+          setAbsolute(topRef.current)
+        } else {
+          const nextTop = clampTop(topLockedTop)
+
+          topRef.current = nextTop
+
+          if (lockTopWithinContainer) {
+            setFixedTop()
+          } else {
+            lockModeRef.current = 'free'
+            setAbsolute(nextTop)
+          }
+        }
+      } else if (direction === 'down' && bottomLockedTop >= topRef.current) {
+        const nextTop = clampTop(bottomLockedTop)
+
+        topRef.current = nextTop
+
+        if (lockBottomWithinContainer) {
           lockModeRef.current = 'bottom'
+          setFixedBottom()
+        } else {
+          setAbsolute(nextTop)
+        }
+      } else if (direction === 'up' && topLockedTop <= topRef.current) {
+        const nextTop = clampTop(topLockedTop)
+
+        topRef.current = nextTop
+
+        if (lockTopWithinContainer) {
+          lockModeRef.current = 'top'
+          setFixedTop()
+        } else {
+          setAbsolute(nextTop)
         }
       } else {
-        const topLockedTop = scrollY + STICKY_TOP_OFFSET - containerTop
-
-        if (topLockedTop < nextTop) {
-          nextTop = topLockedTop
-          lockModeRef.current = 'top'
-        }
+        setAbsolute(topRef.current)
       }
 
-      const clampedTop = Math.min(Math.max(nextTop, 0), maxTop)
-
-      topRef.current = clampedTop
       lastScrollYRef.current = scrollY
       lastDirectionRef.current = direction
-      setSidebarTop(clampedTop)
-      setSidebarHeight(measuredSidebarHeight)
+
+      if (sidebarHeightRef.current !== measuredSidebarHeight) {
+        sidebarHeightRef.current = measuredSidebarHeight
+        setSidebarHeight(measuredSidebarHeight)
+      }
     }
 
     const scheduleUpdate = () => {
@@ -209,13 +291,6 @@ function useSmartStickySidebar() {
     containerRef,
     sidebarRef,
     spacerStyle: isDesktop && sidebarHeight !== null ? { height: `${sidebarHeight}px` } : undefined,
-    sidebarStyle: isDesktop
-      ? {
-          position: 'absolute' as const,
-          top: `${sidebarTop}px`,
-          left: 0,
-          right: 0,
-        }
-      : undefined,
+    sidebarStyle: undefined,
   }
 }

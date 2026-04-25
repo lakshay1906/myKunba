@@ -7,6 +7,7 @@ import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
+import { AdBanner } from '@/components/AdBanner'
 
 export async function generateMetadata({
   params,
@@ -29,7 +30,8 @@ export async function generateMetadata({
         where: { slug: { equals: slug }, deleted_at: { equals: null } },
         limit: 1,
       })
-      if (!tagResult.docs.length) return { title: 'Tag Not Found', robots: { index: false, follow: false } }
+      if (!tagResult.docs.length)
+        return { title: 'Tag Not Found', robots: { index: false, follow: false } }
       const tag = tagResult.docs[0] as { id: number; name: string; slug: string }
       tagId = tag.id
       tagName = tag.name
@@ -51,8 +53,17 @@ export async function generateMetadata({
       description: `Explore blog posts tagged with ${tagName}.`,
       robots: { index: true, follow: true },
       keywords: [tagName, 'blog', 'articles', 'tag'],
-      openGraph: { title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.`, url: tagUrl, type: 'website' },
-      twitter: { card: 'summary', title: `${tagName} - Blog Posts | My Kunba`, description: `Explore blog posts tagged with ${tagName}.` },
+      openGraph: {
+        title: `${tagName} - Blog Posts | My Kunba`,
+        description: `Explore blog posts tagged with ${tagName}.`,
+        url: tagUrl,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary',
+        title: `${tagName} - Blog Posts | My Kunba`,
+        description: `Explore blog posts tagged with ${tagName}.`,
+      },
       alternates: { canonical: tagUrl, languages },
     }
   } catch {
@@ -105,6 +116,8 @@ export default async function TagPage({
     const siteUrl = getPublicUrl()
     const tagUrl = `${siteUrl}/tag/${slug}`
 
+    const horizontalAdSlot = process.env.NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL ?? ''
+
     const collectionPageSchema = {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
@@ -148,6 +161,16 @@ export default async function TagPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <div className="container mx-auto px-4 py-8">
+          {horizontalAdSlot ? (
+            <div className="container mx-auto px-4 mb-6">
+              <AdBanner
+                dataAdSlot={horizontalAdSlot}
+                dataAdFormat="fluid"
+                className="w-full"
+                minHeight={120}
+              />
+            </div>
+          ) : null}
           <h1 className="text-4xl font-bold mb-2">{tagName}</h1>
           <p className="text-muted-foreground mb-8">
             {posts.totalDocs || 0} {posts.totalDocs === 1 ? 'article' : 'articles'} with this tag

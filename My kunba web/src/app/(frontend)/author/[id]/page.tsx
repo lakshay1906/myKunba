@@ -10,6 +10,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { AdBanner } from '@/components/AdBanner'
 
 /** User doc from users collection with fields used on author pages */
 type AuthorProfile = {
@@ -187,7 +188,9 @@ export default async function AuthorPage({
         `${getServerApiUrl()}/api/user/blog?limit=${limit}&offset=${offset}&author=${encodeURIComponent(authorEmail)}`,
         { next: { tags: ['posts'] } },
       ),
-      fetch(`${getServerApiUrl()}/api/user/category?locale=${locale}`, { next: { tags: ['posts'] } }),
+      fetch(`${getServerApiUrl()}/api/user/category?locale=${locale}`, {
+        next: { tags: ['posts'] },
+      }),
     ])
 
     const authorPosts = await postsRes.json()
@@ -199,6 +202,8 @@ export default async function AuthorPage({
     const authorSlug = profile.username || String(profile.id)
     const authorUrl = `${siteUrl}/author/${authorSlug}`
 
+    const horizontalAdSlot = process.env.NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL ?? ''
+
     const personSchema = {
       '@context': 'https://schema.org',
       '@type': 'Person',
@@ -208,9 +213,17 @@ export default async function AuthorPage({
         description: profile.bio,
       }),
       ...(profile.profileImage && {
-        image: typeof profile.profileImage === 'string' ? profile.profileImage : (profile.profileImage as { url?: string })?.url,
+        image:
+          typeof profile.profileImage === 'string'
+            ? profile.profileImage
+            : (profile.profileImage as { url?: string })?.url,
       }),
-      jobTitle: profile.role === 'admin' ? 'Administrator' : profile.role === 'author' ? 'Content Author' : 'User',
+      jobTitle:
+        profile.role === 'admin'
+          ? 'Administrator'
+          : profile.role === 'author'
+            ? 'Content Author'
+            : 'User',
       worksFor: {
         '@type': 'Organization',
         name: 'My Kunba',
@@ -264,6 +277,17 @@ export default async function AuthorPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <div className="container mx-auto px-4 py-8">
+          {horizontalAdSlot ? (
+            <div className="container mx-auto px-4 mb-6">
+              <AdBanner
+                dataAdSlot={horizontalAdSlot}
+                dataAdFormat="fluid"
+                className="w-full"
+                minHeight={120}
+                />
+            </div>
+          ) : null}
+          
           {/* Author Profile Section - E-E-A-T Signals */}
           <div className="mb-8 p-6 bg-muted/50 rounded-lg border">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
@@ -295,7 +319,9 @@ export default async function AuthorPage({
                       ? 'Content Author'
                       : 'User'}
                 </Badge>
-                {profile.bio && <p className="text-muted-foreground leading-relaxed">{profile.bio}</p>}
+                {profile.bio && (
+                  <p className="text-muted-foreground leading-relaxed">{profile.bio}</p>
+                )}
               </div>
             </div>
           </div>
@@ -317,4 +343,3 @@ export default async function AuthorPage({
     notFound()
   }
 }
-

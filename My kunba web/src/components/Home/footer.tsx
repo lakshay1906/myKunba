@@ -29,8 +29,11 @@ const sectionKeys = [
     links: [
       { nameKey: 'Twitter / X', href: 'https://x.com/mykunba' },
       { nameKey: 'Facebook', href: 'https://www.facebook.com/share/18uTwTVVPU/' },
+      { nameKey: 'Instagram', href: 'https://www.instagram.com/mykunba' },
       { nameKey: 'Threads', href: 'https://www.threads.com/@mykunba' },
+      { nameKey: 'Whatsapp', href: 'https://whatsapp.com/channel/0029Vb2aGUo35fM4bB3j471H' },
       { nameKey: 'Reddit', href: 'https://www.reddit.com/u/mykunba/s/9a6MvAZu9q' },
+      { nameKey: 'Telegram', href: 'https://t.me/myKunba_org' },
       { nameKey: 'Pinterest', href: 'https://pin.it/6gyJTzWOi' },
     ],
   },
