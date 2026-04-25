@@ -211,11 +211,11 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                           </div>
                         </div>
 
-                        {/* Divider */}
+                        {/* // Divider
                         <span className="text-white/40">•</span>
 
-                        {/* Reading Time */}
-                        {/* <div className="flex items-center gap-1 text-sm text-white/80">
+                        // Reading Time
+                        <div className="flex items-center gap-1 text-sm text-white/80">
                           <Clock size={16} />
                           <span>{getReadingTime(blog.excerpt)} min read</span>
                         </div> */}

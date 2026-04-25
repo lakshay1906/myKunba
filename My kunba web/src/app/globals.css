@@ -137,6 +137,20 @@ body {
   scroll-behavior: smooth !important;
 }
 
+.ad-banner-wrapper {
+  contain: layout paint;
+}
+
+.ad-banner-wrapper .adsbygoogle,
+.ad-banner-wrapper iframe {
+  max-width: 100% !important;
+}
+
+.ad-banner-wrapper iframe {
+  display: block !important;
+  margin-inline: auto !important;
+}
+
 @layer utilities {
   @keyframes pulse-spinner {
     0%,

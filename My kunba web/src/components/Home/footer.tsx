@@ -27,10 +27,11 @@ const sectionKeys = [
   {
     titleKey: 'footer_social',
     links: [
-      { nameKey: 'Twitter / X', href: '#' },
-      { nameKey: 'GitHub', href: '#' },
-      { nameKey: 'LinkedIn', href: '#' },
-      { nameKey: 'Instagram', href: '#' },
+      { nameKey: 'Twitter / X', href: 'https://x.com/mykunba' },
+      { nameKey: 'Facebook', href: 'https://www.facebook.com/share/18uTwTVVPU/' },
+      { nameKey: 'Threads', href: 'https://www.threads.com/@mykunba' },
+      { nameKey: 'Reddit', href: 'https://www.reddit.com/u/mykunba/s/9a6MvAZu9q' },
+      { nameKey: 'Pinterest', href: 'https://pin.it/6gyJTzWOi' },
     ],
   },
 ]
@@ -84,19 +85,20 @@ export default function Footer() {
   }
 
   return (
-    <footer className="container mx-auto mt-12">
+    <footer className="container relative z-0 mx-auto mt-12 isolate">
       {MULTIPLEX_AD_SLOT_HORIZONTAL ? (
-        <div className="w-full mb-8 px-6">
+        <div className="relative z-0 w-full mb-8 overflow-hidden px-6">
           <AdBanner
             dataAdSlot={MULTIPLEX_AD_SLOT_HORIZONTAL}
             dataAdFormat="autorelaxed"
             dataAutoFormat="mcrspv"
             className="w-full rounded-lg"
             minHeight={320}
+            maxHeight={380}
           />
         </div>
       ) : null}
-      <div className="grid grid-cols-2 gap-8 lg:grid-cols-6 px-6">
+      <div className="relative z-10 grid grid-cols-2 gap-8 lg:grid-cols-6 px-6">
         <div className="col-span-2 mb-8 lg:mb-0">
           <div className="flex flex-col justify-start gap-3">
             <div className="flex justify-start gap-3 items-center">
@@ -141,8 +143,8 @@ export default function Footer() {
           </form>
         </div>
       </div>
-      <Separator className="my-12" />
-      <div className="flex flex-col justify-between gap-4 p-6 pt-0 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
+      <Separator className="relative z-10 my-12" />
+      <div className="relative z-10 flex flex-col justify-between gap-4 p-6 pt-0 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
         <p>{t('footer_copyright')}</p>
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
