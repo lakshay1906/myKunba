@@ -22,7 +22,7 @@ function findPayloadUIScssPaths() {
           if (existsSync(scssPath)) paths.push(scssPath)
         }
       }
-    } catch (e) { }
+    } catch (e) {}
   }
   return paths.length > 0 ? paths : [path.join(__dirname, 'node_modules/@payloadcms/ui/dist/scss')]
 }
@@ -75,8 +75,7 @@ const nextConfig = {
   ...(process.env.DOCKER_BUILD === '1' ? { output: 'standalone' } : {}),
   compiler: {
     // Keep console.error / console.warn in production so API failures show in `docker logs`
-    removeConsole:
-      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   webpack: (config, { webpack }) => {
     config.plugins.push(
@@ -90,14 +89,31 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: process.env.CLOUDFLARE_HOSTNAME,
-      },
-    ],
+    remotePatterns:
+      process.env.NODE_ENV === 'development'
+        ? [
+            {
+              protocol: 'https',
+              hostname: '**', // This allows all HTTPS domains
+            },
+            {
+              protocol: 'http',
+              hostname: '**', // This allows all HTTP domains (optional)
+            },
+          ]
+        : [
+            {
+              protocol: 'https',
+              hostname: process.env.CLOUDFLARE_HOSTNAME,
+            },
+            {
+              protocol: 'https',
+              hostname: 'mykunba.org',
+            },
+          ],
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     dangerouslyAllowSVG: true,
   },
   experimental: {

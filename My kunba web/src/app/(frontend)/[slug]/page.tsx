@@ -263,7 +263,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         />
       )}
       <main className="container mx-auto px-3">
-        <div className="flex flex-col lg:flex-row gap-8 py-4">
+        <div className="flex flex-col items-stretch gap-8 py-4 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
             <BlogContent
               blog={

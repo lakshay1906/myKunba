@@ -10,7 +10,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel'
-import { Clock } from 'lucide-react'
+import { BadgeCheck, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 interface Author {
@@ -205,17 +205,17 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                             </span>
                             {blog.author.verified && (
                               <span className="text-blue-300" title="Verified">
-                                ✓
+                                <BadgeCheck className="size-4 text-[#007BFF]" />
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {/* Divider */}
-                        {/* <span className="text-white/40">•</span> */}
+                        {/* // Divider
+                        <span className="text-white/40">•</span>
 
-                        {/* Reading Time */}
-                        {/* <div className="flex items-center gap-1 text-sm text-white/80">
+                        // Reading Time
+                        <div className="flex items-center gap-1 text-sm text-white/80">
                           <Clock size={16} />
                           <span>{getReadingTime(blog.excerpt)} min read</span>
                         </div> */}

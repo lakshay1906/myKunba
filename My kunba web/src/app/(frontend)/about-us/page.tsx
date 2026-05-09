@@ -103,7 +103,7 @@ export default function About() {
           </p>
         </section>
 
-        <section className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
+        {/* <section className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold mb-6">Our Team</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -143,7 +143,7 @@ export default function About() {
               </div>
             ))}
           </div>
-        </section>
+        </section> */}
 
         <section>
           <h2 className="text-2xl font-bold mb-6">Our Values</h2>

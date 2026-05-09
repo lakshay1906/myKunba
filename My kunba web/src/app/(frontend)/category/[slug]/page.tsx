@@ -7,6 +7,7 @@ import { SEO_LOCALES, HREFLANG_CODES } from '@/lib/i18n/seo'
 import { parseLocaleFromHeader } from '@/lib/i18n/translations'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
+import { AdBanner } from '@/components/AdBanner'
 
 // Generate metadata for category pages (Programmatic SEO); slug is localized (e.g. health, swasthya)
 export async function generateMetadata({
@@ -58,8 +59,17 @@ export async function generateMetadata({
       description: `Explore all blog posts in the ${categoryName} category.`,
       robots: { index: true, follow: true },
       keywords: [categoryName, 'blog', 'articles', 'category'],
-      openGraph: { title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.`, url: categoryUrl, type: 'website' },
-      twitter: { card: 'summary', title: `${categoryName} - Blog Posts | My Kunba`, description: `Explore all blog posts in the ${categoryName} category.` },
+      openGraph: {
+        title: `${categoryName} - Blog Posts | My Kunba`,
+        description: `Explore all blog posts in the ${categoryName} category.`,
+        url: categoryUrl,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary',
+        title: `${categoryName} - Blog Posts | My Kunba`,
+        description: `Explore all blog posts in the ${categoryName} category.`,
+      },
       alternates: { canonical: categoryUrl, languages },
     }
   } catch {
@@ -118,6 +128,8 @@ export default async function CategoryPage({
     const siteUrl = getPublicUrl()
     const categoryPageUrl = `${siteUrl}/category/${slug}`
 
+    const horizontalAdSlot = process.env.NEXT_PUBLIC_ADS_DISPLAY_HORIZONTAL ?? ''
+
     const collectionPageSchema = {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
@@ -127,15 +139,16 @@ export default async function CategoryPage({
       mainEntity: {
         '@type': 'ItemList',
         numberOfItems: posts.totalDocs || 0,
-        itemListElement: posts.docs?.slice(0, 10).map((post: { title: string; slug: string }, index: number) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          item: {
-            '@type': 'BlogPosting',
-            headline: post.title,
-            url: `${siteUrl}/${post.slug}`,
-          },
-        })) || [],
+        itemListElement:
+          posts.docs?.slice(0, 10).map((post: { title: string; slug: string }, index: number) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@type': 'BlogPosting',
+              headline: post.title,
+              url: `${siteUrl}/${post.slug}`,
+            },
+          })) || [],
       },
     }
 
@@ -175,6 +188,16 @@ export default async function CategoryPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <div className="container mx-auto px-4 py-8">
+          {horizontalAdSlot ? (
+            <div className="container mx-auto px-4 mb-6">
+              <AdBanner
+                dataAdSlot={horizontalAdSlot}
+                dataAdFormat="fluid"
+                className="w-full"
+                minHeight={120}
+              />
+            </div>
+          ) : null}
           <h1 className="text-4xl font-bold mb-2">{categoryName}</h1>
           <p className="text-muted-foreground mb-8">
             {posts.totalDocs || 0} {posts.totalDocs === 1 ? 'article' : 'articles'} in this category
@@ -185,6 +208,7 @@ export default async function CategoryPage({
             initialSelectedCategory={categoryId}
             total={posts.totalDocs || 0}
             limit={limit}
+            titleRequired={false}
           />
         </div>
       </>
@@ -193,4 +217,3 @@ export default async function CategoryPage({
     notFound()
   }
 }
-
