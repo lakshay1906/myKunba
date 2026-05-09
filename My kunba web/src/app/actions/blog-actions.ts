@@ -41,6 +41,7 @@ export async function fetchBlogPostBySlugInternal(
         updatedAt: true,
         content: true,
         commentsEnabled: true,
+        disclaimer: true,
         metaTitle: true,
         metaDescription: true,
         focusKeyword: true,
@@ -97,7 +98,7 @@ export interface FeaturedBlog {
 }
 
 /**
- * Fetch featured blogs (blogs with isFeatured: true)
+ * Fetch latest blogs for homepage featured carousel
  * Only returns necessary fields to reduce bandwidth
  */
 export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
@@ -105,9 +106,6 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
     const result = await payload.find({
       collection: 'posts',
       where: {
-        isFeatured: {
-          equals: true,
-        },
         deleted_at: {
           equals: null,
         },
@@ -125,8 +123,8 @@ export async function fetchFeaturedBlogs(): Promise<FeaturedBlog[]> {
         author: true,
       },
       depth: 1, // Only populate author relationship
-      sort: '-publishDate', // Latest first
-      limit: 10, // Limit to 10 featured blogs
+      sort: '-updatedAt',
+      limit: 10,
       overrideAccess: true,
     })
 

@@ -8,6 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
 
@@ -20,11 +21,16 @@ export function NavMain({
     icon?: LucideIcon
   }[]
 }) {
+  const { isMobile, setOpenMobile } = useSidebar()
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          <Link href="/dashboard/blog/create">
+          <Link href="/dashboard/blog/create" onClick={closeOnMobile}>
             <SidebarMenuItem className="flex items-center gap-2">
               <SidebarMenuButton
                 tooltip="Quick Create"
@@ -46,7 +52,7 @@ export function NavMain({
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => (
-            <Link href={item.url} key={item.title}>
+            <Link href={item.url} key={item.title} onClick={closeOnMobile}>
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton tooltip={item.title}>
                   {item.icon && <item.icon />}

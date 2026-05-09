@@ -102,13 +102,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/scripts ./scripts
+# Source tree needed so `payload migrate` can load payload.config.ts + migrations at container boot.
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install pg@8 && \
   mkdir -p /app/vendor && cp -r /tmp/pg-install/node_modules/* /app/vendor/ && rm -rf /tmp/pg-install
 
 ENV NODE_PATH=/app/vendor
 
-RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor package.json package-lock.json 2>/dev/null || true
+RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor src tsconfig.json package.json package-lock.json 2>/dev/null || true
 
 USER nextjs
 

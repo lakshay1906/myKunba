@@ -127,7 +127,7 @@ export default function EditBlogPage({
     metaTitle: string
     metaDescription: string
     commentsEnabled: boolean
-    isFeatured: boolean
+    disclaimer: string
     focusKeyword: string
     imageAltText: string
     externalLinks: string
@@ -274,7 +274,7 @@ export default function EditBlogPage({
         metaTitle: (blogData.metaTitle ?? '').toString(),
         metaDescription: (blogData.metaDescription ?? '').toString(),
         commentsEnabled: blogData.commentsEnabled !== false,
-        isFeatured: blogData.isFeatured === true,
+        disclaimer: (blogData.disclaimer ?? '').toString(),
         focusKeyword: (blogData.focusKeyword ?? '').toString(),
         imageAltText: (blogData.imageAltText ?? blogData.title ?? '').toString(),
         externalLinks: JSON.stringify(blogData.externalLinks ?? []),
@@ -536,7 +536,7 @@ export default function EditBlogPage({
           metaTitle: (blog.metaTitle ?? '').toString(),
           metaDescription: (blog.metaDescription ?? '').toString(),
           commentsEnabled: blog.commentsEnabled !== false,
-          isFeatured: blog.isFeatured === true,
+          disclaimer: (blog.disclaimer ?? '').toString(),
           focusKeyword: (blog.focusKeyword ?? '').toString(),
           imageAltText: (imageUploadData.alt ?? '').toString(),
           externalLinks: JSON.stringify(blog.externalLinks ?? []),
@@ -556,7 +556,7 @@ export default function EditBlogPage({
           initial.metaTitle === current.metaTitle &&
           initial.metaDescription === current.metaDescription &&
           initial.commentsEnabled === current.commentsEnabled &&
-          initial.isFeatured === current.isFeatured &&
+          initial.disclaimer === current.disclaimer &&
           initial.focusKeyword === current.focusKeyword &&
           initial.imageAltText === current.imageAltText &&
           initial.externalLinks === current.externalLinks &&
@@ -686,7 +686,7 @@ export default function EditBlogPage({
         metaTitle: blog.metaTitle || '',
         metaDescription: blog.metaDescription || '',
         commentsEnabled: blog.commentsEnabled !== false,
-        isFeatured: blog.isFeatured === true,
+        disclaimer: (blog.disclaimer ?? '').toString(),
         focusKeyword: blog.focusKeyword || '',
         imageAltText: imageUploadData.alt || '',
         externalLinks: blog.externalLinks || [],
@@ -1403,17 +1403,15 @@ export default function EditBlogPage({
                     onCheckedChange={(checked) => setBlog({ ...blog, commentsEnabled: checked })}
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="featured">Featured Post</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Mark this post as featured on your blog
-                    </p>
-                  </div>
-                  <Switch
-                    id="featured"
-                    checked={blog.isFeatured === true}
-                    onCheckedChange={(checked) => setBlog({ ...blog, isFeatured: checked })}
+                <div className="space-y-2">
+                  <Label htmlFor="disclaimer">Disclaimer</Label>
+                  <Textarea
+                    id="disclaimer"
+                    name="disclaimer"
+                    value={blog.disclaimer ?? ''}
+                    onChange={handleInputChange}
+                    placeholder="Optional disclaimer shown on the blog detail page."
+                    rows={3}
                   />
                 </div>
               </div>

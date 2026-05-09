@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Docker entrypoint: wait for PostgreSQL, run i18n migrations, then start the app.
+ * Docker entrypoint: wait for PostgreSQL, run Payload DB migrations, SQL patches, then start the app.
  * Usage: used as CMD in Dockerfile (see I18N_MIGRATIONS.md).
  *
- * Requires: DATABASE_URI in env.
- * Optional: MIGRATE_SKIP=1 to skip migration (e.g. for local dev).
+ * Requires: DATABASE_URI, PAYLOAD_SECRET (for `payload migrate`).
+ * Optional: MIGRATE_SKIP=1 skips Payload migrate + SQL migrations (e.g. local dev).
  *          WAIT_FOR_DB_MAX=60 (seconds to wait for DB, default 60).
  */
 
@@ -37,21 +37,42 @@ async function waitForDb() {
   process.exit(1)
 }
 
-async function runMigration() {
+/** Payload/Drizzle migrations from src/migrations (registered in payload.config). */
+async function runPayloadMigrate() {
+  if (process.env.MIGRATE_SKIP === '1') {
+    return
+  }
+  try {
+    const { execSync } = await import('child_process')
+    execSync('npx --yes payload migrate', {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        NODE_OPTIONS: process.env.NODE_OPTIONS || '--no-deprecation',
+      },
+    })
+  } catch {
+    process.exit(1)
+  }
+}
+
+async function runSqlPatches() {
   if (process.env.MIGRATE_SKIP === '1') {
     return
   }
   try {
     const { execSync } = await import('child_process')
     execSync('node scripts/run-migration.js', { stdio: 'inherit', cwd: process.cwd() })
-  } catch (err) {
+  } catch {
     process.exit(1)
   }
 }
 
 async function main() {
   await waitForDb()
-  await runMigration()
+  await runPayloadMigrate()
+  await runSqlPatches()
 
   const server = spawn('node', ['server.js'], {
     stdio: 'inherit',

@@ -287,6 +287,7 @@ export const posts = pgTable(
     content: jsonb('content'),
     commentsEnabled: boolean('comments_enabled').default(true),
     isFeatured: boolean('is_featured').default(false),
+    disclaimer: varchar('disclaimer'),
     media: varchar('media'),
     status: enum_posts_status('status'),
     publishDate: timestamp('publish_date', { mode: 'string', withTimezone: true, precision: 3 }),

@@ -115,6 +115,7 @@ type Blog = {
     slug: string
   }>
   tags: Array<{ id: number; name?: string; slug?: string }>
+  disclaimer?: string | null
 }
 
 type BlogContentProps = {
@@ -143,6 +144,7 @@ export default function BlogContent({
   relatedArticles = [],
 }: BlogContentProps) {
   const internalLinkPosts = useInternalLinkPosts(blog.internalLinks ?? [])
+  const [showDisclaimer, setShowDisclaimer] = useState(Boolean(blog.disclaimer?.trim()))
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -166,6 +168,21 @@ export default function BlogContent({
     <div className="max-w-[720px] mx-auto mt-4 md:mt-6 lg:mt-8">
       {/* Priority: Title, Cover Image, Content - load immediately */}
       <h1 className="text-4xl font-bold mb-4 text-foreground">{blog.title}</h1>
+
+      {showDisclaimer && blog.disclaimer?.trim() ? (
+        <div className="mb-4 flex sm:flex-row flex-col sm:items-center justify-between gap-2 p-4 border rounded-md bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-amber-800 dark:text-amber-200">{blog.disclaimer}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDisclaimer(false)}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-amber-300 px-3 text-sm text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+          >
+            Understood
+          </button>
+        </div>
+      ) : null}
 
       {BELOW_TITLE_AD_SLOT ? (
         <div className="mb-4 flex w-full justify-center">
