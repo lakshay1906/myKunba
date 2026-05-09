@@ -105,6 +105,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # the full tree (e.g. @payloadcms/db-postgres). Overlay builder deps after standalone.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
+# Drop devDependencies + source maps — full install is huge and EC2 disk failed on docker load (no space).
+RUN npm install -g pnpm@9 \
+  && pnpm prune --prod \
+  && npm uninstall -g pnpm \
+  && find /app/node_modules -type f -name "*.map" -delete 2>/dev/null || true
 COPY --from=builder /app/scripts ./scripts
 # Source tree needed so `payload migrate` can load payload.config.ts + migrations at container boot.
 COPY --from=builder /app/src ./src
@@ -115,7 +121,7 @@ RUN mkdir -p /tmp/pg-install && cd /tmp/pg-install && npm init -y && npm install
 
 ENV NODE_PATH=/app/vendor
 
-RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor src tsconfig.json package.json node_modules 2>/dev/null || true
+RUN mkdir -p .next && chown -R nextjs:nodejs .next scripts vendor src tsconfig.json package.json pnpm-lock.yaml node_modules 2>/dev/null || true
 
 USER nextjs
 

@@ -90,6 +90,9 @@ jobs:
             fi
 
             # 3. Load and Start NEW container
+            echo "Freeing Docker disk space before loading new image..."
+            docker image prune -af || true
+
             echo "Loading new image..."
             docker load < /home/ec2-user/mykunba.tar
             
