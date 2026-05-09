@@ -44,7 +44,7 @@ async function runPayloadMigrate() {
   }
   try {
     const { execSync } = await import('child_process')
-    execSync('npx --yes payload migrate', {
+    execSync('node ./node_modules/payload/bin.js migrate', {
       stdio: 'inherit',
       cwd: process.cwd(),
       env: {

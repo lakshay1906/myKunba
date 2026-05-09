@@ -15,7 +15,7 @@ const root = join(__dirname, '..')
 
 if (process.env.MIGRATE_SKIP !== '1') {
   try {
-    execSync('npx --yes payload migrate', {
+    execSync('node ./node_modules/payload/bin.js migrate', {
       stdio: 'inherit',
       cwd: root,
       env: {
