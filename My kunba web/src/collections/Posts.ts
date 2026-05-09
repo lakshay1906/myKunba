@@ -36,9 +36,11 @@ export const Posts: CollectionConfig = {
       defaultValue: true,
     },
     {
-      name: 'isFeatured',
-      type: 'checkbox',
-      defaultValue: false,
+      name: 'disclaimer',
+      type: 'textarea',
+      admin: {
+        description: 'Optional disclaimer shown to readers before they continue.',
+      },
     },
     // OLD: Media relationship field (stored in database) - COMMENTED OUT
     // {

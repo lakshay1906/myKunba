@@ -104,7 +104,7 @@ const formSchema = z.object({
     )
     .optional(),
   commentsEnabled: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
+  disclaimer: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -182,7 +182,7 @@ export function CreatePostForm() {
       faq: [],
       status: 'draft',
       commentsEnabled: true,
-      isFeatured: false,
+      disclaimer: '',
     },
   })
 
@@ -319,7 +319,7 @@ export function CreatePostForm() {
             faq: normalizeFaq(draftData.faq),
             status: draftData.status || 'draft',
             commentsEnabled: draftData.commentsEnabled !== false,
-            isFeatured: draftData.isFeatured === true,
+            disclaimer: draftData.disclaimer || '',
           },
           { keepDefaultValues: false },
         )
@@ -391,7 +391,7 @@ export function CreatePostForm() {
           focusKeyword: formValues.focusKeyword?.trim() || undefined,
           imageAltText: (imageUploadData.alt || formValues.imageAltText)?.trim() || undefined,
           commentsEnabled: formValues.commentsEnabled,
-          isFeatured: formValues.isFeatured,
+          disclaimer: formValues.disclaimer?.trim() || undefined,
           externalLinks:
             formValues.externalLinks?.length &&
             formValues.externalLinks.some((l) => l?.url?.trim() || l?.anchorText?.trim())
@@ -726,7 +726,7 @@ export function CreatePostForm() {
           faq: [],
           status: 'draft',
           commentsEnabled: true,
-          isFeatured: false,
+          disclaimer: '',
         },
         { keepDefaultValues: false },
       )
@@ -947,7 +947,7 @@ export function CreatePostForm() {
               data.internalLinks && data.internalLinks.length > 0 ? data.internalLinks : undefined,
             faq: data.faq && data.faq.length > 0 ? data.faq : undefined,
             commentsEnabled: data.commentsEnabled !== false,
-            isFeatured: data.isFeatured === true,
+            disclaimer: data.disclaimer?.trim() || undefined,
             seoScore: seoScoreResult?.score,
           }),
         })
@@ -1003,7 +1003,7 @@ export function CreatePostForm() {
               faq: [],
               status: 'draft',
               commentsEnabled: true,
-              isFeatured: false,
+              disclaimer: '',
             },
             { keepDefaultValues: false },
           )
@@ -1912,7 +1912,7 @@ export function CreatePostForm() {
                     </div>
                   )}
 
-                  {/* Allow Comments & Featured Post */}
+                  {/* Allow Comments */}
                   <div className="space-y-4">
                     <FormField
                       control={form.control}
@@ -1937,22 +1937,21 @@ export function CreatePostForm() {
                     />
                     <FormField
                       control={form.control}
-                      name="isFeatured"
+                      name="disclaimer"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Featured Post</FormLabel>
-                            <FormDescription>
-                              Mark this post as featured on your blog
-                            </FormDescription>
-                          </div>
+                        <FormItem>
+                          <FormLabel>Disclaimer</FormLabel>
                           <FormControl>
-                            <Switch
-                              checked={field.value === true}
-                              onCheckedChange={field.onChange}
+                            <Textarea
+                              placeholder="Optional disclaimer shown on the blog detail page."
+                              {...field}
                               disabled={isLoading}
                             />
                           </FormControl>
+                          <FormDescription>
+                            If provided, readers must acknowledge this message before viewing content.
+                          </FormDescription>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />

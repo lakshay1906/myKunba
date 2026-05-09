@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
             metaTitle: true,
             metaDescription: true,
             commentsEnabled: true,
-            isFeatured: true,
+            disclaimer: true,
             author: true,
             categories: true,
             tags: true,
@@ -195,6 +195,7 @@ export async function POST(req: NextRequest) {
       externalLinks,
       internalLinks,
       faq,
+      disclaimer,
       seoScore: clientSeoScore,
     } = await req.json()
 
@@ -313,6 +314,9 @@ export async function POST(req: NextRequest) {
     if (internalLinksStr != null) postData.internalLinks = internalLinksStr
     const faqStr = stringifyFaq(faq)
     if (faqStr != null) postData.faq = faqStr
+    if (disclaimer !== undefined) {
+      postData.disclaimer = typeof disclaimer === 'string' ? disclaimer.trim() : null
+    }
 
     const savedSeoScore =
       typeof clientSeoScore === 'number' && clientSeoScore >= 0 && clientSeoScore <= 100
@@ -436,7 +440,7 @@ export async function PUT(req: NextRequest) {
       categories,
       tags,
       commentsEnabled,
-      isFeatured,
+      disclaimer,
       focusKeyword,
       imageAltText,
       externalLinks,
@@ -512,7 +516,12 @@ export async function PUT(req: NextRequest) {
       metaDescription: finalMetaDescription,
       metaTitle: finalMetaTitle,
       commentsEnabled: commentsEnabled !== undefined ? commentsEnabled : blogPost.commentsEnabled,
-      isFeatured: isFeatured !== undefined ? isFeatured : blogPost.isFeatured,
+      disclaimer:
+        disclaimer !== undefined
+          ? typeof disclaimer === 'string'
+            ? disclaimer.trim()
+            : null
+          : blogPost.disclaimer,
     }
 
     // Only update publishDate if provided

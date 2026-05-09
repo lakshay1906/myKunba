@@ -28,6 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/lib/context/store'
@@ -36,6 +37,7 @@ import Link from 'next/link'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { loginDetail } = useAppStore()
+  const { isMobile, setOpenMobile } = useSidebar()
   const [userData, setUserData] = useState({
     name: 'Demo User',
     email: 'demo_user@gmail.com',
@@ -158,7 +160,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="">
-              <Link href="#">
+              <Link
+                href="#"
+                onClick={() => {
+                  if (isMobile) setOpenMobile(false)
+                }}
+              >
                 <Image src="/logo.svg" alt="My Kunba" width={32} height={32} />
                 <span className="text-base font-semibold">My Kunba</span>
               </Link>

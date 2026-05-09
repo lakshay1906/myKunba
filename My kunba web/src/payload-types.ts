@@ -272,7 +272,7 @@ export interface Post {
     [k: string]: unknown;
   } | null;
   commentsEnabled?: boolean | null;
-  isFeatured?: boolean | null;
+  disclaimer?: string | null;
   /**
    * URL of the cover image stored in Cloudflare R2
    */
@@ -731,7 +731,7 @@ export interface PostsSelect<T extends boolean = true> {
   excerpt?: T;
   content?: T;
   commentsEnabled?: T;
-  isFeatured?: T;
+  disclaimer?: T;
   media?: T;
   status?: T;
   publishDate?: T;

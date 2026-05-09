@@ -133,7 +133,7 @@ export async function fetchDashboardBlogBySlug(slug: string) {
         internalLinks: true,
         faq: true,
         commentsEnabled: true,
-        isFeatured: true,
+        disclaimer: true,
         author: true,
         categories: true,
         tags: true,

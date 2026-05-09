@@ -212,7 +212,7 @@ export function BlogCarousel({ blogs }: BlogCarouselProps) {
                         </div>
 
                         {/* Divider */}
-                        <span className="text-white/40">•</span>
+                        {/* <span className="text-white/40">•</span> */}
 
                         {/* Reading Time */}
                         {/* <div className="flex items-center gap-1 text-sm text-white/80">

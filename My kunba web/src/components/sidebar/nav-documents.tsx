@@ -7,6 +7,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
 
@@ -19,6 +20,8 @@ export function NavDocuments({
     icon: LucideIcon
   }[]
 }) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="text-sm">Documents</SidebarGroupLabel>
@@ -26,7 +29,12 @@ export function NavDocuments({
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild tooltip={item.name}>
-              <Link href={item.url}>
+              <Link
+                href={item.url}
+                onClick={() => {
+                  if (isMobile) setOpenMobile(false)
+                }}
+              >
                 <item.icon />
                 <span>{item.name}</span>
               </Link>

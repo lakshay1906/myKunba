@@ -57,7 +57,7 @@ export interface BlogDraftData {
   tags?: number[]
   coverImage?: string
   commentsEnabled?: boolean
-  isFeatured?: boolean
+  disclaimer?: string
   // Metadata properties (not part of actual draft data)
   hasIndexedDBData?: boolean
   timestamp?: number
@@ -288,6 +288,7 @@ export async function loadDraftFromCookie(): Promise<BlogDraftData | null> {
           parsed.excerpt ||
           parsed.metaTitle ||
           parsed.metaDescription ||
+          parsed.disclaimer ||
           parsed.focusKeyword ||
           parsed.imageAltText ||
           (parsed.externalLinks && parsed.externalLinks.length > 0) ||
@@ -578,6 +579,7 @@ export async function hasDraftDataAsync(): Promise<boolean> {
           parsed.excerpt ||
           parsed.metaTitle ||
           parsed.metaDescription ||
+          parsed.disclaimer ||
           parsed.focusKeyword ||
           parsed.imageAltText ||
           (parsed.externalLinks && parsed.externalLinks.length > 0) ||

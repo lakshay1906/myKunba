@@ -318,32 +318,36 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
         }
 
         case 'a': {
-          // Editor emits <a href="…" target="_blank" rel="…">text</a>. Preserve href, and map
-          // target="_blank" → newTab so the Lexical renderer can open external links correctly.
-          const href = element.getAttribute('href') || ''
-          const target = element.getAttribute('target') || ''
-          const rel = element.getAttribute('rel') || ''
+          const href = (element.getAttribute('href') || '').trim()
+          const targetAttr = (element.getAttribute('target') || '').toLowerCase()
+          const relAttr = (element.getAttribute('rel') || '').toLowerCase()
+          const newTab =
+            targetAttr === '_blank' ||
+            relAttr.includes('noopener') ||
+            relAttr.includes('noreferrer')
 
-          // Skip anchors with no href and no meaningful children.
-          const hasTextChild = elementChildren.some(
-            (c) => c.type === 'text' && (c as LexicalTextNode).text?.trim().length > 0,
-          )
-          if (!href && !hasTextChild) break
+          let linkChildren = elementChildren
+          if (linkChildren.length === 0) {
+            const t = element.text?.trim() ?? ''
+            linkChildren = t ? [createTextNode(t, inheritedFormat)] : href ? [createTextNode(href, inheritedFormat)] : []
+          }
 
+          const url = href || '#'
           result.push({
             type: 'link',
             version: 1,
-            children:
-              elementChildren.length > 0
-                ? elementChildren
-                : [createTextNode(href, inheritedFormat)],
+            children: linkChildren.length > 0 ? linkChildren : [createTextNode(url, inheritedFormat)],
             direction: 'ltr',
             format: '',
             indent: 0,
-            url: href,
-            newTab: target === '_blank',
-            rel: rel || undefined,
-          } as LexicalElementNode & { url: string; newTab: boolean; rel?: string })
+            url,
+            newTab,
+            fields: {
+              linkType: 'custom',
+              url,
+              newTab,
+            },
+          } as LexicalElementNode)
           break
         }
 
@@ -419,42 +423,6 @@ export function convertHtmlToLexicalWithParser(html: string): PayloadLexicalCont
             })
           }
           break
-
-        case 'a': {
-          // Preserve hyperlinks (Tiptap / HTML) as Lexical "link" nodes for PayloadRichTextRenderer
-          const href = (element.getAttribute('href') || '').trim()
-          const targetAttr = (element.getAttribute('target') || '').toLowerCase()
-          const relAttr = (element.getAttribute('rel') || '').toLowerCase()
-          const newTab =
-            targetAttr === '_blank' ||
-            relAttr.includes('noopener') ||
-            relAttr.includes('noreferrer')
-
-          let linkChildren = elementChildren
-          if (linkChildren.length === 0) {
-            const t = element.text?.trim() ?? ''
-            linkChildren = t ? [createTextNode(t)] : href ? [createTextNode(href)] : []
-          }
-
-          const url = href || '#'
-          result.push({
-            type: 'link',
-            version: 1,
-            children: linkChildren.length > 0 ? linkChildren : [createTextNode(url)],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            url,
-            newTab,
-            // Payload Lexical often stores link target in `fields` — mirror for admin / consistency
-            fields: {
-              linkType: 'custom',
-              url,
-              newTab,
-            },
-          } as LexicalElementNode)
-          break
-        }
 
         case 'div':
         case 'figure':
