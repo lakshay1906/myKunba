@@ -33,7 +33,7 @@ sudo mv /var/lib/pgsql/mykunba_backup.sql.gz /home/ec2-user/
 sudo chown ec2-user:ec2-user /home/ec2-user/mykunba_backup.sql.gz
 ```
 
-### SINGLE COMMAND FOR ALL THE ABOVE IN PLACE OF ALL THE ABOVE COMMANDS
+### ✅ SINGLE COMMAND FOR ALL THE ABOVE IN PLACE OF ALL THE ABOVE COMMANDS
 
 ```
 sudo -u postgres pg_dump mykunba | gzip > ~/mykunba_backup.sql.gz
@@ -47,7 +47,7 @@ ls -lh /home/ec2-user/mykunba_backup.sql.gz
 
 #### Move out of the AWS linux CMD or open a new powershell tab. Because the below command will run on local system.
 
-### 7. ✅ DOWNLOAD TO LOCAL SYSTEM (FINAL STEP)
+### 7. DOWNLOAD TO LOCAL SYSTEM (FINAL STEP)
 
 ```
 scp -i "C:\Users\lbhat\.ssh\mykunba.pem" ec2-user@3.6.239.45:/home/ec2-user/mykunba_backup.sql.gz .
