@@ -35,6 +35,18 @@ export const Posts: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
     },
+    /**
+     * Legacy DB column — kept for schema parity and zero-downtime deploys.
+     * Homepage carousel uses latest posts by `updatedAt`, not this flag.
+     */
+    {
+      name: 'isFeatured',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        hidden: true,
+      },
+    },
     {
       name: 'disclaimer',
       type: 'textarea',
