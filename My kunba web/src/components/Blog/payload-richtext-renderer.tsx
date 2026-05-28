@@ -245,14 +245,14 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
         (c) => (c as PayloadElementNode).type === 'tableHeader',
       )
       return (
-        <div className="my-6 w-full overflow-x-auto rounded-lg border">
-          <Table className="min-w-[400px]">
+        <div className="my-6 w-full max-w-full overflow-x-auto rounded-lg border not-prose">
+          <Table className="blog-rich-text-table w-max min-w-full table-auto">
             {firstRowHasHeader && firstRow && (
               <TableHeader>
                 <TableRow>
                   {firstRow.children?.map((cell, i) => (
-                    <TableHead key={i} className="px-4 py-2 font-medium max-w-[200px]">
-                      <div className="line-clamp-2 wrap-break-word">
+                    <TableHead key={i} className="px-4 py-2 font-medium">
+                      <div className="blog-rich-text-table__cell">
                         {(cell as PayloadElementNode).children?.map((child, j) => (
                           <RenderNode key={j} node={child} />
                         ))}
@@ -269,8 +269,8 @@ function RenderNode({ node }: { node: PayloadElementNode | PayloadTextNode }) {
                 return (
                   <TableRow key={rowIdx}>
                     {cells.map((cell, cellIdx) => (
-                      <TableCell key={cellIdx} className="px-4 py-2 max-w-[200px]">
-                        <div className="line-clamp-2 wrap-break-word">
+                      <TableCell key={cellIdx} className="px-4 py-2">
+                        <div className="blog-rich-text-table__cell">
                           {(cell as PayloadElementNode).children?.map((child, j) => (
                             <RenderNode key={j} node={child} />
                           ))}

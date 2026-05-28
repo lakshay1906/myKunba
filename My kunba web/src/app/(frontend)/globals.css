@@ -201,4 +201,35 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
+
+/* Blog post rich-text tables: widen columns to fit content (max 2 lines), scroll horizontally */
+@layer components {
+  .blog-rich-text-table {
+    table-layout: auto;
+  }
+
+  .blog-rich-text-table :is(th, td) {
+    vertical-align: top;
+    max-width: none;
+  }
+
+  .blog-rich-text-table__cell {
+    display: block;
+    width: max-content;
+    min-width: 4rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .blog-rich-text-table__cell > * {
+    display: inline;
+    margin: 0;
+  }
+
+  .blog-rich-text-table__cell > *:not(:last-child)::after {
+    content: ' ';
+  }
+}
+
