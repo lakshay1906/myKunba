@@ -1,16 +1,17 @@
-import 'package:my_kunba/utils/api_function.dart';
 import '/auth/firebase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
+import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'welcome_page_model.dart';
 export 'welcome_page_model.dart';
-import 'package:my_kunba/utils/common_function.dart';
 
 class WelcomePageWidget extends StatefulWidget {
   const WelcomePageWidget({super.key});
@@ -22,11 +23,13 @@ class WelcomePageWidget extends StatefulWidget {
   State<WelcomePageWidget> createState() => _WelcomePageWidgetState();
 }
 
-class _WelcomePageWidgetState extends State<WelcomePageWidget> {
+class _WelcomePageWidgetState extends State<WelcomePageWidget>
+    with TickerProviderStateMixin {
   late WelcomePageModel _model;
-  final af = ApiFunction();
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  final animationsMap = <String, AnimationInfo>{};
 
   @override
   void initState() {
@@ -38,6 +41,21 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
 
     _model.passwordTextController ??= TextEditingController();
     _model.textFieldFocusNode2 ??= FocusNode();
+
+    animationsMap.addAll({
+      'buttonOnPageLoadAnimation': AnimationInfo(
+        trigger: AnimationTrigger.onPageLoad,
+        effectsBuilder: () => [
+          ScaleEffect(
+            curve: Curves.easeInOut,
+            delay: 0.0.ms,
+            duration: 600.0.ms,
+            begin: Offset(0.3, 0.3),
+            end: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    });
   }
 
   @override
@@ -49,28 +67,6 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final cf = CommonFunction();
-
-    Future<void> login(BaseAuthUser userData) async {
-      final token = await cf.getJWT(context, userData);
-      if (token == null) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text("You're not authorized to perform this action")),
-        );
-      } else {
-        final response = await af.loginIn(context, token);
-        if (response.statusCode == 200) {
-          context.goNamedAuth(HomePageWidget.routeName, context.mounted);
-        } else
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text("Log In failed!! Please try again later.. :)")),
-          );
-      }
-    }
-
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -117,9 +113,44 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                         if (user == null) {
                           return;
                         }
-                        login(user);
+                        _model.tokenResponse = await GetNewJwtTokenCall.call(
+                          email: currentUserEmail,
+                          uid: currentUserUid,
+                        );
+
+                        if ((_model.tokenResponse?.succeeded ?? true)) {
+                          FFAppState().jwtToken = getJsonField(
+                            (_model.tokenResponse?.jsonBody ?? ''),
+                            r'''$.token''',
+                          ).toString();
+                          safeSetState(() {});
+
+                          context.pushNamedAuth(
+                              HomePageWidget.routeName, context.mounted);
+                        } else {
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Authentication failed. Please try again.',
+                                style: TextStyle(
+                                  color:
+                                      FlutterFlowTheme.of(context).primaryText,
+                                ),
+                                textAlign: TextAlign.start,
+                              ),
+                              duration: Duration(milliseconds: 4000),
+                              backgroundColor:
+                                  FlutterFlowTheme.of(context).error,
+                            ),
+                          );
+                        }
+
+                        safeSetState(() {});
                       },
-                      text: 'Log In with Google',
+                      text: FFLocalizations.of(context).getText(
+                        '0eekuytv' /* Log In with Google */,
+                      ),
                       icon: FaIcon(
                         FontAwesomeIcons.google,
                         size: 28.0,
@@ -158,7 +189,8 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                         borderRadius: BorderRadius.circular(24.0),
                       ),
                       showLoadingIndicator: false,
-                    ),
+                    ).animateOnPageLoad(
+                        animationsMap['buttonOnPageLoadAnimation']!),
                   ),
                 if (responsiveVisibility(
                   context: context,
@@ -174,9 +206,13 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                         if (user == null) {
                           return;
                         }
-                        login(user);
+
+                        context.goNamedAuth(
+                            HomePageWidget.routeName, context.mounted);
                       },
-                      text: 'Log In with Google',
+                      text: FFLocalizations.of(context).getText(
+                        'krx1y413' /* Log In with Google */,
+                      ),
                       options: FFButtonOptions(
                         width: MediaQuery.sizeOf(context).width * 0.55,
                         height: 55.0,
@@ -213,7 +249,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                     ),
                   ),
                 Text(
-                  'OR',
+                  FFLocalizations.of(context).getText(
+                    '0v89s1hh' /* OR */,
+                  ),
                   style: FlutterFlowTheme.of(context).bodyMedium.override(
                         font: GoogleFonts.inter(
                           fontWeight: FontWeight.w500,
@@ -257,7 +295,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                          hintText: 'Email address',
+                          hintText: FFLocalizations.of(context).getText(
+                            '32nzxau3' /* Email address */,
+                          ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -359,7 +399,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                          hintText: 'Password',
+                          hintText: FFLocalizations.of(context).getText(
+                            'wwgqiu8r' /* Password */,
+                          ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -453,19 +495,21 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                         onPressed: () async {
                           GoRouter.of(context).prepareAuthEvent();
 
-                          final userData = await authManager.signInWithEmail(
+                          final user = await authManager.signInWithEmail(
                             context,
                             _model.emailTextController.text,
                             _model.passwordTextController.text,
                           );
-                          if (userData == null) {
+                          if (user == null) {
                             return;
                           }
 
-                          // Perform login
-                          login(userData);
+                          context.goNamedAuth(
+                              HomePageWidget.routeName, context.mounted);
                         },
-                        text: 'Submit',
+                        text: FFLocalizations.of(context).getText(
+                          'vgybaeun' /* Submit */,
+                        ),
                         options: FFButtonOptions(
                           width: MediaQuery.sizeOf(context).width * 0.8,
                           height: 40.0,
@@ -502,8 +546,7 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
             Align(
               alignment: AlignmentDirectional(0.0, 1.0),
               child: Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(
-                    0.0, 0.0, 0.0, MediaQuery.of(context).size.height * 0.045),
+                padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 55.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -532,7 +575,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                           );
                         },
                         child: Text(
-                          'Forgot Password',
+                          FFLocalizations.of(context).getText(
+                            '1xaedrvh' /* Forgot Password */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).bodyMedium.override(
                                     font: GoogleFonts.inter(
@@ -559,7 +604,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Don\'t have account? ',
+                              text: FFLocalizations.of(context).getText(
+                                'ug1qw0g2' /* Don't have an account?  */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -582,7 +629,9 @@ class _WelcomePageWidgetState extends State<WelcomePageWidget> {
                                   ),
                             ),
                             TextSpan(
-                              text: 'Sign Up',
+                              text: FFLocalizations.of(context).getText(
+                                'lslbn01j' /* Sign Up */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(

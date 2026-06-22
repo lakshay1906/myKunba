@@ -228,7 +228,7 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                         size: 20.0,
                       ),
                       onPressed: () async {
-                        context.safePop();
+                        context.pop();
                       },
                     ).animateOnPageLoad(
                         animationsMap['iconButtonOnPageLoadAnimation1']!),
@@ -295,7 +295,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Firenze - Giardino Bardini',
+                        FFLocalizations.of(context).getText(
+                          '077l4fnx' /* Firenze - Giardino Bardini */,
+                        ),
                         style:
                             FlutterFlowTheme.of(context).displaySmall.override(
                                   font: GoogleFonts.interTight(
@@ -326,7 +328,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '4 Night Stay',
+                                  FFLocalizations.of(context).getText(
+                                    '2tc4or4p' /* 4 Night Stay */,
+                                  ),
                                   style: FlutterFlowTheme.of(context)
                                       .headlineSmall
                                       .override(
@@ -371,7 +375,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                                         padding: EdgeInsetsDirectional.fromSTEB(
                                             8.0, 0.0, 0.0, 0.0),
                                         child: Text(
-                                          '4.7',
+                                          FFLocalizations.of(context).getText(
+                                            'gstzw5s3' /* 4.7 */,
+                                          ),
                                           style: FlutterFlowTheme.of(context)
                                               .bodySmall
                                               .override(
@@ -418,7 +424,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                                 padding: EdgeInsetsDirectional.fromSTEB(
                                     8.0, 0.0, 8.0, 0.0),
                                 child: Text(
-                                  '\$220 USD',
+                                  FFLocalizations.of(context).getText(
+                                    'guymz1qk' /* $220 USD */,
+                                  ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -453,7 +461,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                         padding:
                             EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 4.0),
                         child: Text(
-                          'Description',
+                          FFLocalizations.of(context).getText(
+                            '8mkr1o0u' /* Description */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).bodySmall.override(
                                     font: GoogleFonts.inter(
@@ -480,7 +490,9 @@ class _Details14DestinationWidgetState extends State<Details14DestinationWidget>
                         padding:
                             EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 24.0),
                         child: Text(
-                          'Non so se la bellezza salverà il mondo ma sicuramente aiuta. Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+                          FFLocalizations.of(context).getText(
+                            'ilz1bfww' /* Non so se la bellezza salverà ... */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
                                     font: GoogleFonts.readexPro(

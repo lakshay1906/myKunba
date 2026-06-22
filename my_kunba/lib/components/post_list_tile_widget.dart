@@ -8,7 +8,16 @@ import 'post_list_tile_model.dart';
 export 'post_list_tile_model.dart';
 
 class PostListTileWidget extends StatefulWidget {
-  const PostListTileWidget({super.key});
+  const PostListTileWidget({
+    super.key,
+    this.title,
+    this.description,
+    this.date,
+  });
+
+  final String? title;
+  final String? description;
+  final String? date;
 
   @override
   State<PostListTileWidget> createState() => _PostListTileWidgetState();
@@ -56,7 +65,10 @@ class _PostListTileWidgetState extends State<PostListTileWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'May 6',
+                  valueOrDefault<String>(
+                    widget.date,
+                    'May 30',
+                  ),
                   style: FlutterFlowTheme.of(context).bodyMedium.override(
                         font: GoogleFonts.inter(
                           fontWeight: FlutterFlowTheme.of(context)
@@ -97,7 +109,10 @@ class _PostListTileWidgetState extends State<PostListTileWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Mock Drills for war time Emergencies: Saving Lives ...',
+                        valueOrDefault<String>(
+                          widget.title,
+                          'Empty title',
+                        ),
                         style: FlutterFlowTheme.of(context).bodyMedium.override(
                               font: GoogleFonts.inter(
                                 fontWeight: FlutterFlowTheme.of(context)
@@ -118,7 +133,10 @@ class _PostListTileWidgetState extends State<PostListTileWidget> {
                             ),
                       ),
                       Text(
-                        'Learn how wartime mock dri...',
+                        valueOrDefault<String>(
+                          widget.description,
+                          'empty description',
+                        ),
                         style: FlutterFlowTheme.of(context).bodyMedium.override(
                               font: GoogleFonts.inter(
                                 fontWeight: FlutterFlowTheme.of(context)
@@ -141,13 +159,15 @@ class _PostListTileWidgetState extends State<PostListTileWidget> {
                     ].divide(SizedBox(height: 2.0)),
                   ),
                 ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    'https://picsum.photos/seed/729/600',
-                    width: 58.0,
-                    height: 58.0,
-                    fit: BoxFit.cover,
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      'https://picsum.photos/seed/729/600',
+                      width: 58.0,
+                      height: 58.0,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ],

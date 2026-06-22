@@ -62,11 +62,13 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
               size: 30.0,
             ),
             onPressed: () async {
-              context.safePop();
+              context.pop();
             },
           ),
           title: Text(
-            'Comment',
+            FFLocalizations.of(context).getText(
+              'e9vftgva' /* Comment */,
+            ),
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                   font: GoogleFonts.interTight(
                     fontWeight:
@@ -139,7 +141,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'SuperPH26',
+                                      FFLocalizations.of(context).getText(
+                                        'zwxv5epo' /* SuperPH26 */,
+                                      ),
                                       style: FlutterFlowTheme.of(context)
                                           .headlineSmall
                                           .override(
@@ -162,7 +166,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                           ),
                                     ),
                                     Text(
-                                      'on Mock Drills for war tim...',
+                                      FFLocalizations.of(context).getText(
+                                        'matyct2j' /* on Mock Drills for war tim... */,
+                                      ),
                                       style: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .override(
@@ -205,7 +211,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                         size: 15.0,
                                       ),
                                       Text(
-                                        '14 hr. ago',
+                                        FFLocalizations.of(context).getText(
+                                          'ug18kclm' /* 14 hr. ago */,
+                                        ),
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -234,7 +242,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                     ].divide(SizedBox(width: 4.0)),
                                   ),
                                   Text(
-                                    'Pending',
+                                    FFLocalizations.of(context).getText(
+                                      '8l1qxme1' /* Pending */,
+                                    ),
                                     style: FlutterFlowTheme.of(context)
                                         .bodyMedium
                                         .override(
@@ -269,7 +279,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 0.0, 9.0, 0.0, 4.0),
                             child: Text(
-                              'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.',
+                              FFLocalizations.of(context).getText(
+                                'l6ngohac' /* Contrary to popular belief, Lo... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .labelMedium
                                   .override(
@@ -311,7 +323,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                       size: 24.0,
                                     ),
                                     Text(
-                                      'Approve',
+                                      FFLocalizations.of(context).getText(
+                                        '5j1zojxz' /* Approve */,
+                                      ),
                                       style: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .override(
@@ -349,7 +363,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                       size: 24.0,
                                     ),
                                     Text(
-                                      'Spam',
+                                      FFLocalizations.of(context).getText(
+                                        'cawz8n03' /* Spam */,
+                                      ),
                                       style: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .override(
@@ -387,7 +403,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                                       size: 24.0,
                                     ),
                                     Text(
-                                      'More',
+                                      FFLocalizations.of(context).getText(
+                                        'gchsyfse' /* More */,
+                                      ),
                                       style: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .override(
@@ -439,7 +457,9 @@ class _ReplyToCommentWidgetState extends State<ReplyToCommentWidget> {
                             obscureText: false,
                             decoration: InputDecoration(
                               isDense: true,
-                              hintText: 'Reply to comment....',
+                              hintText: FFLocalizations.of(context).getText(
+                                '6knnrdmg' /* Reply to comment.... */,
+                              ),
                               hintStyle: FlutterFlowTheme.of(context)
                                   .labelMedium
                                   .override(

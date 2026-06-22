@@ -1,6 +1,3 @@
-import 'package:flutter_quill/flutter_quill.dart';
-import 'package:my_kunba/pages/create_blog_settings/create_blog_settings_widget.dart';
-
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -25,19 +22,17 @@ class _CreateBlogContentWidgetState extends State<CreateBlogContentWidget> {
   late CreateBlogContentModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  QuillController _quillController = QuillController.basic();
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => CreateBlogContentModel());
-    _model.quillFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _model.dispose();
-    _quillController.dispose();
+
     super.dispose();
   }
 
@@ -65,11 +60,13 @@ class _CreateBlogContentWidgetState extends State<CreateBlogContentWidget> {
               size: 30.0,
             ),
             onPressed: () async {
-              context.safePop();
+              context.pop();
             },
           ),
           title: Text(
-            'Content',
+            FFLocalizations.of(context).getText(
+              'ko8w7gga' /* Content */,
+            ),
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                   font: GoogleFonts.interTight(
                     fontWeight:
@@ -93,58 +90,52 @@ class _CreateBlogContentWidgetState extends State<CreateBlogContentWidget> {
         body: SafeArea(
           top: true,
           child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(10.0, 10.0, 10.0, 0.0),
-            child: Stack(
+            padding: EdgeInsetsDirectional.fromSTEB(10.0, 0.0, 10.0, 0.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                  padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
                   child: Container(
                     width: double.infinity,
-                    height: MediaQuery.sizeOf(context).height * 0.78,
+                    height: 600.0,
                     decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(6)),
-                    child: Column(
-                      children: [
-                        QuillSimpleToolbar(
-                          controller: _quillController,
-                          config: const QuillSimpleToolbarConfig(),
-                        ),
-                        Expanded(
-                          child: QuillEditor.basic(
-                            controller: _quillController,
-                            config: const QuillEditorConfig(),
-                            focusNode: _model.quillFocusNode,
-                          ),
-                        )
-                      ].divide(const SizedBox(
-                        height: 20,
-                      )),
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
                     ),
                   ),
                 ),
-                Align(
-                  alignment: AlignmentDirectional(0, 1),
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.fromSTEB(10.0, 0.0, 10.0, 20.0),
-                    child: FFButtonWidget(
-                      onPressed: () async {
-                        context.pushNamed(CreateBlogSettingsWidget.routeName);
-                      },
-                      text: 'Proceed',
-                      options: FFButtonOptions(
-                        width: double.infinity,
-                        height: 45.0,
-                        padding: EdgeInsetsDirectional.fromSTEB(
-                            16.0, 0.0, 16.0, 0.0),
-                        iconPadding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        textStyle: FlutterFlowTheme.of(context)
-                            .titleSmall
-                            .override(
-                              font: GoogleFonts.interTight(
+                Padding(
+                  padding:
+                      EdgeInsetsDirectional.fromSTEB(10.0, 0.0, 10.0, 25.0),
+                  child: FFButtonWidget(
+                    onPressed: () async {
+                      context.pushNamed(CreateBlogContentWidget.routeName);
+                    },
+                    text: FFLocalizations.of(context).getText(
+                      'xu0tgr07' /* Proceed */,
+                    ),
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 45.0,
+                      padding:
+                          EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
+                      iconPadding:
+                          EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      textStyle:
+                          FlutterFlowTheme.of(context).titleSmall.override(
+                                font: GoogleFonts.interTight(
+                                  fontWeight: FlutterFlowTheme.of(context)
+                                      .titleSmall
+                                      .fontWeight,
+                                  fontStyle: FlutterFlowTheme.of(context)
+                                      .titleSmall
+                                      .fontStyle,
+                                ),
+                                color: FlutterFlowTheme.of(context).primaryText,
+                                letterSpacing: 0.0,
                                 fontWeight: FlutterFlowTheme.of(context)
                                     .titleSmall
                                     .fontWeight,
@@ -152,18 +143,8 @@ class _CreateBlogContentWidgetState extends State<CreateBlogContentWidget> {
                                     .titleSmall
                                     .fontStyle,
                               ),
-                              color: FlutterFlowTheme.of(context).primaryText,
-                              letterSpacing: 0.0,
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .titleSmall
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .titleSmall
-                                  .fontStyle,
-                            ),
-                        elevation: 0.0,
-                        borderRadius: BorderRadius.circular(6.0),
-                      ),
+                      elevation: 0.0,
+                      borderRadius: BorderRadius.circular(6.0),
                     ),
                   ),
                 ),

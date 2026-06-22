@@ -1,6 +1,5 @@
-import 'package:my_kunba/components/menu_side_bar_widget.dart';
-
 import '/components/comments_tile_widget.dart';
+import '/components/menu_side_bar_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -53,33 +52,40 @@ class _CommentsWidgetState extends State<CommentsWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        drawer: MenuSideBarWidget(),
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        drawer: Drawer(
+          elevation: 16.0,
+          child: wrapWithModel(
+            model: _model.menuSideBarModel,
+            updateCallback: () => safeSetState(() {}),
+            child: MenuSideBarWidget(),
+          ),
+        ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
           automaticallyImplyLeading: false,
-          leading: Builder(builder: (context) {
-            return FlutterFlowIconButton(
-              borderColor: Color(0x000A0A0A),
-              borderRadius: 30.0,
-              borderWidth: 1.0,
-              buttonSize: 50.0,
-              icon: Icon(
-                Icons.dehaze_outlined,
-                color: FlutterFlowTheme.of(context).primaryText,
-                size: 25.0,
-              ),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          }),
+          leading: FlutterFlowIconButton(
+            borderColor: Color(0x000A0A0A),
+            borderRadius: 30.0,
+            borderWidth: 1.0,
+            buttonSize: 50.0,
+            icon: Icon(
+              Icons.dehaze_outlined,
+              color: FlutterFlowTheme.of(context).primaryText,
+              size: 25.0,
+            ),
+            onPressed: () async {
+              scaffoldKey.currentState!.openDrawer();
+            },
+          ),
           title: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Comments',
+                FFLocalizations.of(context).getText(
+                  'uydo28z0' /* Comments */,
+                ),
                 style: FlutterFlowTheme.of(context).headlineMedium.override(
                       font: GoogleFonts.interTight(
                         fontWeight: FlutterFlowTheme.of(context)
@@ -160,22 +166,34 @@ class _CommentsWidgetState extends State<CommentsWidget>
                         indicatorWeight: 2.0,
                         tabs: [
                           Tab(
-                            text: 'All',
+                            text: FFLocalizations.of(context).getText(
+                              'peuei47v' /* All */,
+                            ),
                           ),
                           Tab(
-                            text: 'Pending',
+                            text: FFLocalizations.of(context).getText(
+                              '55wlsj8a' /* Pending */,
+                            ),
                           ),
                           Tab(
-                            text: 'Unreplied',
+                            text: FFLocalizations.of(context).getText(
+                              'h95w05g7' /* Unreplied */,
+                            ),
                           ),
                           Tab(
-                            text: 'Approved',
+                            text: FFLocalizations.of(context).getText(
+                              '2ri0iyh8' /* Approved */,
+                            ),
                           ),
                           Tab(
-                            text: 'Spam',
+                            text: FFLocalizations.of(context).getText(
+                              '5jxxui8r' /* Spam */,
+                            ),
                           ),
                           Tab(
-                            text: 'Trashed',
+                            text: FFLocalizations.of(context).getText(
+                              'sfa9wsz3' /* Trashed */,
+                            ),
                           ),
                         ],
                         controller: _model.tabBarController,

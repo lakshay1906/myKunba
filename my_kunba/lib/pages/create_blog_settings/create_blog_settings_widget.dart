@@ -71,11 +71,13 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
               size: 30.0,
             ),
             onPressed: () async {
-              context.safePop();
+              context.pop();
             },
           ),
           title: Text(
-            'Setting',
+            FFLocalizations.of(context).getText(
+              'yx7tmp4b' /* Setting */,
+            ),
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                   font: GoogleFonts.interTight(
                     fontWeight:
@@ -116,7 +118,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Status',
+                              FFLocalizations.of(context).getText(
+                                'xbfm8tdz' /* Status */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -139,7 +143,14 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                   FormFieldController<String>(null),
                               options:
                                   List<String>.from(['Draft', 'Published']),
-                              optionLabels: ['Draft', 'Published'],
+                              optionLabels: [
+                                FFLocalizations.of(context).getText(
+                                  '8r2yl3yw' /* Draft */,
+                                ),
+                                FFLocalizations.of(context).getText(
+                                  'jd7u3dd1' /* Published */,
+                                )
+                              ],
                               onChanged: (val) => safeSetState(
                                   () => _model.dropDownValue1 = val),
                               width: double.infinity,
@@ -164,7 +175,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                         .bodyMedium
                                         .fontStyle,
                                   ),
-                              hintText: 'Select...',
+                              hintText: FFLocalizations.of(context).getText(
+                                '8qxf93gf' /* Select... */,
+                              ),
                               icon: Icon(
                                 Icons.keyboard_arrow_down_rounded,
                                 color:
@@ -191,7 +204,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Publish Date',
+                              FFLocalizations.of(context).getText(
+                                'd180j8o8' /* Publish Date */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -280,7 +295,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                     });
                                   }
                                 },
-                                text: 'Pick a date',
+                                text: FFLocalizations.of(context).getText(
+                                  '5pkwd706' /* Pick a date */,
+                                ),
                                 icon: Icon(
                                   Icons.calendar_month,
                                   size: 25.0,
@@ -324,7 +341,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                               ),
                             ),
                             Text(
-                              'When the post should be published.',
+                              FFLocalizations.of(context).getText(
+                                'egc1uxp8' /* When the post should be publis... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -353,7 +372,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Template',
+                              FFLocalizations.of(context).getText(
+                                'qda3ku5l' /* Template */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -377,9 +398,19 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                               child: FlutterFlowDropDown<String>(
                                 controller: _model.dropDownValueController2 ??=
                                     FormFieldController<String>(
-                                  _model.dropDownValue2 ??= 'Standard',
+                                  _model.dropDownValue2 ??=
+                                      FFLocalizations.of(context).getText(
+                                    '6fugy949' /* Standard */,
+                                  ),
                                 ),
-                                options: ['Standard', 'Full Width'],
+                                options: [
+                                  FFLocalizations.of(context).getText(
+                                    '072zfh5j' /* Standard */,
+                                  ),
+                                  FFLocalizations.of(context).getText(
+                                    'euogl29t' /* Full Width */,
+                                  )
+                                ],
                                 onChanged: (val) => safeSetState(
                                     () => _model.dropDownValue2 = val),
                                 width: double.infinity,
@@ -404,7 +435,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                hintText: 'Select...',
+                                hintText: FFLocalizations.of(context).getText(
+                                  'fjxo3uqd' /* Select... */,
+                                ),
                                 icon: Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   color: FlutterFlowTheme.of(context)
@@ -426,7 +459,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                               ),
                             ),
                             Text(
-                              'The layout template for this post.',
+                              FFLocalizations.of(context).getText(
+                                'k9aessmi' /* The layout template for this p... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -455,7 +490,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Category',
+                              FFLocalizations.of(context).getText(
+                                'l9r4qiwg' /* Category */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -487,9 +524,15 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                   'Category 03'
                                 ]),
                                 optionLabels: [
-                                  'Category 01',
-                                  'Category 02',
-                                  'Category 03'
+                                  FFLocalizations.of(context).getText(
+                                    'wflgfqd6' /* Category 01 */,
+                                  ),
+                                  FFLocalizations.of(context).getText(
+                                    '0o2191f7' /* Category 02 */,
+                                  ),
+                                  FFLocalizations.of(context).getText(
+                                    'sm2f95tw' /* Category 03 */,
+                                  )
                                 ],
                                 onChanged: (val) => safeSetState(
                                     () => _model.dropDownValue3 = val),
@@ -515,7 +558,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                hintText: 'None',
+                                hintText: FFLocalizations.of(context).getText(
+                                  '6gryenj3' /* None */,
+                                ),
                                 icon: Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   color: FlutterFlowTheme.of(context)
@@ -543,7 +588,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Meta Title',
+                              FFLocalizations.of(context).getText(
+                                '4cdj09jq' /* Meta Title */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -581,7 +628,10 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     isDense: true,
-                                    hintText: 'SEO title (optional)',
+                                    hintText:
+                                        FFLocalizations.of(context).getText(
+                                      'hf5e4h04' /* SEO title (optional) */,
+                                    ),
                                     hintStyle: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
@@ -695,7 +745,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                               ),
                             ),
                             Text(
-                              'Title used for SEO purposes. Defaults to post title if left empty.',
+                              FFLocalizations.of(context).getText(
+                                'ryfmbhwk' /* Title used for SEO purposes. D... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -724,7 +776,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Meta Description',
+                              FFLocalizations.of(context).getText(
+                                'fd1bxufm' /* Meta Description */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -759,7 +813,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                                 obscureText: false,
                                 decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'SEO description (optional)',
+                                  hintText: FFLocalizations.of(context).getText(
+                                    'bq7cx29s' /* SEO description (optional) */,
+                                  ),
                                   hintStyle: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -866,7 +922,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                               ),
                             ),
                             Text(
-                              'Description used for SEO purposes. Defaults to excerpt of left empty.',
+                              FFLocalizations.of(context).getText(
+                                'pveqpu1n' /* Description used for SEO purpo... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -903,7 +961,9 @@ class _CreateBlogSettingsWidgetState extends State<CreateBlogSettingsWidget> {
                     onPressed: () async {
                       context.pushNamed(HomePageWidget.routeName);
                     },
-                    text: 'Proceed',
+                    text: FFLocalizations.of(context).getText(
+                      'qh4j7yi2' /* Proceed */,
+                    ),
                     options: FFButtonOptions(
                       width: double.infinity,
                       height: 45.0,

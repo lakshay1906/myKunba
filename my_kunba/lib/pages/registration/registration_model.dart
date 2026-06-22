@@ -1,5 +1,3 @@
-import 'package:my_kunba/flutter_flow/form_field_controller.dart';
-
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'registration_widget.dart' show RegistrationWidget;
@@ -32,9 +30,6 @@ class RegistrationModel extends FlutterFlowModel<RegistrationWidget> {
   FocusNode? textFieldFocusNode6;
   TextEditingController? textController6;
   String? Function(BuildContext, String?)? textController6Validator;
-
-  String? dropDownValue1;
-  FormFieldController<String>? dropDownValueController1;
 
   @override
   void initState(BuildContext context) {}

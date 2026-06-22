@@ -49,11 +49,6 @@ class AppStateNotifier extends ChangeNotifier {
   /// to perform subsequent actions (such as navigation) afterwards.
   void updateNotifyOnAuthChange(bool notify) => notifyOnAuthChange = notify;
 
-  set loggedIn(bool value) {
-    loggedIn = value;
-    notifyListeners(); // Notify widgets to rebuild
-  }
-
   void update(BaseAuthUser newUser) {
     final shouldUpdate =
         user?.uid == null || newUser.uid == null || user?.uid != newUser.uid;
@@ -103,6 +98,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomePageWidget.routeName,
           path: HomePageWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => HomePageWidget(),
         ),
         FFRoute(
@@ -154,8 +150,20 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: RegistrationWidget.routeName,
           path: RegistrationWidget.routePath,
           builder: (context, params) => RegistrationWidget(
-              email: params.getParam('email', ParamType.String),
-              name: params.getParam('name', ParamType.String)),
+            email: params.getParam(
+              'email',
+              ParamType.String,
+            ),
+            name: params.getParam(
+              'name',
+              ParamType.String,
+            ),
+          ),
+        ),
+        FFRoute(
+          name: ProfilePageWidget.routeName,
+          path: ProfilePageWidget.routePath,
+          builder: (context, params) => ProfilePageWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
@@ -344,7 +352,7 @@ class FFRoute {
                     height: 50.0,
                     child: CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        FlutterFlowTheme.of(context).primaryText,
+                        FlutterFlowTheme.of(context).primary,
                       ),
                     ),
                   ),

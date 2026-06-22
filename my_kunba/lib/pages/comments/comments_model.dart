@@ -1,4 +1,5 @@
 import '/components/comments_tile_widget.dart';
+import '/components/menu_side_bar_widget.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'comments_widget.dart' show CommentsWidget;
 import 'package:flutter/material.dart';
@@ -61,6 +62,8 @@ class CommentsModel extends FlutterFlowModel<CommentsWidget> {
   late CommentsTileModel commentsTileModel23;
   // Model for CommentsTile component.
   late CommentsTileModel commentsTileModel24;
+  // Model for MenuSideBar component.
+  late MenuSideBarModel menuSideBarModel;
 
   @override
   void initState(BuildContext context) {
@@ -88,6 +91,7 @@ class CommentsModel extends FlutterFlowModel<CommentsWidget> {
     commentsTileModel22 = createModel(context, () => CommentsTileModel());
     commentsTileModel23 = createModel(context, () => CommentsTileModel());
     commentsTileModel24 = createModel(context, () => CommentsTileModel());
+    menuSideBarModel = createModel(context, () => MenuSideBarModel());
   }
 
   @override
@@ -117,5 +121,6 @@ class CommentsModel extends FlutterFlowModel<CommentsWidget> {
     commentsTileModel22.dispose();
     commentsTileModel23.dispose();
     commentsTileModel24.dispose();
+    menuSideBarModel.dispose();
   }
 }

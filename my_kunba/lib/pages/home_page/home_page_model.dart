@@ -1,8 +1,12 @@
+import '/backend/api_requests/api_calls.dart';
+import '/components/menu_side_bar_widget.dart';
 import '/components/post_list_tile_widget.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import 'dart:async';
 import 'home_page_widget.dart' show HomePageWidget;
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   ///  State fields for stateful widgets in this page.
@@ -14,8 +18,13 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   int get tabBarPreviousIndex =>
       tabBarController != null ? tabBarController!.previousIndex : 0;
 
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel1;
+  // State field(s) for ListView widget.
+
+  PagingController<ApiPagingParams, dynamic>? listViewPagingController1;
+  Function(ApiPagingParams nextPageMarker)? listViewApiCall1;
+
+  // Models for PostListTile dynamic component.
+  late FlutterFlowDynamicModels<PostListTileModel> postListTileModels1;
   // Model for PostListTile component.
   late PostListTileModel postListTileModel2;
   // Model for PostListTile component.
@@ -76,28 +85,12 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   late PostListTileModel postListTileModel30;
   // Model for PostListTile component.
   late PostListTileModel postListTileModel31;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel32;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel33;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel34;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel35;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel36;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel37;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel38;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel39;
-  // Model for PostListTile component.
-  late PostListTileModel postListTileModel40;
+  // Model for MenuSideBar component.
+  late MenuSideBarModel menuSideBarModel;
 
   @override
   void initState(BuildContext context) {
-    postListTileModel1 = createModel(context, () => PostListTileModel());
+    postListTileModels1 = FlutterFlowDynamicModels(() => PostListTileModel());
     postListTileModel2 = createModel(context, () => PostListTileModel());
     postListTileModel3 = createModel(context, () => PostListTileModel());
     postListTileModel4 = createModel(context, () => PostListTileModel());
@@ -128,21 +121,14 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
     postListTileModel29 = createModel(context, () => PostListTileModel());
     postListTileModel30 = createModel(context, () => PostListTileModel());
     postListTileModel31 = createModel(context, () => PostListTileModel());
-    postListTileModel32 = createModel(context, () => PostListTileModel());
-    postListTileModel33 = createModel(context, () => PostListTileModel());
-    postListTileModel34 = createModel(context, () => PostListTileModel());
-    postListTileModel35 = createModel(context, () => PostListTileModel());
-    postListTileModel36 = createModel(context, () => PostListTileModel());
-    postListTileModel37 = createModel(context, () => PostListTileModel());
-    postListTileModel38 = createModel(context, () => PostListTileModel());
-    postListTileModel39 = createModel(context, () => PostListTileModel());
-    postListTileModel40 = createModel(context, () => PostListTileModel());
+    menuSideBarModel = createModel(context, () => MenuSideBarModel());
   }
 
   @override
   void dispose() {
     tabBarController?.dispose();
-    postListTileModel1.dispose();
+    listViewPagingController1?.dispose();
+    postListTileModels1.dispose();
     postListTileModel2.dispose();
     postListTileModel3.dispose();
     postListTileModel4.dispose();
@@ -173,14 +159,65 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
     postListTileModel29.dispose();
     postListTileModel30.dispose();
     postListTileModel31.dispose();
-    postListTileModel32.dispose();
-    postListTileModel33.dispose();
-    postListTileModel34.dispose();
-    postListTileModel35.dispose();
-    postListTileModel36.dispose();
-    postListTileModel37.dispose();
-    postListTileModel38.dispose();
-    postListTileModel39.dispose();
-    postListTileModel40.dispose();
+    menuSideBarModel.dispose();
+  }
+
+  /// Additional helper methods.
+  PagingController<ApiPagingParams, dynamic> setListViewController1(
+    Function(ApiPagingParams) apiCall,
+  ) {
+    listViewApiCall1 = apiCall;
+    return listViewPagingController1 ??= _createListViewController1(apiCall);
+  }
+
+  PagingController<ApiPagingParams, dynamic> _createListViewController1(
+    Function(ApiPagingParams) query,
+  ) {
+    final controller = PagingController<ApiPagingParams, dynamic>(
+      firstPageKey: ApiPagingParams(
+        nextPageNumber: 0,
+        numItems: 0,
+        lastResponse: null,
+      ),
+    );
+    return controller
+      ..addPageRequestListener(listViewGetAllAdminRelatedBlogsPage1);
+  }
+
+  void listViewGetAllAdminRelatedBlogsPage1(ApiPagingParams nextPageMarker) =>
+      listViewApiCall1!(nextPageMarker)
+          .then((listViewGetAllAdminRelatedBlogsResponse) {
+        final pageItems = (GetAllAdminRelatedBlogsCall.blogs(
+                  listViewGetAllAdminRelatedBlogsResponse.jsonBody,
+                )! ??
+                [])
+            .toList();
+        final newNumItems = nextPageMarker.numItems + pageItems.length;
+        listViewPagingController1?.appendPage(
+          pageItems,
+          (pageItems.length > 0)
+              ? ApiPagingParams(
+                  nextPageNumber: nextPageMarker.nextPageNumber + 1,
+                  numItems: newNumItems,
+                  lastResponse: listViewGetAllAdminRelatedBlogsResponse,
+                )
+              : null,
+        );
+      });
+
+  Future waitForOnePageForListView1({
+    double minWait = 0,
+    double maxWait = double.infinity,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    while (true) {
+      await Future.delayed(Duration(milliseconds: 50));
+      final timeElapsed = stopwatch.elapsedMilliseconds;
+      final requestComplete =
+          (listViewPagingController1?.nextPageKey?.nextPageNumber ?? 0) > 0;
+      if (timeElapsed > maxWait || (requestComplete && timeElapsed > minWait)) {
+        break;
+      }
+    }
   }
 }

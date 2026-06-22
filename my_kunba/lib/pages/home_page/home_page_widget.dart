@@ -1,15 +1,16 @@
-import 'package:my_kunba/components/menu_side_bar_widget.dart';
-import 'package:my_kunba/utils/api_function.dart';
-import 'package:my_kunba/utils/provider/user.dart';
-import 'package:provider/provider.dart';
-
+import '/auth/firebase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
+import '/components/menu_side_bar_widget.dart';
 import '/components/post_list_tile_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:provider/provider.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -26,42 +27,48 @@ class HomePageWidget extends StatefulWidget {
 class _HomePageWidgetState extends State<HomePageWidget>
     with TickerProviderStateMixin {
   late HomePageModel _model;
-  final af = ApiFunction();
+
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  bool loading = true;
-  List<Map<String, dynamic>> allBlogs = [];
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => HomePageModel());
-    fetchBlog();
+
+    // On page load action.
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      Function() _navigate = () {};
+      if (!(FFAppState().jwtToken != '')) {
+        GoRouter.of(context).prepareAuthEvent();
+        await authManager.signOut();
+        GoRouter.of(context).clearRedirectLocation();
+
+        _navigate = () =>
+            context.goNamedAuth(WelcomePageWidget.routeName, context.mounted);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Please log in again!',
+              style: TextStyle(
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+              textAlign: TextAlign.start,
+            ),
+            duration: Duration(milliseconds: 4000),
+            backgroundColor: FlutterFlowTheme.of(context).primary,
+          ),
+        );
+      }
+
+      _navigate();
+    });
+
     _model.tabBarController = TabController(
       vsync: this,
       length: 5,
       initialIndex: 0,
     )..addListener(() => safeSetState(() {}));
-  }
-
-  Future<void> fetchBlog() async {
-    final response = await af.fetchBlogs(context);
-    if (response == null) {
-      print('response is null');
-      // ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("You're not authorized to perform this action")),
-      // );
-      safeSetState(() {
-        loading = false;
-      });
-      return null;
-    }
-    if (response.statusCode == 200) {
-      print(jsonDecode(response.body));
-      safeSetState(() {
-        loading = false;
-      });
-    }
   }
 
   @override
@@ -73,7 +80,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   @override
   Widget build(BuildContext context) {
-    User user = Provider.of<User>(context, listen: false);
+    context.watch<FFAppState>();
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -81,50 +89,58 @@ class _HomePageWidgetState extends State<HomePageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        drawer: MenuSideBarWidget(),
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        floatingActionButton: user.role == 'author'
-            ? Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 5.0, 30.0),
-                child: FloatingActionButton(
-                  onPressed: () async {
-                    context.pushNamed(CreateBlogWidget.routeName);
-                  },
-                  backgroundColor: FlutterFlowTheme.of(context).alternate,
-                  elevation: 8.0,
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: FlutterFlowTheme.of(context).primaryText,
-                    size: 24.0,
-                  ),
-                ),
-              )
-            : SizedBox(),
+        floatingActionButton: Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 5.0, 30.0),
+          child: FloatingActionButton(
+            onPressed: () async {
+              context.pushNamed(CreateBlogWidget.routeName);
+            },
+            backgroundColor: FlutterFlowTheme.of(context).alternate,
+            elevation: 8.0,
+            child: Icon(
+              Icons.add_rounded,
+              color: FlutterFlowTheme.of(context).primaryText,
+              size: 24.0,
+            ),
+          ),
+        ),
+        drawer: Container(
+          width: MediaQuery.sizeOf(context).width * 0.82,
+          child: Drawer(
+            elevation: 16.0,
+            child: wrapWithModel(
+              model: _model.menuSideBarModel,
+              updateCallback: () => safeSetState(() {}),
+              child: MenuSideBarWidget(),
+            ),
+          ),
+        ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
           automaticallyImplyLeading: false,
-          leading: Builder(
-            builder: (context) => FlutterFlowIconButton(
-              borderColor: Color(0x000A0A0A),
-              borderRadius: 30.0,
-              borderWidth: 1.0,
-              buttonSize: 50.0,
-              icon: Icon(
-                Icons.dehaze_outlined,
-                color: FlutterFlowTheme.of(context).primaryText,
-                size: 25.0,
-              ),
-              onPressed: () async {
-                Scaffold.of(context).openDrawer();
-              },
+          leading: FlutterFlowIconButton(
+            borderColor: Color(0x000A0A0A),
+            borderRadius: 30.0,
+            borderWidth: 1.0,
+            buttonSize: 50.0,
+            icon: Icon(
+              Icons.dehaze_outlined,
+              color: FlutterFlowTheme.of(context).primaryText,
+              size: 25.0,
             ),
+            onPressed: () async {
+              scaffoldKey.currentState!.openDrawer();
+            },
           ),
           title: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Posts',
+                FFLocalizations.of(context).getText(
+                  '2mlymmog' /* Posts */,
+                ),
                 style: FlutterFlowTheme.of(context).headlineMedium.override(
                       font: GoogleFonts.interTight(
                         fontWeight: FlutterFlowTheme.of(context)
@@ -203,19 +219,29 @@ class _HomePageWidgetState extends State<HomePageWidget>
                     indicatorColor: FlutterFlowTheme.of(context).primary,
                     tabs: [
                       Tab(
-                        text: 'Published',
+                        text: FFLocalizations.of(context).getText(
+                          'jplkl1oa' /* Published */,
+                        ),
                       ),
                       Tab(
-                        text: 'Draft',
+                        text: FFLocalizations.of(context).getText(
+                          '4cquzzpq' /* Draft */,
+                        ),
                       ),
                       Tab(
-                        text: 'Scheduled',
+                        text: FFLocalizations.of(context).getText(
+                          'n4zbuc2k' /* Scheduled */,
+                        ),
                       ),
                       Tab(
-                        text: 'Trash',
+                        text: FFLocalizations.of(context).getText(
+                          '1kux8u4o' /* Trash */,
+                        ),
                       ),
                       Tab(
-                        text: 'Pending',
+                        text: FFLocalizations.of(context).getText(
+                          'wf1y5bur' /* Pending */,
+                        ),
                       ),
                     ],
                     controller: _model.tabBarController,
@@ -241,6 +267,115 @@ class _HomePageWidgetState extends State<HomePageWidget>
                             child: Padding(
                               padding: EdgeInsetsDirectional.fromSTEB(
                                   6.0, 0.0, 6.0, 0.0),
+                              child: RefreshIndicator(
+                                onRefresh: () async {
+                                  safeSetState(() => _model
+                                      .listViewPagingController1
+                                      ?.refresh());
+                                  await _model.waitForOnePageForListView1();
+                                },
+                                child: PagedListView<ApiPagingParams,
+                                    dynamic>.separated(
+                                  pagingController:
+                                      _model.setListViewController1(
+                                    (nextPageMarker) =>
+                                        GetAllAdminRelatedBlogsCall.call(
+                                      token: FFAppState().jwtToken,
+                                      page: valueOrDefault<int>(
+                                        nextPageMarker.nextPageNumber + 1,
+                                        1,
+                                      ),
+                                      limit: 10,
+                                    ),
+                                  ),
+                                  padding: EdgeInsets.fromLTRB(
+                                    0,
+                                    10.0,
+                                    0,
+                                    10.0,
+                                  ),
+                                  reverse: false,
+                                  scrollDirection: Axis.vertical,
+                                  separatorBuilder: (_, __) =>
+                                      SizedBox(height: 5.0),
+                                  builderDelegate:
+                                      PagedChildBuilderDelegate<dynamic>(
+                                    // Customize what your widget looks like when it's loading the first page.
+                                    firstPageProgressIndicatorBuilder: (_) =>
+                                        Center(
+                                      child: SizedBox(
+                                        width: 40.0,
+                                        height: 40.0,
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            FlutterFlowTheme.of(context)
+                                                .primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Customize what your widget looks like when it's loading another page.
+                                    newPageProgressIndicatorBuilder: (_) =>
+                                        Center(
+                                      child: SizedBox(
+                                        width: 40.0,
+                                        height: 40.0,
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            FlutterFlowTheme.of(context)
+                                                .primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    itemBuilder: (context, _, blogsIndex) {
+                                      final blogsItem = _model
+                                          .listViewPagingController1!
+                                          .itemList![blogsIndex];
+                                      return wrapWithModel(
+                                        model:
+                                            _model.postListTileModels1.getModel(
+                                          blogsIndex.toString(),
+                                          blogsIndex,
+                                        ),
+                                        updateCallback: () =>
+                                            safeSetState(() {}),
+                                        child: PostListTileWidget(
+                                          key: Key(
+                                            'Keytkr_${blogsIndex.toString()}',
+                                          ),
+                                          title: getJsonField(
+                                            blogsItem,
+                                            r'''$.title''',
+                                          ).toString(),
+                                          description: getJsonField(
+                                            blogsItem,
+                                            r'''$.slug''',
+                                          ).toString(),
+                                          date: getJsonField(
+                                            blogsItem,
+                                            r'''$.publishDate''',
+                                          ).toString(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  6.0, 0.0, 6.0, 0.0),
                               child: ListView(
                                 padding: EdgeInsets.fromLTRB(
                                   0,
@@ -251,11 +386,6 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 shrinkWrap: true,
                                 scrollDirection: Axis.vertical,
                                 children: [
-                                  wrapWithModel(
-                                    model: _model.postListTileModel1,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
                                   wrapWithModel(
                                     model: _model.postListTileModel2,
                                     updateCallback: () => safeSetState(() {}),
@@ -301,6 +431,11 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     updateCallback: () => safeSetState(() {}),
                                     child: PostListTileWidget(),
                                   ),
+                                  wrapWithModel(
+                                    model: _model.postListTileModel11,
+                                    updateCallback: () => safeSetState(() {}),
+                                    child: PostListTileWidget(),
+                                  ),
                                 ].divide(SizedBox(height: 5.0)),
                               ),
                             ),
@@ -324,11 +459,6 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 shrinkWrap: true,
                                 scrollDirection: Axis.vertical,
                                 children: [
-                                  wrapWithModel(
-                                    model: _model.postListTileModel11,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
                                   wrapWithModel(
                                     model: _model.postListTileModel12,
                                     updateCallback: () => safeSetState(() {}),
@@ -374,6 +504,11 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     updateCallback: () => safeSetState(() {}),
                                     child: PostListTileWidget(),
                                   ),
+                                  wrapWithModel(
+                                    model: _model.postListTileModel21,
+                                    updateCallback: () => safeSetState(() {}),
+                                    child: PostListTileWidget(),
+                                  ),
                                 ].divide(SizedBox(height: 5.0)),
                               ),
                             ),
@@ -397,11 +532,6 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 shrinkWrap: true,
                                 scrollDirection: Axis.vertical,
                                 children: [
-                                  wrapWithModel(
-                                    model: _model.postListTileModel21,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
                                   wrapWithModel(
                                     model: _model.postListTileModel22,
                                     updateCallback: () => safeSetState(() {}),
@@ -447,76 +577,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     updateCallback: () => safeSetState(() {}),
                                     child: PostListTileWidget(),
                                   ),
-                                ].divide(SizedBox(height: 5.0)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  6.0, 0.0, 6.0, 0.0),
-                              child: ListView(
-                                padding: EdgeInsets.fromLTRB(
-                                  0,
-                                  10.0,
-                                  0,
-                                  10.0,
-                                ),
-                                shrinkWrap: true,
-                                scrollDirection: Axis.vertical,
-                                children: [
                                   wrapWithModel(
                                     model: _model.postListTileModel31,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel32,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel33,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel34,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel35,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel36,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel37,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel38,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel39,
-                                    updateCallback: () => safeSetState(() {}),
-                                    child: PostListTileWidget(),
-                                  ),
-                                  wrapWithModel(
-                                    model: _model.postListTileModel40,
                                     updateCallback: () => safeSetState(() {}),
                                     child: PostListTileWidget(),
                                   ),

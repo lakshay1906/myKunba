@@ -16,3 +16,4 @@ export '/pages/reply_to_comment/reply_to_comment_widget.dart'
     show ReplyToCommentWidget;
 export '/pages/sign_up/sign_up_widget.dart' show SignUpWidget;
 export '/pages/registration/registration_widget.dart' show RegistrationWidget;
+export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;

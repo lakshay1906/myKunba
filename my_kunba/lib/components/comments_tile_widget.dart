@@ -40,13 +40,13 @@ class _CommentsTileWidgetState extends State<CommentsTileWidget> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 90.0,
+      height: 110.0,
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).accent4,
         borderRadius: BorderRadius.circular(6.0),
       ),
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(8.0, 6.0, 8.0, 6.0),
+        padding: EdgeInsetsDirectional.fromSTEB(10.0, 8.0, 10.0, 8.0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +77,9 @@ class _CommentsTileWidgetState extends State<CommentsTileWidget> {
                     children: [
                       Expanded(
                         child: Text(
-                          'SuperPH26 on Delhi-NCR Traffic Restrictions: No Entry...',
+                          FFLocalizations.of(context).getText(
+                            '0hb6pk4f' /* SuperPH26 on Delhi-NCR Traffic... */,
+                          ),
                           style: FlutterFlowTheme.of(context)
                               .headlineSmall
                               .override(
@@ -98,7 +100,7 @@ class _CommentsTileWidgetState extends State<CommentsTileWidget> {
                       ),
                       FlutterFlowIconButton(
                         borderRadius: 8.0,
-                        buttonSize: 35.0,
+                        buttonSize: 48.0,
                         icon: FaIcon(
                           FontAwesomeIcons.ellipsisV,
                           color: FlutterFlowTheme.of(context).info,
@@ -113,7 +115,9 @@ class _CommentsTileWidgetState extends State<CommentsTileWidget> {
                   Padding(
                     padding: EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                     child: Text(
-                      'SuperPH26 offers a top-tier slot experience with 1034 way...',
+                      FFLocalizations.of(context).getText(
+                        '0ek0tdly' /* SuperPH26 offers a top-tier sl... */,
+                      ),
                       style: FlutterFlowTheme.of(context).labelMedium.override(
                             font: GoogleFonts.inter(
                               fontWeight: FlutterFlowTheme.of(context)

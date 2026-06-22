@@ -107,7 +107,7 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                                           size: 25.0,
                                         ),
                                         onPressed: () async {
-                                          context.safePop();
+                                          context.pop();
                                         },
                                       ),
                                     ),
@@ -149,7 +149,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Zion Limited',
+                          FFLocalizations.of(context).getText(
+                            'f8jk1ql1' /* Zion Limited */,
+                          ),
                           style: FlutterFlowTheme.of(context)
                               .headlineMedium
                               .override(
@@ -171,7 +173,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                               ),
                         ),
                         Text(
-                          '\$156.00',
+                          FFLocalizations.of(context).getText(
+                            'nlfv6swz' /* $156.00 */,
+                          ),
                           style: FlutterFlowTheme.of(context)
                               .headlineMedium
                               .override(
@@ -203,7 +207,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       mainAxisSize: MainAxisSize.max,
                       children: [
                         Text(
-                          'Retailed by Nike',
+                          FFLocalizations.of(context).getText(
+                            'vz3q4wc4' /* Retailed by Nike */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -247,7 +253,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            '4/5 Reviews',
+                            FFLocalizations.of(context).getText(
+                              'lnor6l0p' /* 4/5 Reviews */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -279,7 +287,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       mainAxisSize: MainAxisSize.max,
                       children: [
                         Text(
-                          'DESCRIPTION',
+                          FFLocalizations.of(context).getText(
+                            'llp79rad' /* DESCRIPTION */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).bodySmall.override(
                                     font: GoogleFonts.inter(
@@ -306,7 +316,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       children: [
                         Expanded(
                           child: Text(
-                            'With a down-to-earth persona and abilities that are out of this world, Zion is unlike anybody else. On court, the gentle spirit who\'s all about family transforms into an unmatched force of unstoppable athleticism and speed.',
+                            FFLocalizations.of(context).getText(
+                              'kaozn98z' /* With a down-to-earth persona a... */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -339,7 +351,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       mainAxisSize: MainAxisSize.max,
                       children: [
                         Text(
-                          'SIZE',
+                          FFLocalizations.of(context).getText(
+                            'uh14xm11' /* SIZE */,
+                          ),
                           style:
                               FlutterFlowTheme.of(context).bodySmall.override(
                                     font: GoogleFonts.inter(
@@ -376,17 +390,39 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                               0.0, 8.0, 0.0, 32.0),
                           child: FlutterFlowChoiceChips(
                             options: [
-                              ChipData('4'),
-                              ChipData('5'),
-                              ChipData('6'),
-                              ChipData('7'),
-                              ChipData('8'),
-                              ChipData('9'),
-                              ChipData('10'),
-                              ChipData('11'),
-                              ChipData('12'),
-                              ChipData('13'),
-                              ChipData('14')
+                              ChipData(FFLocalizations.of(context).getText(
+                                'atgbzt5y' /* 4 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'v4h0tthh' /* 5 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'iwgtb6hd' /* 6 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'f484l52x' /* 7 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'ynjcet0j' /* 8 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'ap5of2bv' /* 9 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'hho9osqn' /* 10 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'd3yu162x' /* 11 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'lgel82rm' /* 12 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                '96huk1bh' /* 13 */,
+                              )),
+                              ChipData(FFLocalizations.of(context).getText(
+                                'fkwcyu5j' /* 14 */,
+                              ))
                             ],
                             onChanged: (val) => safeSetState(() =>
                                 _model.choiceChipsValue = val?.firstOrNull),
@@ -497,7 +533,9 @@ class _PreviewBlogWidgetState extends State<PreviewBlogWidget>
                       onPressed: () {
                         print('Button pressed ...');
                       },
-                      text: 'Create',
+                      text: FFLocalizations.of(context).getText(
+                        'iptyefzg' /* Create */,
+                      ),
                       options: FFButtonOptions(
                         height: 45.0,
                         padding: EdgeInsetsDirectional.fromSTEB(

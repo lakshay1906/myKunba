@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime_type/mime_type.dart';
-// import 'package:video_player/video_player.dart';
+import 'package:video_player/video_player.dart';
 
 import '../auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -177,8 +177,11 @@ Future<List<SelectedFile>?> selectMedia({
       final media = e.value;
       final mediaBytes = await media.readAsBytes();
       final path = _getStoragePath(storageFolderPath, media.name, false, index);
-      final dimensions =
-          includeDimensions ? _getImageDimensions(mediaBytes) : null;
+      final dimensions = includeDimensions
+          ? isVideo
+              ? _getVideoDimensions(media.path)
+              : _getImageDimensions(mediaBytes)
+          : null;
 
       return SelectedFile(
         storagePath: path,
@@ -206,12 +209,11 @@ Future<List<SelectedFile>?> selectMedia({
     return null;
   }
   final path = _getStoragePath(storageFolderPath, pickedMedia!.name, isVideo);
-  final dimensions = includeDimensions ? _getImageDimensions(mediaBytes) : null;
-  // final dimensions = includeDimensions
-  //     ? isVideo
-  //         ? _getVideoDimensions(pickedMedia.path)
-  //         : _getImageDimensions(mediaBytes)
-  //     : null;
+  final dimensions = includeDimensions
+      ? isVideo
+          ? _getVideoDimensions(pickedMedia.path)
+          : _getImageDimensions(mediaBytes)
+      : null;
 
   return [
     SelectedFile(
@@ -314,13 +316,13 @@ Future<MediaDimensions> _getImageDimensions(Uint8List mediaBytes) async {
   );
 }
 
-// Future<MediaDimensions> _getVideoDimensions(String path) async {
-//   final VideoPlayerController videoPlayerController =
-//       VideoPlayerController.asset(path);
-//   await videoPlayerController.initialize();
-//   final size = videoPlayerController.value.size;
-//   return MediaDimensions(width: size.width, height: size.height);
-// }
+Future<MediaDimensions> _getVideoDimensions(String path) async {
+  final VideoPlayerController videoPlayerController =
+      VideoPlayerController.asset(path);
+  await videoPlayerController.initialize();
+  final size = videoPlayerController.value.size;
+  return MediaDimensions(width: size.width, height: size.height);
+}
 
 String _getStoragePath(
   String? pathPrefix,

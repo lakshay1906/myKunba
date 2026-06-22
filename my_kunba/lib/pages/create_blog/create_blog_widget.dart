@@ -75,11 +75,13 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
               size: 30.0,
             ),
             onPressed: () async {
-              context.safePop();
+              context.pop();
             },
           ),
           title: Text(
-            'Create Blog',
+            FFLocalizations.of(context).getText(
+              '852v8tii' /* Create Blog */,
+            ),
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                   font: GoogleFonts.interTight(
                     fontWeight:
@@ -120,7 +122,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Title',
+                              FFLocalizations.of(context).getText(
+                                'wih6bzva' /* Title */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -155,7 +159,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                 obscureText: false,
                                 decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'Enter blog title',
+                                  hintText: FFLocalizations.of(context).getText(
+                                    '4g506mtd' /* Enter blog title */,
+                                  ),
                                   hintStyle: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -268,7 +274,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Slug',
+                              FFLocalizations.of(context).getText(
+                                'hjeti8i1' /* Slug */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -303,7 +311,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                 obscureText: false,
                                 decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'Enter blog slug',
+                                  hintText: FFLocalizations.of(context).getText(
+                                    'oauu0fl3' /* Enter blog slug */,
+                                  ),
                                   hintStyle: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -416,7 +426,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Excerpt',
+                              FFLocalizations.of(context).getText(
+                                '2l4x9cy0' /* Excerpt */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -451,7 +463,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                 obscureText: false,
                                 decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'Enter blog slug',
+                                  hintText: FFLocalizations.of(context).getText(
+                                    '81xerllj' /* Enter blog slug */,
+                                  ),
                                   hintStyle: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -565,7 +579,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Feature Image',
+                              FFLocalizations.of(context).getText(
+                                'rb6royb8' /* Feature Image */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -645,7 +661,11 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                                               .labelMedium
                                                               .fontStyle,
                                                     ),
-                                            hintText: 'TextField',
+                                            hintText:
+                                                FFLocalizations.of(context)
+                                                    .getText(
+                                              'of7fndn0' /* TextField */,
+                                            ),
                                             hintStyle:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -750,7 +770,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                         ),
                                       ),
                                       Text(
-                                        'OR',
+                                        FFLocalizations.of(context).getText(
+                                          'y6f4c38z' /* OR */,
+                                        ),
                                         textAlign: TextAlign.center,
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
@@ -790,6 +812,8 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                                         onPressed: () async {
                                           final selectedMedia =
                                               await selectMedia(
+                                            maxWidth: 200.00,
+                                            maxHeight: 150.00,
                                             mediaSource:
                                                 MediaSource.photoGallery,
                                             multiImage: false,
@@ -877,7 +901,9 @@ class _CreateBlogWidgetState extends State<CreateBlogWidget> {
                   onPressed: () async {
                     context.pushNamed(CreateBlogContentWidget.routeName);
                   },
-                  text: 'Proceed',
+                  text: FFLocalizations.of(context).getText(
+                    'llvnef4n' /* Proceed */,
+                  ),
                   options: FFButtonOptions(
                     width: double.infinity,
                     height: 45.0,

@@ -54,8 +54,8 @@ class FirebaseAuthManager extends AuthManager
   FirebasePhoneAuthManager phoneAuthManager = FirebasePhoneAuthManager();
 
   @override
-  Future signOut() async {
-    return await FirebaseAuth.instance.signOut();
+  Future signOut() {
+    return FirebaseAuth.instance.signOut();
   }
 
   @override
@@ -101,6 +101,7 @@ class FirebaseAuthManager extends AuthManager
     }
   }
 
+  @override
   Future updatePassword({
     required String newPassword,
     required BuildContext context,

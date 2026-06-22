@@ -1,5 +1,4 @@
-import 'package:my_kunba/components/menu_side_bar_widget.dart';
-
+import '/components/menu_side_bar_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -45,33 +44,40 @@ class _NotificationWidgetState extends State<NotificationWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        drawer: MenuSideBarWidget(),
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        drawer: Drawer(
+          elevation: 16.0,
+          child: wrapWithModel(
+            model: _model.menuSideBarModel,
+            updateCallback: () => safeSetState(() {}),
+            child: MenuSideBarWidget(),
+          ),
+        ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
           automaticallyImplyLeading: false,
-          leading: Builder(builder: (context) {
-            return FlutterFlowIconButton(
-              borderColor: Color(0x000A0A0A),
-              borderRadius: 30.0,
-              borderWidth: 1.0,
-              buttonSize: 50.0,
-              icon: Icon(
-                Icons.dehaze_outlined,
-                color: FlutterFlowTheme.of(context).primaryText,
-                size: 25.0,
-              ),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          }),
+          leading: FlutterFlowIconButton(
+            borderColor: Color(0x000A0A0A),
+            borderRadius: 30.0,
+            borderWidth: 1.0,
+            buttonSize: 50.0,
+            icon: Icon(
+              Icons.dehaze_outlined,
+              color: FlutterFlowTheme.of(context).primaryText,
+              size: 25.0,
+            ),
+            onPressed: () async {
+              scaffoldKey.currentState!.openDrawer();
+            },
+          ),
           title: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Notifications',
+                FFLocalizations.of(context).getText(
+                  'd5uyw80b' /* Notifications */,
+                ),
                 style: FlutterFlowTheme.of(context).headlineMedium.override(
                       font: GoogleFonts.interTight(
                         fontWeight: FlutterFlowTheme.of(context)
@@ -140,7 +146,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 12.0, 0.0, 0.0, 0.0),
                             child: Text(
-                              'Check-in evaluated',
+                              FFLocalizations.of(context).getText(
+                                '7ru41dt7' /* Check-in evaluated */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyLarge
                                   .override(
@@ -167,7 +175,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            'Mar 8, 2022',
+                            FFLocalizations.of(context).getText(
+                              'vf437tgl' /* Mar 8, 2022 */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -231,7 +241,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 12.0, 0.0, 0.0, 0.0),
                             child: Text(
-                              'Check-in evaluated',
+                              FFLocalizations.of(context).getText(
+                                '2zt673q0' /* Check-in evaluated */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyLarge
                                   .override(
@@ -258,7 +270,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            'Mar 8, 2022',
+                            FFLocalizations.of(context).getText(
+                              '4mgd2ub0' /* Mar 8, 2022 */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -322,7 +336,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 12.0, 0.0, 0.0, 0.0),
                             child: Text(
-                              'Check-in evaluated',
+                              FFLocalizations.of(context).getText(
+                                'kam40dek' /* Check-in evaluated */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyLarge
                                   .override(
@@ -349,7 +365,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            'Mar 8, 2022',
+                            FFLocalizations.of(context).getText(
+                              '20qpc585' /* Mar 8, 2022 */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -413,7 +431,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 12.0, 0.0, 0.0, 0.0),
                             child: Text(
-                              'New Event added to your calendar',
+                              FFLocalizations.of(context).getText(
+                                'vuzogdw5' /* New Event added to your calend... */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .labelLarge
                                   .override(
@@ -440,7 +460,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            'Mar 8, 2022',
+                            FFLocalizations.of(context).getText(
+                              'a0z0m91o' /* Mar 8, 2022 */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(
@@ -504,7 +526,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 12.0, 0.0, 0.0, 0.0),
                             child: Text(
-                              'Profile Modified',
+                              FFLocalizations.of(context).getText(
+                                'alkhg8y0' /* Profile Modified */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .labelLarge
                                   .override(
@@ -531,7 +555,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                           padding: EdgeInsetsDirectional.fromSTEB(
                               12.0, 0.0, 0.0, 0.0),
                           child: Text(
-                            'Mar 8, 2022',
+                            FFLocalizations.of(context).getText(
+                              'ez51k41u' /* Mar 8, 2022 */,
+                            ),
                             style: FlutterFlowTheme.of(context)
                                 .labelMedium
                                 .override(

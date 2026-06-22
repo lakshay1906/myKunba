@@ -1,6 +1,5 @@
-import 'package:my_kunba/utils/common_function.dart';
-
 import '/auth/firebase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'sign_up_model.dart';
 export 'sign_up_model.dart';
 
@@ -51,7 +51,8 @@ class _SignUpWidgetState extends State<SignUpWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final cf = CommonFunction();
+    context.watch<FFAppState>();
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -92,27 +93,75 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     alignment: AlignmentDirectional(0.0, 0.0),
                     child: FFButtonWidget(
                       onPressed: () async {
+                        await authManager.refreshUser();
                         GoRouter.of(context).prepareAuthEvent();
                         final user =
                             await authManager.signInWithGoogle(context);
                         if (user == null) {
                           return;
                         }
-                        await cf.getJWT(context, user);
-                        context.goNamedAuth(
-                          RegistrationWidget.routeName,
-                          context.mounted,
-                          queryParameters: {
-                            "email": serializeParam(
-                                    user.email ?? '', ParamType.String) ??
-                                "",
-                            "name": serializeParam(
-                                    user.displayName ?? '', ParamType.String) ??
-                                "",
-                          },
+                        _model.tokenResponse = await GetNewJwtTokenCall.call(
+                          email: currentUserEmail,
+                          uid: currentUserUid,
                         );
+
+                        if ((_model.tokenResponse?.succeeded ?? true)) {
+                          FFAppState().jwtToken = getJsonField(
+                            (_model.tokenResponse?.jsonBody ?? ''),
+                            r'''$.token''',
+                          ).toString();
+                          safeSetState(() {});
+                          _model.signUpResult = await SignUpCall.call(
+                            token: FFAppState().jwtToken,
+                            verified: currentUserEmailVerified,
+                            name: currentUserDisplayName,
+                          );
+
+                          if ((_model.signUpResult?.succeeded ?? true)) {
+                            context.pushNamedAuth(
+                                HomePageWidget.routeName, context.mounted);
+                          } else {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Something went wrong.',
+                                  style: TextStyle(
+                                    color: FlutterFlowTheme.of(context)
+                                        .primaryText,
+                                  ),
+                                  textAlign: TextAlign.start,
+                                ),
+                                duration: Duration(milliseconds: 4000),
+                                backgroundColor:
+                                    FlutterFlowTheme.of(context).error,
+                              ),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Authentication failed. Please try again.',
+                                style: TextStyle(
+                                  color:
+                                      FlutterFlowTheme.of(context).primaryText,
+                                ),
+                                textAlign: TextAlign.start,
+                              ),
+                              duration: Duration(milliseconds: 4000),
+                              backgroundColor:
+                                  FlutterFlowTheme.of(context).error,
+                            ),
+                          );
+                        }
+
+                        safeSetState(() {});
                       },
-                      text: 'Sign Up with Google',
+                      text: FFLocalizations.of(context).getText(
+                        '6wcgpd5l' /* Log In with Google */,
+                      ),
                       icon: FaIcon(
                         FontAwesomeIcons.google,
                         size: 28.0,
@@ -167,21 +216,13 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                         if (user == null) {
                           return;
                         }
-                        await cf.getJWT(context, user);
+
                         context.goNamedAuth(
-                          RegistrationWidget.routeName,
-                          context.mounted,
-                          queryParameters: {
-                            "email": serializeParam(
-                                    user.email ?? '', ParamType.String) ??
-                                "",
-                            "name": serializeParam(
-                                    user.displayName ?? '', ParamType.String) ??
-                                "",
-                          },
-                        );
+                            CommentsWidget.routeName, context.mounted);
                       },
-                      text: 'Log In with Google',
+                      text: FFLocalizations.of(context).getText(
+                        'vbwk8518' /* Log In with Google */,
+                      ),
                       options: FFButtonOptions(
                         width: MediaQuery.sizeOf(context).width * 0.55,
                         height: 55.0,
@@ -218,7 +259,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     ),
                   ),
                 Text(
-                  'OR',
+                  FFLocalizations.of(context).getText(
+                    'kmqungba' /* OR */,
+                  ),
                   style: FlutterFlowTheme.of(context).bodyMedium.override(
                         font: GoogleFonts.inter(
                           fontWeight: FontWeight.w500,
@@ -262,7 +305,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                          hintText: 'Email address',
+                          hintText: FFLocalizations.of(context).getText(
+                            'h71xs85h' /* Email address */,
+                          ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -364,7 +409,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                          hintText: 'Password',
+                          hintText: FFLocalizations.of(context).getText(
+                            'mgzp7kga' /* Password */,
+                          ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -478,7 +525,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                          hintText: 'Confirm password',
+                          hintText: FFLocalizations.of(context).getText(
+                            'twge6t6u' /* Confirm password */,
+                          ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
                                     font: GoogleFonts.inter(
@@ -588,25 +637,16 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                             _model.emailTextController.text,
                             _model.passwordTextController.text,
                           );
-                          if (user == null || user.email == null) {
+                          if (user == null) {
                             return;
                           }
 
-                          await cf.getJWT(context, user);
                           context.pushNamedAuth(
-                            RegistrationWidget.routeName,
-                            context.mounted,
-                            queryParameters: {
-                              "email": serializeParam(
-                                      user.email ?? '', ParamType.String) ??
-                                  "",
-                              "name": serializeParam(user.displayName ?? '',
-                                      ParamType.String) ??
-                                  "",
-                            },
-                          );
+                              HomePageWidget.routeName, context.mounted);
                         },
-                        text: 'Submit',
+                        text: FFLocalizations.of(context).getText(
+                          '6szfh892' /* Submit */,
+                        ),
                         options: FFButtonOptions(
                           width: MediaQuery.sizeOf(context).width * 0.8,
                           height: 40.0,
@@ -643,8 +683,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             Align(
               alignment: AlignmentDirectional(0.0, 1.0),
               child: Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(
-                    0.0, 0.0, 0.0, MediaQuery.of(context).size.height * 0.045),
+                padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 55.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -656,7 +695,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Already have account? ',
+                              text: FFLocalizations.of(context).getText(
+                                'anjm2a6x' /* Already have account?  */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
@@ -679,7 +720,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                                   ),
                             ),
                             TextSpan(
-                              text: 'Log In',
+                              text: FFLocalizations.of(context).getText(
+                                'djn5ihob' /* Log In */,
+                              ),
                               style: FlutterFlowTheme.of(context)
                                   .bodyMedium
                                   .override(
