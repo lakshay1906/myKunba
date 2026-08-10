@@ -1,4 +1,0 @@
-trendspy
-google-generativeai
-requests
-python-dotenv

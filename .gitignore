@@ -1,7 +1,10 @@
-/my_kunba
-/my_kunba_old
-/mykunba-automation
+# Keep only "My kunba web" (and repo meta) in this GitHub repo.
+# Already-tracked paths must also be removed from the index with:
+#   git rm -r --cached <path>
 
-my_kunba
-my_kunba_old
-mykunba-automation
+# Flutter / mobile apps
+my_kunba/
+my_kunba_old/
+
+# Automation project
+mykunba-automation/
